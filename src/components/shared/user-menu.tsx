@@ -29,7 +29,10 @@ export function UserMenu() {
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger className="flex items-center gap-2 rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+        <DropdownMenuTrigger
+          className="flex items-center gap-2 rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          aria-label="User account menu"
+        >
           <Avatar className="size-8">
             <AvatarFallback className="bg-primary text-xs text-primary-foreground">
               {initials(user.firstName, user.lastName)}

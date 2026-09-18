@@ -76,10 +76,11 @@ export const DraftCard = memo(function DraftCard({
             size="sm"
             onClick={() => setConfirmingDelete(true)}
             disabled={isDeleting}
+            aria-label={`Discard draft for ${requestType?.name ?? "request"}`}
             className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive h-8 px-2.5"
             title="Discard Draft"
           >
-            <Trash2 className="size-3.5" />
+            <Trash2 className="size-3.5" aria-hidden="true" />
             <span className="text-xs ml-1">Discard</span>
           </Button>
 
@@ -87,10 +88,11 @@ export const DraftCard = memo(function DraftCard({
             size="sm"
             nativeButton={false}
             render={<Link href={`/requests/new?draftId=${draft.id}`} />}
+            aria-label={`Resume draft for ${requestType?.name ?? "request"}`}
             className="h-8 gap-1.5"
           >
             <span>Resume</span>
-            <ArrowRight className="size-3.5" />
+            <ArrowRight className="size-3.5" aria-hidden="true" />
           </Button>
         </div>
 
@@ -146,14 +148,14 @@ export const DraftCard = memo(function DraftCard({
       <div className="pt-3 mt-4 border-t border-border/60 space-y-3">
         {address && (
           <div className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300 font-medium truncate">
-            <MapPin className="size-3.5 text-brand-gold shrink-0" />
+            <MapPin className="size-3.5 text-brand-gold shrink-0" aria-hidden="true" />
             <span className="truncate">{address}</span>
           </div>
         )}
 
         <div className="flex items-center justify-between text-[11px] text-muted-foreground/80">
           <span className="flex items-center gap-1">
-            <Clock className="size-3 text-slate-400" />
+            <Clock className="size-3 text-slate-400" aria-hidden="true" />
             Saved {formatRelative(draft.updatedAt)}
           </span>
         </div>
@@ -164,10 +166,11 @@ export const DraftCard = memo(function DraftCard({
             size="sm"
             onClick={() => setConfirmingDelete(true)}
             disabled={isDeleting}
+            aria-label={`Discard draft for ${requestType?.name ?? "request"}`}
             className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive h-8 px-2.5 flex-1"
             title="Discard Draft"
           >
-            <Trash2 className="size-3.5" />
+            <Trash2 className="size-3.5" aria-hidden="true" />
             <span className="text-xs">Discard</span>
           </Button>
 
@@ -175,10 +178,11 @@ export const DraftCard = memo(function DraftCard({
             size="sm"
             nativeButton={false}
             render={<Link href={`/requests/new?draftId=${draft.id}`} />}
+            aria-label={`Resume draft for ${requestType?.name ?? "request"}`}
             className="h-8 gap-1.5 flex-1"
           >
             <span>Resume</span>
-            <ArrowRight className="size-3.5" />
+            <ArrowRight className="size-3.5" aria-hidden="true" />
           </Button>
         </div>
       </div>

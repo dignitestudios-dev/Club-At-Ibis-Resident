@@ -47,6 +47,7 @@ export function FileDropzone({
         <div
           role="button"
           tabIndex={0}
+          aria-label="Upload files by clicking or dragging and dropping"
           onClick={() => inputRef.current?.click()}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") inputRef.current?.click();
@@ -67,7 +68,7 @@ export function FileDropzone({
             invalid && "border-destructive bg-destructive/5"
           )}
         >
-          <span className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <span className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary" aria-hidden="true">
             <Upload className="size-5" />
           </span>
           <div>

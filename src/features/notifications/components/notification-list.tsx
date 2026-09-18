@@ -1,100 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import {
-  Bell,
-  CheckCheck,
-  CheckCircle2,
-  AlertTriangle,
-  MessageSquare,
-  FileText,
-  Clock,
-  XCircle,
-  ArrowRight,
-  Check,
-  UserX,
-  CreditCard,
-  Layers,
-} from "lucide-react";
+import { Bell, CheckCheck, Layers } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { NotificationItem } from "@/features/notifications/components/notification-item";
 import { useNotifications } from "@/features/notifications/hooks/use-notifications";
 import { useToast } from "@/hooks/use-toast";
-import { formatRelative, formatDateTime } from "@/utils/format";
 import { cn } from "@/utils/cn";
 
 type FilterType = "all" | "unread";
 
-function getNotificationVisuals(type: NotificationType) {
-  switch (type) {
-    case "approved":
-    case "completed":
-    case "approval_letter":
-      return {
-        icon: <CheckCircle2 className="size-4.5 text-emerald-600 dark:text-emerald-400" />,
-        badgeClass: "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200/80 dark:border-emerald-800/60",
-        avatarBg: "bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-200/70 dark:border-emerald-800/40",
-        label: "Approved",
-      };
-    case "revision_required":
-    case "action_required":
-      return {
-        icon: <AlertTriangle className="size-4.5 text-amber-600 dark:text-amber-400" />,
-        badgeClass: "bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border-amber-200/80 dark:border-amber-800/60",
-        avatarBg: "bg-amber-50/50 dark:bg-amber-950/30 border-amber-200/60 dark:border-amber-800/40",
-        label: "Action Required",
-      };
-    case "feedback":
-      return {
-        icon: <MessageSquare className="size-4.5 text-slate-700 dark:text-slate-300" />,
-        badgeClass: "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border-slate-200/80 dark:border-slate-700",
-        avatarBg: "bg-slate-50 dark:bg-slate-800/60 border-slate-200/70 dark:border-slate-700",
-        label: "Feedback",
-      };
-    case "resubmitted":
-      return {
-        icon: <Clock className="size-4.5 text-slate-700 dark:text-slate-300" />,
-        badgeClass: "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border-slate-200/80 dark:border-slate-700",
-        avatarBg: "bg-slate-50 dark:bg-slate-800/60 border-slate-200/70 dark:border-slate-700",
-        label: "Resubmitted",
-      };
-    case "rejected":
-      return {
-        icon: <XCircle className="size-4.5 text-rose-600 dark:text-rose-400" />,
-        badgeClass: "bg-rose-50 dark:bg-rose-950/40 text-rose-950 dark:text-rose-300 border-rose-200/80 dark:border-rose-800/60",
-        avatarBg: "bg-rose-50/50 dark:bg-rose-950/30 border-rose-200/60 dark:border-rose-800/40",
-        label: "Not Approved",
-      };
-    case "withdrawn":
-      return {
-        icon: <UserX className="size-4.5 text-slate-600 dark:text-slate-400" />,
-        badgeClass: "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700",
-        avatarBg: "bg-slate-50 dark:bg-slate-800/60 border-slate-200/70 dark:border-slate-700",
-        label: "Withdrawn",
-      };
-    case "refund_updated":
-      return {
-        icon: <CreditCard className="size-4.5 text-slate-700 dark:text-slate-300" />,
-        badgeClass: "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-700",
-        avatarBg: "bg-slate-50 dark:bg-slate-800/60 border-slate-200/70 dark:border-slate-700",
-        label: "Deposit / Refund",
-      };
-    default:
-      return {
-        icon: <FileText className="size-4.5 text-slate-700 dark:text-slate-300" />,
-        badgeClass: "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700",
-        avatarBg: "bg-slate-50 dark:bg-slate-800/60 border-slate-200/70 dark:border-slate-700",
-        label: "Update",
-      };
-  }
-}
-
 export default function NotificationList() {
-  const { notifications, isLoading, unreadCount, markRead, markAllRead, isMarkingAllRead } =
-    useNotifications();
+  const {
+    notifications,
+    isLoading,
+    unreadCount,
+    markRead,
+    markAllRead,
+    isMarkingAllRead,
+  } = useNotifications();
   const toast = useToast();
   const [filter, setFilter] = useState<FilterType>("all");
 
@@ -126,33 +53,45 @@ export default function NotificationList() {
               onClick={handleMarkAll}
               disabled={isMarkingAllRead}
               className="bg-white dark:bg-card gap-1.5 shadow-2xs hover:border-primary/40 hover:bg-slate-50 dark:hover:bg-slate-800"
+              aria-label={`Mark all ${unreadCount} unread notifications as read`}
             >
-              <CheckCheck className="size-4 text-primary" />
+              <CheckCheck className="size-4 text-primary" aria-hidden="true" />
               Mark all as read ({unreadCount})
             </Button>
           ) : undefined
         }
       />
 
-      {/* Filter Navigation Tabs: All and Unread only */}
-      <div className="flex items-center gap-2 border-b border-border/80 pb-3">
+      {/* Filter Navigation Tabs */}
+      <div
+        role="tablist"
+        aria-label="Filter notifications"
+        className="flex items-center gap-2 border-b border-border/80 pb-3"
+      >
         <button
           type="button"
+          role="tab"
+          aria-selected={filter === "all"}
+          aria-controls="panel-all-notifications"
+          id="tab-all-notifications"
           onClick={() => setFilter("all")}
           className={cn(
-            "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all",
+            "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary",
             filter === "all"
               ? "bg-primary text-white shadow-xs"
               : "bg-white dark:bg-card text-slate-700 dark:text-slate-300 border border-border/80 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-foreground"
           )}
         >
-          <Layers className="size-3.5" />
+          <Layers className="size-3.5" aria-hidden="true" />
           All
           <span
             className={cn(
               "rounded-full px-1.5 py-0.2 text-[10px]",
-              filter === "all" ? "bg-white/20 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
+              filter === "all"
+                ? "bg-white/20 text-white"
+                : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
             )}
+            aria-label={`${notifications.length} total notifications`}
           >
             {notifications.length}
           </span>
@@ -160,22 +99,29 @@ export default function NotificationList() {
 
         <button
           type="button"
+          role="tab"
+          aria-selected={filter === "unread"}
+          aria-controls="panel-unread-notifications"
+          id="tab-unread-notifications"
           onClick={() => setFilter("unread")}
           className={cn(
-            "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all",
+            "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary",
             filter === "unread"
               ? "bg-primary text-white shadow-xs"
               : "bg-white dark:bg-card text-slate-700 dark:text-slate-300 border border-border/80 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-foreground"
           )}
         >
-          <Bell className="size-3.5" />
+          <Bell className="size-3.5" aria-hidden="true" />
           Unread
           {unreadCount > 0 && (
             <span
               className={cn(
                 "rounded-full px-1.5 py-0.2 text-[10px] font-semibold",
-                filter === "unread" ? "bg-white/20 text-white" : "bg-slate-800 dark:bg-slate-700 text-white"
+                filter === "unread"
+                  ? "bg-white/20 text-white"
+                  : "bg-slate-800 dark:bg-slate-700 text-white"
               )}
+              aria-label={`${unreadCount} unread notifications`}
             >
               {unreadCount}
             </span>
@@ -184,7 +130,7 @@ export default function NotificationList() {
       </div>
 
       {isLoading && (
-        <div className="space-y-3">
+        <div className="space-y-3" aria-busy="true" aria-live="polite">
           <Skeleton className="h-28 w-full rounded-xl" />
           <Skeleton className="h-28 w-full rounded-xl" />
           <Skeleton className="h-28 w-full rounded-xl" />
@@ -204,106 +150,22 @@ export default function NotificationList() {
       )}
 
       {!isLoading && filtered.length > 0 && (
-        <div className="space-y-3">
-          {filtered.map((notification) => {
-            const visual = getNotificationVisuals(notification.type);
-            return (
-              <div
-                key={notification.id}
-                className={cn(
-                  "group relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border bg-white dark:bg-card p-4.5 sm:p-5 shadow-2xs transition-all duration-200",
-                  "hover:-translate-y-0.5 hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-md",
-                  !notification.read
-                    ? "border-l-4 border-l-primary border-slate-200 dark:border-slate-700 shadow-xs"
-                    : "border-border/80"
-                )}
-              >
-                <div className="flex items-start gap-4 min-w-0 flex-1">
-                  <span
-                    className={cn(
-                      "flex size-10 shrink-0 items-center justify-center rounded-xl border mt-0.5",
-                      visual.avatarBg
-                    )}
-                  >
-                    {visual.icon}
-                  </span>
-                  <div className="min-w-0 flex-1 space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span
-                        className={cn(
-                          "rounded-full border px-2.5 py-0.5 text-[11px] font-medium",
-                          visual.badgeClass
-                        )}
-                      >
-                        {visual.label}
-                      </span>
-                      {!notification.read && (
-                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary tracking-wide">
-                          NEW
-                        </span>
-                      )}
-                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Clock className="size-3" />
-                        <span title={formatDateTime(notification.createdAt)}>
-                          {formatRelative(notification.createdAt)}
-                        </span>
-                      </span>
-                    </div>
-
-                    <h3
-                      className={cn(
-                        "font-heading text-base font-medium text-foreground group-hover:text-primary transition-colors",
-                        !notification.read && "font-semibold text-primary"
-                      )}
-                    >
-                      {notification.title}
-                    </h3>
-
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      {notification.message}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex shrink-0 items-center gap-2 sm:self-center pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-800">
-                  {!notification.read && (
-                    <Button
-                      variant="ghost"
-                      size="xs"
-                      onClick={() => handleMarkOne(notification.id)}
-                      className="gap-1.5 text-xs text-muted-foreground hover:bg-slate-200/60 dark:hover:bg-slate-800 hover:text-foreground"
-                    >
-                      <Check className="size-3.5" />
-                      Mark read
-                    </Button>
-                  )}
-                  {notification.requestId && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-1.5 bg-white dark:bg-card hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-primary/50 text-xs font-medium shadow-2xs"
-                      nativeButton={false}
-                      render={
-                        <Link
-                          href={`/requests/${notification.requestId}`}
-                          onClick={() => {
-                            if (!notification.read) markRead(notification.id);
-                          }}
-                        />
-                      }
-                    >
-                      View Request
-                      <ArrowRight className="size-3.5" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+        <div
+          id={filter === "unread" ? "panel-unread-notifications" : "panel-all-notifications"}
+          role="tabpanel"
+          aria-labelledby={filter === "unread" ? "tab-unread-notifications" : "tab-all-notifications"}
+          className="space-y-3"
+          aria-label="Notification list"
+        >
+          {filtered.map((notification) => (
+            <NotificationItem
+              key={notification.id}
+              notification={notification}
+              onMarkRead={handleMarkOne}
+            />
+          ))}
         </div>
       )}
     </div>
   );
 }
-
-

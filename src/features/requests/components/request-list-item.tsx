@@ -44,6 +44,7 @@ export const RequestListItem = memo(function RequestListItem({
     return (
       <Link
         href={`/requests/${request.id}`}
+        aria-label={`View request ${request.code}: ${requestType?.name ?? "Architectural Request"}`}
         style={style}
         className={cn(
           "group relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 overflow-hidden rounded-xl border border-border/80 bg-card p-4 sm:p-4.5 pl-4.5 sm:pl-5 shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50/70 dark:hover:bg-slate-800/40 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-md",
@@ -69,7 +70,7 @@ export const RequestListItem = memo(function RequestListItem({
             </span>
             {hasFeedback && (
               <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-300/80 dark:border-amber-700/60 px-2 py-0.5 text-[10px] font-semibold text-amber-900 dark:text-amber-300 shadow-2xs">
-                <MessageSquare className="size-3 text-amber-700 dark:text-amber-400" />
+                <MessageSquare className="size-3 text-amber-700 dark:text-amber-400" aria-hidden="true" />
                 Note{request.comments.length > 1 ? "s" : ""}
               </span>
             )}
@@ -77,12 +78,12 @@ export const RequestListItem = memo(function RequestListItem({
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
             {address && (
               <span className="inline-flex items-center gap-1 text-slate-600 dark:text-slate-300 font-medium truncate max-w-xs">
-                <MapPin className="size-3 text-brand-gold shrink-0" />
+                <MapPin className="size-3 text-brand-gold shrink-0" aria-hidden="true" />
                 {address}
               </span>
             )}
             <span className="inline-flex items-center gap-1">
-              <Calendar className="size-3 text-slate-400 shrink-0" />
+              <Calendar className="size-3 text-slate-400 shrink-0" aria-hidden="true" />
               Submitted {formatDate(request.submittedAt ?? request.createdAt)}
             </span>
             <span>·</span>
@@ -92,7 +93,10 @@ export const RequestListItem = memo(function RequestListItem({
 
         <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/60 pr-1">
           <StatusBadge status={request.status} />
-          <span className="flex size-7 items-center justify-center rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-border/60 text-muted-foreground transition-all duration-200 group-hover:bg-primary group-hover:text-primary-foreground group-hover:translate-x-0.5 group-hover:border-primary shadow-2xs">
+          <span
+            aria-hidden="true"
+            className="flex size-7 items-center justify-center rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-border/60 text-muted-foreground transition-all duration-200 group-hover:bg-primary group-hover:text-primary-foreground group-hover:translate-x-0.5 group-hover:border-primary shadow-2xs"
+          >
             <ChevronRight className="size-3.5" />
           </span>
         </div>
@@ -103,6 +107,7 @@ export const RequestListItem = memo(function RequestListItem({
   return (
     <Link
       href={`/requests/${request.id}`}
+      aria-label={`View request ${request.code}: ${requestType?.name ?? "Architectural Request"}`}
       style={style}
       className={cn(
         "group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/80 bg-card p-5 shadow-2xs transition-all duration-300",
@@ -129,7 +134,7 @@ export const RequestListItem = memo(function RequestListItem({
           <div className="flex items-center gap-1.5 shrink-0">
             {hasFeedback && (
               <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-300/80 dark:border-amber-700/60 px-2 py-0.5 text-[10px] font-semibold text-amber-900 dark:text-amber-300 shadow-2xs">
-                <MessageSquare className="size-3 text-amber-700 dark:text-amber-400" />
+                <MessageSquare className="size-3 text-amber-700 dark:text-amber-400" aria-hidden="true" />
                 Note{request.comments.length > 1 ? "s" : ""}
               </span>
             )}
@@ -158,18 +163,21 @@ export const RequestListItem = memo(function RequestListItem({
       <div className="pt-3 mt-4 border-t border-border/60 space-y-2.5">
         {address && (
           <div className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300 font-medium truncate">
-            <MapPin className="size-3.5 text-brand-gold shrink-0" />
+            <MapPin className="size-3.5 text-brand-gold shrink-0" aria-hidden="true" />
             <span className="truncate">{address}</span>
           </div>
         )}
 
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1 text-[11px]">
-            <Calendar className="size-3 text-slate-400 shrink-0" />
+            <Calendar className="size-3 text-slate-400 shrink-0" aria-hidden="true" />
             Submitted {formatDate(request.submittedAt ?? request.createdAt)}
           </span>
 
-          <span className="flex size-7 items-center justify-center rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-border/60 text-muted-foreground transition-all duration-200 group-hover:bg-primary group-hover:text-primary-foreground group-hover:translate-x-0.5 group-hover:border-primary shadow-2xs">
+          <span
+            aria-hidden="true"
+            className="flex size-7 items-center justify-center rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-border/60 text-muted-foreground transition-all duration-200 group-hover:bg-primary group-hover:text-primary-foreground group-hover:translate-x-0.5 group-hover:border-primary shadow-2xs"
+          >
             <ChevronRight className="size-3.5" />
           </span>
         </div>

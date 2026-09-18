@@ -3,32 +3,15 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import {
-  PlusCircle,
-  Search,
-  FileText,
-  FileEdit,
-  ListChecks,
-  History,
-  RotateCcw,
-  X,
-  LayoutGrid,
-  List,
-} from "lucide-react";
+import { PlusCircle, FileText, FileEdit, History } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { RequestListItem } from "@/features/requests/components/request-list-item";
 import { DraftCard } from "@/features/drafts/components/draft-card";
+import { RequestsTabsHeader, type RequestsTabType } from "@/features/requests/components/list/requests-tabs-header";
+import { RequestsFilterToolbar } from "@/features/requests/components/list/requests-filter-toolbar";
 import { useRequestsList, type DatePeriod } from "@/features/requests/hooks/use-requests-list";
 import { useDrafts } from "@/features/drafts/hooks/use-drafts";
 import { requestTypes } from "@/lib/mock/request-types";
@@ -69,10 +52,10 @@ export default function RequestsListPage() {
   const router = useRouter();
 
   const tabParam = searchParams.get("tab");
-  const initialTab: "requests" | "history" | "drafts" =
+  const initialTab: RequestsTabType =
     tabParam === "history" ? "history" : tabParam === "drafts" ? "drafts" : "requests";
 
-  const [activeTab, setActiveTab] = useState<"requests" | "history" | "drafts">(initialTab);
+  const [activeTab, setActiveTab] = useState<RequestsTabType>(initialTab);
   const [viewMode, setViewModeState] = useState<"grid" | "list">("grid");
 
   useEffect(() => {
@@ -106,7 +89,7 @@ export default function RequestsListPage() {
     }
   }, [searchParams]);
 
-  function handleTabChange(tab: "requests" | "history" | "drafts") {
+  function handleTabChange(tab: RequestsTabType) {
     setActiveTab(tab);
     const params = new URLSearchParams(searchParams.toString());
     if (tab === "requests") {
@@ -147,226 +130,55 @@ export default function RequestsListPage() {
           title="My Requests"
           description="Track your active architectural modifications, inspect past records, and resume saved drafts."
           actions={
-            <Button nativeButton={false} render={<Link href="/requests/new" />}>
-              <PlusCircle className="size-4" />
+            <Button
+              nativeButton={false}
+              render={<Link href="/requests/new" />}
+              aria-label="Create a new architectural request"
+            >
+              <PlusCircle className="size-4" aria-hidden="true" />
               New Request
             </Button>
           }
         />
       </div>
 
-      {/* Header Controls: Tab Switcher & View Switcher */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2 duration-400 delay-75">
-        {/* Simplified, Modern Pill Tab Switcher */}
-        <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 dark:bg-slate-900/90 rounded-xl border border-slate-200/80 dark:border-slate-800 w-fit max-w-full overflow-x-auto">
-          {/* Tab 1: Active Requests */}
-          <button
-            type="button"
-            onClick={() => handleTabChange("requests")}
-            className={cn(
-              "flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all shrink-0 cursor-pointer",
-              activeTab === "requests"
-                ? "bg-white dark:bg-slate-800 text-primary dark:text-foreground shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <ListChecks className="size-3.5" />
-            <span>Active Requests</span>
-            <span
-              className={cn(
-                "rounded-full px-1.5 py-0.2 text-[11px] font-bold",
-                activeTab === "requests"
-                  ? "bg-primary/10 dark:bg-primary/20 text-primary dark:text-amber-300"
-                  : "bg-slate-200 dark:bg-slate-800 text-muted-foreground"
-              )}
-            >
-              {allActiveRequests.length}
-            </span>
-          </button>
-
-          {/* Tab 2: History */}
-          <button
-            type="button"
-            onClick={() => handleTabChange("history")}
-            className={cn(
-              "flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all shrink-0 cursor-pointer",
-              activeTab === "history"
-                ? "bg-white dark:bg-slate-800 text-primary dark:text-foreground shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <History className="size-3.5" />
-            <span>History</span>
-            <span
-              className={cn(
-                "rounded-full px-1.5 py-0.2 text-[11px] font-bold",
-                activeTab === "history"
-                  ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300"
-                  : "bg-slate-200 dark:bg-slate-800 text-muted-foreground"
-              )}
-            >
-              {allHistoryRequests.length}
-            </span>
-          </button>
-
-          {/* Tab 3: Saved Drafts */}
-          <button
-            type="button"
-            onClick={() => handleTabChange("drafts")}
-            className={cn(
-              "flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all shrink-0 cursor-pointer",
-              activeTab === "drafts"
-                ? "bg-white dark:bg-slate-800 text-primary dark:text-foreground shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <FileEdit className="size-3.5" />
-            <span>Saved Drafts</span>
-            {drafts.length > 0 && (
-              <span
-                className={cn(
-                  "rounded-full px-1.5 py-0.2 text-[11px] font-bold",
-                  activeTab === "drafts"
-                    ? "bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300"
-                    : "bg-amber-100/70 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400"
-                )}
-              >
-                {drafts.length}
-              </span>
-            )}
-          </button>
-        </div>
-
-        {/* View Switcher: Cards vs List */}
-        <div className="flex items-center gap-1 p-1 bg-slate-100/90 dark:bg-slate-900/90 rounded-xl border border-slate-200/80 dark:border-slate-800 shrink-0 self-start sm:self-auto">
-          <button
-            type="button"
-            onClick={() => handleViewModeChange("grid")}
-            className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer",
-              viewMode === "grid"
-                ? "bg-white dark:bg-slate-800 text-primary dark:text-foreground shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-            title="Card Grid View"
-            aria-label="Card Grid View"
-          >
-            <LayoutGrid className="size-3.5" />
-            <span>Cards</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleViewModeChange("list")}
-            className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer",
-              viewMode === "list"
-                ? "bg-white dark:bg-slate-800 text-primary dark:text-foreground shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-            title="List View"
-            aria-label="List View"
-          >
-            <List className="size-3.5" />
-            <span>List</span>
-          </button>
-        </div>
-      </div>
+      <RequestsTabsHeader
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        activeCount={allActiveRequests.length}
+        historyCount={allHistoryRequests.length}
+        draftsCount={drafts.length}
+        viewMode={viewMode}
+        onViewModeChange={handleViewModeChange}
+      />
 
       {/* Submitted / Active Requests Tab Content */}
       {activeTab === "requests" && (
-        <div className="space-y-4 animate-in fade-in duration-300">
-          {/* Multi-Filter Bar */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-            {/* Search Input */}
-            <div className="relative">
-              <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by code, type, details..."
-                className="pl-8 pr-8 bg-card dark:bg-card border-border"
-              />
-              {search && (
-                <button
-                  type="button"
-                  onClick={() => setSearch("")}
-                  className="absolute top-1/2 right-2.5 -translate-y-1/2 rounded-full p-1 text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-foreground transition-colors cursor-pointer"
-                  aria-label="Clear search"
-                >
-                  <X className="size-3.5" />
-                </button>
-              )}
-            </div>
-
-            {/* Status Filter */}
-            <Select
-              items={ACTIVE_STATUS_OPTIONS}
-              value={status}
-              onValueChange={(v) => setStatus(v as RequestStatus | "all")}
-            >
-              <SelectTrigger className="w-full bg-card dark:bg-card border-border">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                {ACTIVE_STATUS_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Category Filter */}
-            <Select
-              items={CATEGORY_OPTIONS}
-              value={requestTypeId}
-              onValueChange={(v) => setRequestTypeId(v as string)}
-            >
-              <SelectTrigger className="w-full bg-card dark:bg-card border-border">
-                <SelectValue placeholder="All Categories" />
-              </SelectTrigger>
-              <SelectContent>
-                {CATEGORY_OPTIONS.map((cat) => (
-                  <SelectItem key={cat.value} value={cat.value}>
-                    {cat.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Period Filter */}
-            <Select
-              items={PERIOD_OPTIONS}
-              value={period}
-              onValueChange={(v) => setPeriod(v as DatePeriod)}
-            >
-              <SelectTrigger className="w-full bg-card dark:bg-card border-border">
-                <SelectValue placeholder="Timeframe" />
-              </SelectTrigger>
-              <SelectContent>
-                {PERIOD_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Active Filter Clear Trigger */}
-          {hasActiveFilters && (
-            <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
-              <span>Showing filtered results ({activeRequests.length} of {allActiveRequests.length})</span>
-              <button
-                type="button"
-                onClick={resetFilters}
-                className="inline-flex items-center gap-1 font-medium text-primary hover:underline cursor-pointer"
-              >
-                <RotateCcw className="size-3" />
-                Reset filters
-              </button>
-            </div>
-          )}
+        <div
+          id="panel-requests"
+          role="tabpanel"
+          aria-labelledby="tab-requests"
+          className="space-y-4 animate-in fade-in duration-300"
+        >
+          <RequestsFilterToolbar
+            search={search}
+            onSearchChange={setSearch}
+            status={status}
+            onStatusChange={setStatus}
+            statusOptions={ACTIVE_STATUS_OPTIONS}
+            statusPlaceholder="Filter by status"
+            requestTypeId={requestTypeId}
+            onRequestTypeChange={setRequestTypeId}
+            categoryOptions={CATEGORY_OPTIONS}
+            period={period}
+            onPeriodChange={setPeriod}
+            periodOptions={PERIOD_OPTIONS}
+            hasActiveFilters={hasActiveFilters}
+            filteredCount={activeRequests.length}
+            totalCount={allActiveRequests.length}
+            onResetFilters={resetFilters}
+            searchPlaceholder="Search by code, type, details..."
+          />
 
           {isLoadingRequests && (
             <div
@@ -376,6 +188,8 @@ export default function RequestsListPage() {
                   : "flex flex-col gap-3",
                 "animate-in fade-in duration-200"
               )}
+              aria-busy="true"
+              aria-live="polite"
             >
               {viewMode === "grid" ? (
                 <>
@@ -400,8 +214,12 @@ export default function RequestsListPage() {
                 title="No active requests found"
                 description="Try adjusting your search criteria or filters, or start a new architectural submission."
                 action={
-                  <Button nativeButton={false} render={<Link href="/requests/new" />}>
-                    <PlusCircle className="size-4" />
+                  <Button
+                    nativeButton={false}
+                    render={<Link href="/requests/new" />}
+                    aria-label="Start a new request"
+                  >
+                    <PlusCircle className="size-4" aria-hidden="true" />
                     Start New Request
                   </Button>
                 }
@@ -416,6 +234,8 @@ export default function RequestsListPage() {
                   ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4.5"
                   : "flex flex-col gap-3"
               )}
+              role="list"
+              aria-label="Active requests"
             >
               {activeRequests.map((request, idx) => (
                 <RequestListItem
@@ -433,99 +253,31 @@ export default function RequestsListPage() {
 
       {/* History (Completed & Rejected Records) Tab Content */}
       {activeTab === "history" && (
-        <div className="space-y-4 animate-in fade-in duration-300">
-          {/* Multi-Filter Bar */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-            {/* Search Input */}
-            <div className="relative">
-              <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search history records..."
-                className="pl-8 pr-8 bg-card dark:bg-card border-border"
-              />
-              {search && (
-                <button
-                  type="button"
-                  onClick={() => setSearch("")}
-                  className="absolute top-1/2 right-2.5 -translate-y-1/2 rounded-full p-1 text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-foreground transition-colors cursor-pointer"
-                  aria-label="Clear search"
-                >
-                  <X className="size-3.5" />
-                </button>
-              )}
-            </div>
-
-            {/* Status Filter */}
-            <Select
-              items={HISTORY_STATUS_OPTIONS}
-              value={status}
-              onValueChange={(v) => setStatus(v as RequestStatus | "all")}
-            >
-              <SelectTrigger className="w-full bg-card dark:bg-card border-border">
-                <SelectValue placeholder="All History Outcomes" />
-              </SelectTrigger>
-              <SelectContent>
-                {HISTORY_STATUS_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Category Filter */}
-            <Select
-              items={CATEGORY_OPTIONS}
-              value={requestTypeId}
-              onValueChange={(v) => setRequestTypeId(v as string)}
-            >
-              <SelectTrigger className="w-full bg-card dark:bg-card border-border">
-                <SelectValue placeholder="All Categories" />
-              </SelectTrigger>
-              <SelectContent>
-                {CATEGORY_OPTIONS.map((cat) => (
-                  <SelectItem key={cat.value} value={cat.value}>
-                    {cat.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Period Filter */}
-            <Select
-              items={PERIOD_OPTIONS}
-              value={period}
-              onValueChange={(v) => setPeriod(v as DatePeriod)}
-            >
-              <SelectTrigger className="w-full bg-card dark:bg-card border-border">
-                <SelectValue placeholder="Timeframe" />
-              </SelectTrigger>
-              <SelectContent>
-                {PERIOD_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Active Filter Clear Trigger */}
-          {hasActiveFilters && (
-            <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
-              <span>Showing filtered records ({historyRequests.length} of {allHistoryRequests.length})</span>
-              <button
-                type="button"
-                onClick={resetFilters}
-                className="inline-flex items-center gap-1 font-medium text-primary hover:underline cursor-pointer"
-              >
-                <RotateCcw className="size-3" />
-                Reset filters
-              </button>
-            </div>
-          )}
+        <div
+          id="panel-history"
+          role="tabpanel"
+          aria-labelledby="tab-history"
+          className="space-y-4 animate-in fade-in duration-300"
+        >
+          <RequestsFilterToolbar
+            search={search}
+            onSearchChange={setSearch}
+            status={status}
+            onStatusChange={setStatus}
+            statusOptions={HISTORY_STATUS_OPTIONS}
+            statusPlaceholder="All History Outcomes"
+            requestTypeId={requestTypeId}
+            onRequestTypeChange={setRequestTypeId}
+            categoryOptions={CATEGORY_OPTIONS}
+            period={period}
+            onPeriodChange={setPeriod}
+            periodOptions={PERIOD_OPTIONS}
+            hasActiveFilters={hasActiveFilters}
+            filteredCount={historyRequests.length}
+            totalCount={allHistoryRequests.length}
+            onResetFilters={resetFilters}
+            searchPlaceholder="Search history records..."
+          />
 
           {isLoadingRequests && (
             <div
@@ -535,6 +287,8 @@ export default function RequestsListPage() {
                   : "flex flex-col gap-3",
                 "animate-in fade-in duration-200"
               )}
+              aria-busy="true"
+              aria-live="polite"
             >
               {viewMode === "grid" ? (
                 <>
@@ -567,6 +321,8 @@ export default function RequestsListPage() {
                   ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4.5"
                   : "flex flex-col gap-3"
               )}
+              role="list"
+              aria-label="Past request history"
             >
               {historyRequests.map((request, idx) => (
                 <RequestListItem
@@ -584,7 +340,12 @@ export default function RequestsListPage() {
 
       {/* Saved Drafts Tab Content */}
       {activeTab === "drafts" && (
-        <div className="space-y-4 animate-in fade-in duration-300">
+        <div
+          id="panel-drafts"
+          role="tabpanel"
+          aria-labelledby="tab-drafts"
+          className="space-y-4 animate-in fade-in duration-300"
+        >
           {isLoadingDrafts && (
             <div
               className={cn(
@@ -593,6 +354,8 @@ export default function RequestsListPage() {
                   : "flex flex-col gap-3",
                 "animate-in fade-in duration-200"
               )}
+              aria-busy="true"
+              aria-live="polite"
             >
               {viewMode === "grid" ? (
                 <>
@@ -615,8 +378,12 @@ export default function RequestsListPage() {
                 title="No saved drafts"
                 description="When you start a request and step away, your in-progress work is automatically saved here."
                 action={
-                  <Button nativeButton={false} render={<Link href="/requests/new" />}>
-                    <PlusCircle className="size-4" />
+                  <Button
+                    nativeButton={false}
+                    render={<Link href="/requests/new" />}
+                    aria-label="Start a new request draft"
+                  >
+                    <PlusCircle className="size-4" aria-hidden="true" />
                     Start a Request
                   </Button>
                 }
@@ -631,6 +398,8 @@ export default function RequestsListPage() {
                   ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4.5"
                   : "flex flex-col gap-3"
               )}
+              role="list"
+              aria-label="Saved drafts"
             >
               {drafts.map((draft, idx) => (
                 <DraftCard

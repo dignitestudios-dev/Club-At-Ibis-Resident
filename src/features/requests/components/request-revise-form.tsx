@@ -44,9 +44,9 @@ export function RequestReviseForm({
                 disabled={!isFlagged}
               />
               {isFlagged && flagsByField.get(field.id) && (
-                <div className="mt-2 rounded-lg border border-amber-200/90 bg-amber-50/90 p-3 text-xs shadow-2xs">
+                <div role="note" className="mt-2 rounded-lg border border-amber-200/90 bg-amber-50/90 p-3 text-xs shadow-2xs">
                   <div className="flex items-start gap-2 text-amber-900">
-                    <AlertTriangle className="size-4 shrink-0 text-amber-600 mt-0.5" />
+                    <AlertTriangle className="size-4 shrink-0 text-amber-600 mt-0.5" aria-hidden="true" />
                     <div>
                       <span className="font-semibold">Reviewer Flag: </span>
                       <span className="text-amber-800">

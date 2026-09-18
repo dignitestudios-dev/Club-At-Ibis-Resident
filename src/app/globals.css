@@ -97,10 +97,10 @@
 
 .dark {
   /* Brand marks */
-  --brand-navy: #0f172a;
+  --brand-navy: #112636;
   --brand-ivory: #1e293b;
   --brand-blue: #3b82f6;
-  --brand-gold: #d4af37;
+  --brand-gold: #a0874a;
 
   /* Eye-Comfort Slate-Navy Dark Theme (eliminates eye fatigue & harsh glare) */
   --background: #0d1522;
@@ -109,7 +109,7 @@
   --card-foreground: #e2e8f0;
   --popover: #131f30;
   --popover-foreground: #e2e8f0;
-  --primary: #d4af37;
+  --primary: #a0874a;
   --primary-foreground: #0d1522;
   --secondary: #1a293f;
   --secondary-foreground: #e2e8f0;
@@ -120,20 +120,20 @@
   --destructive: #f87171;
   --border: #23344d;
   --input: #23344d;
-  --ring: #d4af37;
-  --chart-1: #d4af37;
+  --ring: #a0874a;
+  --chart-1: #a0874a;
   --chart-2: #60a5fa;
   --chart-3: #34d399;
   --chart-4: #fbbf24;
   --chart-5: #a78bfa;
   --sidebar: #101a29;
   --sidebar-foreground: #cbd5e1;
-  --sidebar-primary: #d4af37;
+  --sidebar-primary: #a0874a;
   --sidebar-primary-foreground: #0d1522;
   --sidebar-accent: #172437;
   --sidebar-accent-foreground: #f8fafc;
   --sidebar-border: #1e2e44;
-  --sidebar-ring: #d4af37;
+  --sidebar-ring: #a0874a;
 }
 
 @layer base {

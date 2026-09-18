@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAppDispatch } from "@/store";
 import { setUser, clearUser } from "@/store/slices/auth.slice";
 import { seedResidents } from "@/lib/mock/users";
+import { authKeys } from "@/features/auth/api/auth.queries";
 
 function toPublic(resident: Resident): PublicResident {
   const { password: _p, ...rest } = resident;
@@ -23,12 +25,14 @@ function isValidResident(value: unknown): value is PublicResident {
 
 export default function AuthRehydrator({ children }: { children: React.ReactNode }) {
   const dispatch = useAppDispatch();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const isExplicitlyLoggedOut = localStorage.getItem("cai.logged-out") === "true";
 
     if (isExplicitlyLoggedOut) {
       dispatch(clearUser());
+      queryClient.setQueryData(authKeys.currentUser, null);
       return;
     }
 
@@ -38,6 +42,7 @@ export default function AuthRehydrator({ children }: { children: React.ReactNode
         const parsed: unknown = JSON.parse(stored);
         if (isValidResident(parsed)) {
           dispatch(setUser(parsed));
+          queryClient.setQueryData(authKeys.currentUser, parsed);
           document.cookie = `auth-token=demo-token-${parsed.id}; path=/; max-age=1209600; SameSite=Lax`;
           return;
         }
@@ -52,7 +57,8 @@ export default function AuthRehydrator({ children }: { children: React.ReactNode
     localStorage.setItem("auth-token", `demo-token-${defaultDemoUser.id}`);
     document.cookie = `auth-token=demo-token-${defaultDemoUser.id}; path=/; max-age=1209600; SameSite=Lax`;
     dispatch(setUser(defaultDemoUser));
-  }, [dispatch]);
+    queryClient.setQueryData(authKeys.currentUser, defaultDemoUser);
+  }, [dispatch, queryClient]);
 
   return <>{children}</>;
 }

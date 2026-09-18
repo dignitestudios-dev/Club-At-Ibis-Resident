@@ -21,6 +21,7 @@ export function AppTopbar() {
           size="icon"
           className="lg:hidden"
           onClick={() => setMobileOpen(true)}
+          aria-label="Open mobile navigation menu"
         >
           <Menu className="size-5" />
         </Button>

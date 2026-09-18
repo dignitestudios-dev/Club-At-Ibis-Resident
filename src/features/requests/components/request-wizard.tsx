@@ -7,9 +7,8 @@ import { ArrowLeft, ArrowRight, Bookmark, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
-import { Checkbox } from "@/components/ui/checkbox";
-import { FieldError, FieldLabel } from "@/components/ui/field";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/utils/cn";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,6 +24,7 @@ import { Stepper } from "@/features/requests/components/stepper";
 import { DynamicField } from "@/features/requests/components/dynamic-field";
 import { RequestTypeCard } from "@/features/requests/components/request-type-card";
 import { RequestReview } from "@/features/requests/components/request-review";
+import { RequestHoaCard } from "@/features/requests/components/wizard/request-hoa-card";
 import { requestTypes } from "@/lib/mock/request-types";
 import { useRequestWizard } from "@/features/requests/hooks/use-request-wizard";
 import { useDraftDetailQuery } from "@/features/drafts/api/drafts.queries";
@@ -175,23 +175,11 @@ function RequestTypeWizard({
                 name="hoaApproved"
                 control={form.control}
                 render={({ field: rhf }) => (
-                  <div className="space-y-1.5 rounded-lg border border-border bg-muted/30 p-4">
-                    <FieldLabel
-                      htmlFor="hoaApproved"
-                      className="flex-row items-start gap-2.5 font-normal"
-                    >
-                      <Checkbox
-                        id="hoaApproved"
-                        checked={rhf.value === true}
-                        onCheckedChange={(checked) => rhf.onChange(checked === true)}
-                        className="mt-0.5"
-                      />
-                      <span className="text-sm text-foreground">
-                        I have HOA Approval for this project.
-                      </span>
-                    </FieldLabel>
-                    <FieldError errors={hoaError ? [hoaError] : []} />
-                  </div>
+                  <RequestHoaCard
+                    checked={rhf.value === true}
+                    onCheckedChange={(checked) => rhf.onChange(checked)}
+                    error={hoaError?.message}
+                  />
                 )}
               />
             </div>

@@ -5,6 +5,50 @@ function toPublic(resident: Resident): PublicResident {
   return rest;
 }
 
+export async function getCurrentUser(): Promise<PublicResident | null> {
+  if (typeof window === "undefined") return null;
+
+  const isExplicitlyLoggedOut = localStorage.getItem("cai.logged-out") === "true";
+  if (isExplicitlyLoggedOut) return null;
+
+  const stored = localStorage.getItem("auth-user");
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored) as PublicResident;
+      if (parsed?.id) {
+        const residents = db.getResidents();
+        const found = residents.find((r) => r.id === parsed.id);
+        if (found) {
+          const fresh = toPublic(found);
+          localStorage.setItem("auth-user", JSON.stringify(fresh));
+          return delay(fresh, 60);
+        }
+        return delay(parsed, 60);
+      }
+    } catch {
+      // Fallback
+    }
+  }
+
+  const residents = db.getResidents();
+  if (residents.length > 0) {
+    const defaultDemo = toPublic(residents[0]);
+    localStorage.setItem("auth-user", JSON.stringify(defaultDemo));
+    localStorage.setItem("auth-token", `demo-token-${defaultDemo.id}`);
+    document.cookie = `auth-token=demo-token-${defaultDemo.id}; path=/; max-age=1209600; SameSite=Lax`;
+    return delay(defaultDemo, 60);
+  }
+
+  return delay(null, 60);
+}
+
+export async function getResidentById(id: string): Promise<PublicResident | null> {
+  const residents = db.getResidents();
+  const found = residents.find((r) => r.id === id);
+  if (!found) return delay(null, 60);
+  return delay(toPublic(found), 60);
+}
+
 export async function loginUser(credentials: LoginCredentials): Promise<PublicResident> {
   const residents = db.getResidents();
   const match = residents.find(

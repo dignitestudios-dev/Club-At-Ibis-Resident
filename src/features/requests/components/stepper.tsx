@@ -16,7 +16,7 @@ export function Stepper({
   className?: string;
 }) {
   return (
-    <div className={cn("w-full py-2", className)}>
+    <nav aria-label="Request progress" className={cn("w-full py-2", className)}>
       <ol className="flex items-center w-full">
         {steps.map((step, index) => {
           const isComplete = index < currentIndex;
@@ -26,6 +26,7 @@ export function Stepper({
           return (
             <li
               key={step.id}
+              aria-current={isCurrent ? "step" : undefined}
               className={cn(
                 "flex items-center",
                 isLast ? "w-auto shrink-0" : "flex-1"
@@ -34,6 +35,7 @@ export function Stepper({
               {/* Step Icon & Label */}
               <div className="flex items-center gap-2.5">
                 <span
+                  aria-hidden="true"
                   className={cn(
                     "flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold transition-all duration-200 shadow-2xs",
                     isComplete
@@ -49,7 +51,12 @@ export function Stepper({
                     <span>{index + 1}</span>
                   )}
                 </span>
+                <span className="sr-only">
+                  Step {index + 1} of {steps.length}: {step.title}{" "}
+                  {isComplete ? "(Completed)" : isCurrent ? "(Current Step)" : ""}
+                </span>
                 <span
+                  aria-hidden="true"
                   className={cn(
                     "hidden sm:inline-block text-xs font-medium whitespace-nowrap transition-colors",
                     isCurrent
@@ -65,7 +72,10 @@ export function Stepper({
 
               {/* Connecting Line */}
               {!isLast && (
-                <div className="mx-3 sm:mx-4 flex-1 h-0.5 bg-slate-200 rounded-full overflow-hidden">
+                <div
+                  aria-hidden="true"
+                  className="mx-3 sm:mx-4 flex-1 h-0.5 bg-slate-200 rounded-full overflow-hidden"
+                >
                   <div
                     className={cn(
                       "h-full transition-all duration-300",
@@ -78,6 +88,6 @@ export function Stepper({
           );
         })}
       </ol>
-    </div>
+    </nav>
   );
 }

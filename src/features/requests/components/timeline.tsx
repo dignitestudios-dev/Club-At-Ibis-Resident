@@ -107,6 +107,7 @@ export function Timeline({ entries }: { entries: ActivityEntry[] }) {
             <div className="flex flex-col items-center">
               {/* Node Icon */}
               <span
+                aria-hidden="true"
                 className={cn(
                   "flex size-8 shrink-0 items-center justify-center rounded-full border-2 border-card shadow-2xs transition-transform duration-200 group-hover:scale-110",
                   config.nodeBg,
@@ -139,13 +140,14 @@ export function Timeline({ entries }: { entries: ActivityEntry[] }) {
                     </span>
                   )}
                 </div>
-                <span
+                <time
+                  dateTime={entry.createdAt}
                   className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"
                   title={formatDateTime(entry.createdAt)}
                 >
-                  <Clock className="size-3.5 text-slate-400" />
+                  <Clock className="size-3.5 text-slate-400" aria-hidden="true" />
                   {formatRelative(entry.createdAt)}
-                </span>
+                </time>
               </div>
 
               {/* Message */}
@@ -158,7 +160,9 @@ export function Timeline({ entries }: { entries: ActivityEntry[] }) {
                 <span>
                   By <span className="font-semibold text-foreground">{entry.actor}</span>
                 </span>
-                <span className="text-muted-foreground">{formatDateTime(entry.createdAt)}</span>
+                <time dateTime={entry.createdAt} className="text-muted-foreground">
+                  {formatDateTime(entry.createdAt)}
+                </time>
               </div>
             </div>
           </div>

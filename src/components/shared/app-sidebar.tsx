@@ -37,7 +37,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-4 custom-scrollbar">
+      <nav aria-label="Main navigation" className="flex-1 space-y-6 overflow-y-auto px-3 py-4 custom-scrollbar">
         {navGroups.map((group) => (
           <div key={group.label} className="space-y-1">
             <p className="px-3 text-[10px] font-semibold tracking-wider text-slate-400/70 uppercase">
@@ -53,6 +53,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
                     key={item.href}
                     href={item.href}
                     onClick={onNavigate}
+                    aria-current={isActive ? "page" : undefined}
                     className={cn(
                       "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150",
                       isActive
@@ -61,13 +62,14 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
                     )}
                   >
                     {isActive && (
-                      <span className="absolute top-1/2 left-0 h-4 w-1 -translate-y-1/2 rounded-r bg-brand-gold" />
+                      <span className="absolute top-1/2 left-0 h-4 w-1 -translate-y-1/2 rounded-r bg-brand-gold" aria-hidden="true" />
                     )}
                     <Icon
                       className={cn(
                         "size-4 shrink-0 transition-colors",
                         isActive ? "text-brand-gold" : "text-slate-400 group-hover:text-slate-200"
                       )}
+                      aria-hidden="true"
                     />
                     <span>{item.label}</span>
                   </Link>

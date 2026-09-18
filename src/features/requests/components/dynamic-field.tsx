@@ -7,6 +7,8 @@ import {
   FieldDescription,
   FieldError,
   FieldLabel,
+  FieldSet,
+  FieldLegend,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -34,6 +36,10 @@ export function DynamicField({
   disabled?: boolean;
 }) {
   const error = errors[field.id];
+  const hasError = !disabled && !!error;
+  const descriptionId = field.helpText && !disabled ? `${field.id}-description` : undefined;
+  const errorId = hasError ? `${field.id}-error` : undefined;
+  const describedBy = [descriptionId, errorId].filter(Boolean).join(" ") || undefined;
 
   return (
     <Controller
@@ -43,7 +49,7 @@ export function DynamicField({
         switch (field.type) {
           case "textarea":
             return (
-              <Field data-invalid={!!error} data-disabled={disabled}>
+              <Field data-invalid={hasError} data-disabled={disabled}>
                 <FieldLabel htmlFor={field.id}>
                   {field.label}
                   {field.required && !disabled && (
@@ -52,7 +58,7 @@ export function DynamicField({
                 </FieldLabel>
                 <FieldContent>
                   {field.helpText && !disabled && (
-                    <FieldDescription>{field.helpText}</FieldDescription>
+                    <FieldDescription id={descriptionId}>{field.helpText}</FieldDescription>
                   )}
                   <Textarea
                     id={field.id}
@@ -61,10 +67,12 @@ export function DynamicField({
                     value={(rhf.value as string) ?? ""}
                     onChange={rhf.onChange}
                     disabled={disabled}
-                    aria-invalid={!!error}
+                    aria-required={field.required}
+                    aria-invalid={hasError}
+                    aria-describedby={describedBy}
                   />
-                  {!disabled && (
-                    <FieldError errors={error ? [error as { message?: string }] : []} />
+                  {hasError && (
+                    <FieldError id={errorId} errors={error ? [error as { message?: string }] : []} />
                   )}
                 </FieldContent>
               </Field>
@@ -72,7 +80,7 @@ export function DynamicField({
 
           case "number":
             return (
-              <Field data-invalid={!!error} data-disabled={disabled}>
+              <Field data-invalid={hasError} data-disabled={disabled}>
                 <FieldLabel htmlFor={field.id}>
                   {field.label}
                   {field.required && !disabled && (
@@ -81,7 +89,7 @@ export function DynamicField({
                 </FieldLabel>
                 <FieldContent>
                   {field.helpText && !disabled && (
-                    <FieldDescription>{field.helpText}</FieldDescription>
+                    <FieldDescription id={descriptionId}>{field.helpText}</FieldDescription>
                   )}
                   <Input
                     id={field.id}
@@ -90,10 +98,12 @@ export function DynamicField({
                     value={(rhf.value as number | string) ?? ""}
                     onChange={rhf.onChange}
                     disabled={disabled}
-                    aria-invalid={!!error}
+                    aria-required={field.required}
+                    aria-invalid={hasError}
+                    aria-describedby={describedBy}
                   />
-                  {!disabled && (
-                    <FieldError errors={error ? [error as { message?: string }] : []} />
+                  {hasError && (
+                    <FieldError id={errorId} errors={error ? [error as { message?: string }] : []} />
                   )}
                 </FieldContent>
               </Field>
@@ -101,7 +111,7 @@ export function DynamicField({
 
           case "select":
             return (
-              <Field data-invalid={!!error} data-disabled={disabled}>
+              <Field data-invalid={hasError} data-disabled={disabled}>
                 <FieldLabel htmlFor={field.id}>
                   {field.label}
                   {field.required && !disabled && (
@@ -110,7 +120,7 @@ export function DynamicField({
                 </FieldLabel>
                 <FieldContent>
                   {field.helpText && !disabled && (
-                    <FieldDescription>{field.helpText}</FieldDescription>
+                    <FieldDescription id={descriptionId}>{field.helpText}</FieldDescription>
                   )}
                   <Select
                     items={field.options}
@@ -121,7 +131,9 @@ export function DynamicField({
                     <SelectTrigger
                       id={field.id}
                       className="w-full"
-                      aria-invalid={!!error}
+                      aria-required={field.required}
+                      aria-invalid={hasError}
+                      aria-describedby={describedBy}
                       disabled={disabled}
                     >
                       <SelectValue placeholder="Select an option" />
@@ -134,8 +146,8 @@ export function DynamicField({
                       ))}
                     </SelectContent>
                   </Select>
-                  {!disabled && (
-                    <FieldError errors={error ? [error as { message?: string }] : []} />
+                  {hasError && (
+                    <FieldError id={errorId} errors={error ? [error as { message?: string }] : []} />
                   )}
                 </FieldContent>
               </Field>
@@ -143,27 +155,28 @@ export function DynamicField({
 
           case "radio":
             return (
-              <Field data-invalid={!!error} data-disabled={disabled}>
-                <FieldLabel>
+              <FieldSet data-invalid={hasError} data-disabled={disabled} aria-describedby={describedBy}>
+                <FieldLegend variant="label" className="text-sm font-medium text-foreground">
                   {field.label}
                   {field.required && !disabled && (
                     <span className="text-red-500 font-bold ml-0.5 text-sm leading-none" aria-hidden="true">*</span>
                   )}
-                </FieldLabel>
+                </FieldLegend>
                 <FieldContent>
                   {field.helpText && !disabled && (
-                    <FieldDescription>{field.helpText}</FieldDescription>
+                    <FieldDescription id={descriptionId}>{field.helpText}</FieldDescription>
                   )}
                   <RadioGroup
                     value={(rhf.value as string) ?? ""}
                     onValueChange={rhf.onChange}
                     disabled={disabled}
+                    aria-required={field.required}
                   >
                     {field.options?.map((opt) => (
                       <FieldLabel
                         key={opt.value}
                         htmlFor={`${field.id}-${opt.value}`}
-                        className="flex-row items-center gap-2 font-normal"
+                        className="flex-row items-center gap-2 font-normal cursor-pointer"
                       >
                         <RadioGroupItem
                           id={`${field.id}-${opt.value}`}
@@ -174,25 +187,25 @@ export function DynamicField({
                       </FieldLabel>
                     ))}
                   </RadioGroup>
-                  {!disabled && (
-                    <FieldError errors={error ? [error as { message?: string }] : []} />
+                  {hasError && (
+                    <FieldError id={errorId} errors={error ? [error as { message?: string }] : []} />
                   )}
                 </FieldContent>
-              </Field>
+              </FieldSet>
             );
 
           case "checkbox":
             return (
-              <Field data-invalid={!!error} data-disabled={disabled}>
-                <FieldLabel>
+              <FieldSet data-invalid={hasError} data-disabled={disabled} aria-describedby={describedBy}>
+                <FieldLegend variant="label" className="text-sm font-medium text-foreground">
                   {field.label}
                   {field.required && !disabled && (
                     <span className="text-red-500 font-bold ml-0.5 text-sm leading-none" aria-hidden="true">*</span>
                   )}
-                </FieldLabel>
+                </FieldLegend>
                 <FieldContent>
                   {field.helpText && !disabled && (
-                    <FieldDescription>{field.helpText}</FieldDescription>
+                    <FieldDescription id={descriptionId}>{field.helpText}</FieldDescription>
                   )}
                   <div className="flex flex-col gap-2">
                     {field.options?.map((opt) => {
@@ -204,7 +217,7 @@ export function DynamicField({
                         <FieldLabel
                           key={opt.value}
                           htmlFor={`${field.id}-${opt.value}`}
-                          className="flex-row items-center gap-2 font-normal"
+                          className="flex-row items-center gap-2 font-normal cursor-pointer"
                         >
                           <Checkbox
                             id={`${field.id}-${opt.value}`}
@@ -222,16 +235,16 @@ export function DynamicField({
                       );
                     })}
                   </div>
-                  {!disabled && (
-                    <FieldError errors={error ? [error as { message?: string }] : []} />
+                  {hasError && (
+                    <FieldError id={errorId} errors={error ? [error as { message?: string }] : []} />
                   )}
                 </FieldContent>
-              </Field>
+              </FieldSet>
             );
 
           case "date":
             return (
-              <Field data-invalid={!!error} data-disabled={disabled}>
+              <Field data-invalid={hasError} data-disabled={disabled}>
                 <FieldLabel htmlFor={field.id}>
                   {field.label}
                   {field.required && !disabled && (
@@ -240,7 +253,7 @@ export function DynamicField({
                 </FieldLabel>
                 <FieldContent>
                   {field.helpText && !disabled && (
-                    <FieldDescription>{field.helpText}</FieldDescription>
+                    <FieldDescription id={descriptionId}>{field.helpText}</FieldDescription>
                   )}
                   <Input
                     id={field.id}
@@ -248,10 +261,12 @@ export function DynamicField({
                     value={(rhf.value as string) ?? ""}
                     onChange={rhf.onChange}
                     disabled={disabled}
-                    aria-invalid={!!error}
+                    aria-required={field.required}
+                    aria-invalid={hasError}
+                    aria-describedby={describedBy}
                   />
-                  {!disabled && (
-                    <FieldError errors={error ? [error as { message?: string }] : []} />
+                  {hasError && (
+                    <FieldError id={errorId} errors={error ? [error as { message?: string }] : []} />
                   )}
                 </FieldContent>
               </Field>
@@ -259,7 +274,7 @@ export function DynamicField({
 
           case "file":
             return (
-              <Field data-invalid={!!error} data-disabled={disabled}>
+              <Field data-invalid={hasError} data-disabled={disabled}>
                 <FieldLabel htmlFor={field.id}>
                   {field.label}
                   {field.required && !disabled && (
@@ -268,7 +283,7 @@ export function DynamicField({
                 </FieldLabel>
                 <FieldContent>
                   {field.helpText && !disabled && (
-                    <FieldDescription>{field.helpText}</FieldDescription>
+                    <FieldDescription id={descriptionId}>{field.helpText}</FieldDescription>
                   )}
                   <FileDropzone
                     value={(rhf.value as DropzoneFile[]) ?? []}
@@ -276,10 +291,10 @@ export function DynamicField({
                     accept={field.accept}
                     multiple={field.multiple}
                     disabled={disabled}
-                    invalid={!disabled && !!error}
+                    invalid={hasError}
                   />
-                  {!disabled && (
-                    <FieldError errors={error ? [error as { message?: string }] : []} />
+                  {hasError && (
+                    <FieldError id={errorId} errors={error ? [error as { message?: string }] : []} />
                   )}
                 </FieldContent>
               </Field>
@@ -287,7 +302,7 @@ export function DynamicField({
 
           default:
             return (
-              <Field data-invalid={!!error} data-disabled={disabled}>
+              <Field data-invalid={hasError} data-disabled={disabled}>
                 <FieldLabel htmlFor={field.id}>
                   {field.label}
                   {field.required && !disabled && (
@@ -296,7 +311,7 @@ export function DynamicField({
                 </FieldLabel>
                 <FieldContent>
                   {field.helpText && !disabled && (
-                    <FieldDescription>{field.helpText}</FieldDescription>
+                    <FieldDescription id={descriptionId}>{field.helpText}</FieldDescription>
                   )}
                   <Input
                     id={field.id}
@@ -304,10 +319,12 @@ export function DynamicField({
                     value={(rhf.value as string) ?? ""}
                     onChange={rhf.onChange}
                     disabled={disabled}
-                    aria-invalid={!!error}
+                    aria-required={field.required}
+                    aria-invalid={hasError}
+                    aria-describedby={describedBy}
                   />
-                  {!disabled && (
-                    <FieldError errors={error ? [error as { message?: string }] : []} />
+                  {hasError && (
+                    <FieldError id={errorId} errors={error ? [error as { message?: string }] : []} />
                   )}
                 </FieldContent>
               </Field>

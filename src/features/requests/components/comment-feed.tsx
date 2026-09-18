@@ -21,7 +21,7 @@ export function CommentFeed({ comments }: { comments: CommentEntry[] }) {
       {sorted.map((comment) => {
         const isArb = comment.authorRole === "arb";
         return (
-          <div
+          <article
             key={comment.id}
             className={cn(
               "rounded-xl border p-4.5 shadow-2xs transition-colors",
@@ -33,6 +33,7 @@ export function CommentFeed({ comments }: { comments: CommentEntry[] }) {
             <div className="flex items-center justify-between gap-3 mb-2">
               <div className="flex items-center gap-2">
                 <span
+                  aria-hidden="true"
                   className={cn(
                     "flex size-7 shrink-0 items-center justify-center rounded-lg text-xs font-semibold",
                     isArb
@@ -53,14 +54,14 @@ export function CommentFeed({ comments }: { comments: CommentEntry[] }) {
                   )}
                 </div>
               </div>
-              <p className="text-[11px] text-muted-foreground whitespace-nowrap">
+              <time dateTime={comment.createdAt} className="text-[11px] text-muted-foreground whitespace-nowrap">
                 {formatDateTime(comment.createdAt)}
-              </p>
+              </time>
             </div>
             <p className="text-sm text-foreground/90 leading-relaxed pl-9">
               {comment.message}
             </p>
-          </div>
+          </article>
         );
       })}
     </div>

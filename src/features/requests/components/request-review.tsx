@@ -84,12 +84,13 @@ export function RequestReview({
                               key={file.id}
                               type="button"
                               onClick={() => handleFileClick(file)}
-                              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-slate-50 dark:bg-slate-800/80 px-2.5 py-1.5 text-xs font-medium text-foreground transition-all duration-200 hover:border-primary/50 hover:bg-white dark:hover:bg-slate-800 hover:text-primary hover:shadow-2xs"
+                              aria-label={`Preview ${file.name}`}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-slate-50 dark:bg-slate-800/80 px-2.5 py-1.5 text-xs font-medium text-foreground transition-all duration-200 hover:border-primary/50 hover:bg-white dark:hover:bg-slate-800 hover:text-primary hover:shadow-2xs cursor-pointer"
                             >
-                              <FileText className="size-3.5 text-primary" />
+                              <FileText className="size-3.5 text-primary" aria-hidden="true" />
                               <span className="max-w-44 truncate">{file.name}</span>
                               <span className="text-[11px] text-muted-foreground">({formatFileSize(file.size)})</span>
-                              <Eye className="size-3 text-muted-foreground" />
+                              <Eye className="size-3 text-muted-foreground" aria-hidden="true" />
                             </button>
                           ))}
                         </div>

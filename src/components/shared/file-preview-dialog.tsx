@@ -143,6 +143,7 @@ export function FilePreviewDialog({
               variant="ghost"
               size="icon-sm"
               onClick={() => setZoom((z) => Math.max(0.5, z - 0.25))}
+              aria-label="Zoom out"
               title="Zoom out"
               className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200/70 dark:hover:bg-slate-800"
             >
@@ -152,6 +153,7 @@ export function FilePreviewDialog({
               variant="ghost"
               size="icon-sm"
               onClick={() => setZoom((z) => Math.min(2.5, z + 0.25))}
+              aria-label="Zoom in"
               title="Zoom in"
               className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200/70 dark:hover:bg-slate-800"
             >
@@ -161,6 +163,7 @@ export function FilePreviewDialog({
               variant="default"
               size="sm"
               onClick={handleDownload}
+              aria-label={`Download ${file.name}`}
               className="gap-1.5 text-xs h-8 ml-2 shadow-2xs font-medium"
             >
               <Download className="size-3.5" />

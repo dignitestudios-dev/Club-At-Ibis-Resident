@@ -52,7 +52,11 @@ export function AuthView({ initialTab = "login" }: AuthViewProps) {
     <div className="flex flex-col h-full min-h-0">
       {/* Top Sliding Pill Tab Switcher */}
       <div className="shrink-0 px-6 pt-3.5 pb-1.5 sm:px-8">
-        <div className="relative grid grid-cols-2 p-1 bg-slate-100 dark:bg-slate-900/90 rounded-xl border border-slate-200/80 dark:border-slate-800">
+        <div
+          role="tablist"
+          aria-label="Authentication Options"
+          className="relative grid grid-cols-2 p-1 bg-slate-100 dark:bg-slate-900/90 rounded-xl border border-slate-200/80 dark:border-slate-800"
+        >
           {/* Animated Sliding Pill */}
           <div
             aria-hidden="true"
@@ -63,6 +67,10 @@ export function AuthView({ initialTab = "login" }: AuthViewProps) {
           />
 
           <button
+            id="auth-login-tab"
+            role="tab"
+            aria-selected={tab === "login"}
+            aria-controls="auth-tabpanel"
             type="button"
             onClick={() => switchTab("login")}
             className={cn(
@@ -72,11 +80,15 @@ export function AuthView({ initialTab = "login" }: AuthViewProps) {
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
-            <LogIn className="size-3.5" />
+            <LogIn className="size-3.5" aria-hidden="true" />
             Sign In
           </button>
 
           <button
+            id="auth-register-tab"
+            role="tab"
+            aria-selected={tab === "register"}
+            aria-controls="auth-tabpanel"
             type="button"
             onClick={() => switchTab("register")}
             className={cn(
@@ -86,7 +98,7 @@ export function AuthView({ initialTab = "login" }: AuthViewProps) {
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
-            <UserPlus className="size-3.5" />
+            <UserPlus className="size-3.5" aria-hidden="true" />
             Create Account
           </button>
         </div>
@@ -94,6 +106,9 @@ export function AuthView({ initialTab = "login" }: AuthViewProps) {
 
       {/* Form Container with Smooth Field Animation (no horizontal sliding) */}
       <div
+        id="auth-tabpanel"
+        role="tabpanel"
+        aria-labelledby={tab === "login" ? "auth-login-tab" : "auth-register-tab"}
         ref={scrollRef}
         className="relative flex-1 overflow-y-auto custom-scrollbar px-6 py-2 sm:px-8"
       >
