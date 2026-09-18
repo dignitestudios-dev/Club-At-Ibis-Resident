@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Download,
@@ -35,10 +36,19 @@ import { useToast } from "@/hooks/use-toast";
 import { formatDate, formatDateTime, formatFileSize, formatRelative } from "@/utils/format";
 
 export default function RequestDetailPage({ id }: { id: string }) {
+  const router = useRouter();
   const { request, requestType, isLoading, revising, startRevising, stopRevising } =
     useRequestDetail(id);
   const toast = useToast();
   const [previewFile, setPreviewFile] = useState<PreviewableFile | null>(null);
+
+  const handleBack = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/requests");
+    }
+  };
 
   if (isLoading) {
     return (
@@ -55,8 +65,8 @@ export default function RequestDetailPage({ id }: { id: string }) {
         title="Request not found"
         description="This request doesn't exist or you don't have access to it."
         action={
-          <Button nativeButton={false} render={<Link href="/requests" />}>
-            Back to My Requests
+          <Button onClick={handleBack}>
+            Back to Requests
           </Button>
         }
       />
@@ -74,12 +84,11 @@ export default function RequestDetailPage({ id }: { id: string }) {
         <Button
           variant="ghost"
           size="sm"
-          nativeButton={false}
-          render={<Link href="/requests" />}
+          onClick={handleBack}
           className="-ml-2"
         >
           <ArrowLeft className="size-4" />
-          Back to My Requests
+          Back
         </Button>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1.5">

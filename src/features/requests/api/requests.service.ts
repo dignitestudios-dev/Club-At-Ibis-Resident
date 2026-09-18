@@ -119,8 +119,8 @@ export async function withdrawRequest(id: string): Promise<RequestRecord> {
       {
         id: crypto.randomUUID(),
         type: "withdrawn",
-        actor: "You",
-        message: "Request withdrawn by resident. Further processing has stopped.",
+        actor: "ARB Reviewer",
+        message: "Request withdrawn by ARB Reviewer. Further processing has stopped.",
         createdAt: now,
       },
     ],

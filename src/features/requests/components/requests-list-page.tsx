@@ -3,7 +3,18 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { PlusCircle, Search, FileText, FileEdit, ListChecks, History, RotateCcw, X } from "lucide-react";
+import {
+  PlusCircle,
+  Search,
+  FileText,
+  FileEdit,
+  ListChecks,
+  History,
+  RotateCcw,
+  X,
+  LayoutGrid,
+  List,
+} from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
@@ -22,6 +33,8 @@ import { useRequestsList, type DatePeriod } from "@/features/requests/hooks/use-
 import { useDrafts } from "@/features/drafts/hooks/use-drafts";
 import { requestTypes } from "@/lib/mock/request-types";
 import { cn } from "@/utils/cn";
+
+const VIEW_MODE_STORAGE_KEY = "ib_requests_view_mode";
 
 const ACTIVE_STATUS_OPTIONS: { label: string; value: RequestStatus | "all" }[] = [
   { label: "All Active Statuses", value: "all" },
@@ -60,6 +73,27 @@ export default function RequestsListPage() {
     tabParam === "history" ? "history" : tabParam === "drafts" ? "drafts" : "requests";
 
   const [activeTab, setActiveTab] = useState<"requests" | "history" | "drafts">(initialTab);
+  const [viewMode, setViewModeState] = useState<"grid" | "list">("grid");
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
+      if (saved === "grid" || saved === "list") {
+        setViewModeState(saved);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const handleViewModeChange = (mode: "grid" | "list") => {
+    setViewModeState(mode);
+    try {
+      localStorage.setItem(VIEW_MODE_STORAGE_KEY, mode);
+    } catch {
+      // ignore
+    }
+  };
 
   useEffect(() => {
     const tab = searchParams.get("tab");
@@ -121,84 +155,121 @@ export default function RequestsListPage() {
         />
       </div>
 
-      {/* Simplified, Modern Pill Tab Switcher */}
-      <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-xl border border-slate-200/80 w-fit max-w-full overflow-x-auto animate-in fade-in slide-in-from-top-2 duration-400 delay-75">
-        {/* Tab 1: Active Requests */}
-        <button
-          type="button"
-          onClick={() => handleTabChange("requests")}
-          className={cn(
-            "flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all shrink-0",
-            activeTab === "requests"
-              ? "bg-white text-primary shadow-xs"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <ListChecks className="size-3.5" />
-          <span>Active Requests</span>
-          <span
+      {/* Header Controls: Tab Switcher & View Switcher */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2 duration-400 delay-75">
+        {/* Simplified, Modern Pill Tab Switcher */}
+        <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-xl border border-slate-200/80 w-fit max-w-full overflow-x-auto">
+          {/* Tab 1: Active Requests */}
+          <button
+            type="button"
+            onClick={() => handleTabChange("requests")}
             className={cn(
-              "rounded-full px-1.5 py-0.2 text-[11px] font-bold",
+              "flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all shrink-0",
               activeTab === "requests"
-                ? "bg-primary/10 text-primary"
-                : "bg-slate-200 text-muted-foreground"
+                ? "bg-white text-primary shadow-xs"
+                : "text-muted-foreground hover:text-foreground"
             )}
           >
-            {allActiveRequests.length}
-          </span>
-        </button>
-
-        {/* Tab 2: History */}
-        <button
-          type="button"
-          onClick={() => handleTabChange("history")}
-          className={cn(
-            "flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all shrink-0",
-            activeTab === "history"
-              ? "bg-white text-primary shadow-xs"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <History className="size-3.5" />
-          <span>History &amp; Closed</span>
-          <span
-            className={cn(
-              "rounded-full px-1.5 py-0.2 text-[11px] font-bold",
-              activeTab === "history"
-                ? "bg-emerald-100 text-emerald-800"
-                : "bg-slate-200 text-muted-foreground"
-            )}
-          >
-            {allHistoryRequests.length}
-          </span>
-        </button>
-
-        {/* Tab 3: Saved Drafts */}
-        <button
-          type="button"
-          onClick={() => handleTabChange("drafts")}
-          className={cn(
-            "flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all shrink-0",
-            activeTab === "drafts"
-              ? "bg-white text-primary shadow-xs"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <FileEdit className="size-3.5" />
-          <span>Saved Drafts</span>
-          {drafts.length > 0 && (
+            <ListChecks className="size-3.5" />
+            <span>Active Requests</span>
             <span
               className={cn(
                 "rounded-full px-1.5 py-0.2 text-[11px] font-bold",
-                activeTab === "drafts"
-                  ? "bg-amber-100 text-amber-900"
-                  : "bg-amber-100/70 text-amber-800"
+                activeTab === "requests"
+                  ? "bg-primary/10 text-primary"
+                  : "bg-slate-200 text-muted-foreground"
               )}
             >
-              {drafts.length}
+              {allActiveRequests.length}
             </span>
-          )}
-        </button>
+          </button>
+
+          {/* Tab 2: History */}
+          <button
+            type="button"
+            onClick={() => handleTabChange("history")}
+            className={cn(
+              "flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all shrink-0",
+              activeTab === "history"
+                ? "bg-white text-primary shadow-xs"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <History className="size-3.5" />
+            <span>History &amp; Closed</span>
+            <span
+              className={cn(
+                "rounded-full px-1.5 py-0.2 text-[11px] font-bold",
+                activeTab === "history"
+                  ? "bg-emerald-100 text-emerald-800"
+                  : "bg-slate-200 text-muted-foreground"
+              )}
+            >
+              {allHistoryRequests.length}
+            </span>
+          </button>
+
+          {/* Tab 3: Saved Drafts */}
+          <button
+            type="button"
+            onClick={() => handleTabChange("drafts")}
+            className={cn(
+              "flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all shrink-0",
+              activeTab === "drafts"
+                ? "bg-white text-primary shadow-xs"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <FileEdit className="size-3.5" />
+            <span>Saved Drafts</span>
+            {drafts.length > 0 && (
+              <span
+                className={cn(
+                  "rounded-full px-1.5 py-0.2 text-[11px] font-bold",
+                  activeTab === "drafts"
+                    ? "bg-amber-100 text-amber-900"
+                    : "bg-amber-100/70 text-amber-800"
+                )}
+              >
+                {drafts.length}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* View Switcher: Cards vs List */}
+        <div className="flex items-center gap-1 p-1 bg-slate-100/90 rounded-xl border border-slate-200/80 shrink-0 self-start sm:self-auto">
+          <button
+            type="button"
+            onClick={() => handleViewModeChange("grid")}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all",
+              viewMode === "grid"
+                ? "bg-white text-primary shadow-xs"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+            title="Card Grid View"
+            aria-label="Card Grid View"
+          >
+            <LayoutGrid className="size-3.5" />
+            <span>Cards</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleViewModeChange("list")}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all",
+              viewMode === "list"
+                ? "bg-white text-primary shadow-xs"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+            title="List View"
+            aria-label="List View"
+          >
+            <List className="size-3.5" />
+            <span>List</span>
+          </button>
+        </div>
       </div>
 
       {/* Submitted / Active Requests Tab Content */}
@@ -298,10 +369,27 @@ export default function RequestsListPage() {
           )}
 
           {isLoadingRequests && (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4.5 animate-in fade-in duration-200">
-              <Skeleton className="h-56 w-full rounded-2xl" />
-              <Skeleton className="h-56 w-full rounded-2xl" />
-              <Skeleton className="h-56 w-full rounded-2xl" />
+            <div
+              className={cn(
+                viewMode === "grid"
+                  ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4.5"
+                  : "flex flex-col gap-3",
+                "animate-in fade-in duration-200"
+              )}
+            >
+              {viewMode === "grid" ? (
+                <>
+                  <Skeleton className="h-56 w-full rounded-2xl" />
+                  <Skeleton className="h-56 w-full rounded-2xl" />
+                  <Skeleton className="h-56 w-full rounded-2xl" />
+                </>
+              ) : (
+                <>
+                  <Skeleton className="h-20 w-full rounded-xl" />
+                  <Skeleton className="h-20 w-full rounded-xl" />
+                  <Skeleton className="h-20 w-full rounded-xl" />
+                </>
+              )}
             </div>
           )}
 
@@ -322,11 +410,18 @@ export default function RequestsListPage() {
           )}
 
           {!isLoadingRequests && activeRequests.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4.5">
+            <div
+              className={cn(
+                viewMode === "grid"
+                  ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4.5"
+                  : "flex flex-col gap-3"
+              )}
+            >
               {activeRequests.map((request, idx) => (
                 <RequestListItem
                   key={request.id}
                   request={request}
+                  viewMode={viewMode}
                   className="animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-both"
                   style={{ animationDelay: `${Math.min(idx * 50, 350)}ms` }}
                 />
@@ -433,9 +528,25 @@ export default function RequestsListPage() {
           )}
 
           {isLoadingRequests && (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4.5 animate-in fade-in duration-200">
-              <Skeleton className="h-56 w-full rounded-2xl" />
-              <Skeleton className="h-56 w-full rounded-2xl" />
+            <div
+              className={cn(
+                viewMode === "grid"
+                  ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4.5"
+                  : "flex flex-col gap-3",
+                "animate-in fade-in duration-200"
+              )}
+            >
+              {viewMode === "grid" ? (
+                <>
+                  <Skeleton className="h-56 w-full rounded-2xl" />
+                  <Skeleton className="h-56 w-full rounded-2xl" />
+                </>
+              ) : (
+                <>
+                  <Skeleton className="h-20 w-full rounded-xl" />
+                  <Skeleton className="h-20 w-full rounded-xl" />
+                </>
+              )}
             </div>
           )}
 
@@ -450,11 +561,18 @@ export default function RequestsListPage() {
           )}
 
           {!isLoadingRequests && historyRequests.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4.5">
+            <div
+              className={cn(
+                viewMode === "grid"
+                  ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4.5"
+                  : "flex flex-col gap-3"
+              )}
+            >
               {historyRequests.map((request, idx) => (
                 <RequestListItem
                   key={request.id}
                   request={request}
+                  viewMode={viewMode}
                   className="animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-both"
                   style={{ animationDelay: `${Math.min(idx * 50, 350)}ms` }}
                 />
@@ -468,9 +586,25 @@ export default function RequestsListPage() {
       {activeTab === "drafts" && (
         <div className="space-y-4 animate-in fade-in duration-300">
           {isLoadingDrafts && (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4.5 animate-in fade-in duration-200">
-              <Skeleton className="h-56 w-full rounded-2xl" />
-              <Skeleton className="h-56 w-full rounded-2xl" />
+            <div
+              className={cn(
+                viewMode === "grid"
+                  ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4.5"
+                  : "flex flex-col gap-3",
+                "animate-in fade-in duration-200"
+              )}
+            >
+              {viewMode === "grid" ? (
+                <>
+                  <Skeleton className="h-56 w-full rounded-2xl" />
+                  <Skeleton className="h-56 w-full rounded-2xl" />
+                </>
+              ) : (
+                <>
+                  <Skeleton className="h-20 w-full rounded-xl" />
+                  <Skeleton className="h-20 w-full rounded-xl" />
+                </>
+              )}
             </div>
           )}
 
@@ -491,11 +625,18 @@ export default function RequestsListPage() {
           )}
 
           {!isLoadingDrafts && drafts.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4.5">
+            <div
+              className={cn(
+                viewMode === "grid"
+                  ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4.5"
+                  : "flex flex-col gap-3"
+              )}
+            >
               {drafts.map((draft, idx) => (
                 <DraftCard
                   key={draft.id}
                   draft={draft}
+                  viewMode={viewMode}
                   onDelete={deleteDraft}
                   isDeleting={isDeleting}
                   className="animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-both"

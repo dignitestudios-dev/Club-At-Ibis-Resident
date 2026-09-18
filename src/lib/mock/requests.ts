@@ -686,8 +686,8 @@ export const seedRequests: RequestRecord[] = [
       {
         id: crypto.randomUUID(),
         type: "withdrawn",
-        actor: "Avery Collins",
-        message: "Request withdrawn by resident. Further processing has stopped.",
+        actor: "ARB Reviewer",
+        message: "Request withdrawn by ARB Reviewer. Further processing has stopped.",
         createdAt: daysAgo(30, 1),
       },
     ],
@@ -713,7 +713,7 @@ export const seedRequests: RequestRecord[] = [
       projectDescription: "Guest cottage construction on the rear lot.",
       contractorName: "Harborview Builders",
       contractorNumber: "(561) 555-3390",
-      additionalDetails: "Project put on hold indefinitely; withdrawing to reapply later.",
+      additionalDetails: "Project put on hold indefinitely by ARB review team.",
       builderName: "Harborview Builders",
       squareFootage: 850,
       stories: 1,
@@ -741,8 +741,8 @@ export const seedRequests: RequestRecord[] = [
       {
         id: crypto.randomUUID(),
         type: "withdrawn",
-        actor: "Avery Collins",
-        message: "Request withdrawn by resident. Further processing has stopped.",
+        actor: "ARB Reviewer",
+        message: "Request withdrawn by ARB Reviewer. Further processing has stopped.",
         createdAt: daysAgo(38, 1),
       },
     ],
@@ -798,8 +798,8 @@ export const seedRequests: RequestRecord[] = [
       {
         id: crypto.randomUUID(),
         type: "withdrawn",
-        actor: "Avery Collins",
-        message: "Request withdrawn by resident. Further processing has stopped.",
+        actor: "ARB Reviewer",
+        message: "Request withdrawn by ARB Reviewer. Further processing has stopped.",
         createdAt: daysAgo(42, 1),
       },
       {

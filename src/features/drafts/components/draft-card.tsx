@@ -11,12 +11,14 @@ export function DraftCard({
   draft,
   onDelete,
   isDeleting,
+  viewMode = "grid",
   className,
   style,
 }: {
   draft: RequestDraft;
   onDelete: (id: string) => void;
   isDeleting?: boolean;
+  viewMode?: "grid" | "list";
   className?: string;
   style?: React.CSSProperties;
 }) {
@@ -26,6 +28,86 @@ export function DraftCard({
   const filledCount = Object.keys(draft.fieldValues).filter(
     (k) => draft.fieldValues[k] !== "" && draft.fieldValues[k] !== undefined
   ).length;
+
+  if (viewMode === "list") {
+    return (
+      <div
+        style={style}
+        className={cn(
+          "group relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 overflow-hidden rounded-xl border border-amber-200/80 bg-white p-4 sm:p-4.5 pl-4.5 sm:pl-5 shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-md",
+          className
+        )}
+      >
+        {/* Left Side Draft Accent Bar */}
+        <span
+          className="absolute left-0 inset-y-0 w-[3px] bg-amber-400 transition-all duration-300 group-hover:w-1"
+          aria-hidden="true"
+        />
+
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="font-heading text-base sm:text-lg font-medium text-slate-900 group-hover:text-primary transition-colors truncate">
+              {requestType?.name ?? "Architectural Request"}
+            </h3>
+            <span className="rounded-md bg-amber-50 border border-amber-200/90 px-2 py-0.5 text-xs font-mono font-semibold text-amber-900">
+              Draft
+            </span>
+            <span className="text-xs text-muted-foreground font-medium">
+              {filledCount} field{filledCount !== 1 ? "s" : ""} filled
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+            {address && (
+              <span className="inline-flex items-center gap-1 text-slate-600 font-medium truncate max-w-xs">
+                <MapPin className="size-3 text-brand-gold shrink-0" />
+                {address}
+              </span>
+            )}
+            <span className="inline-flex items-center gap-1">
+              <Clock className="size-3 text-slate-400" />
+              Saved {formatRelative(draft.updatedAt)}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-amber-100 pr-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setConfirmingDelete(true)}
+            disabled={isDeleting}
+            className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive h-8 px-2.5"
+            title="Discard Draft"
+          >
+            <Trash2 className="size-3.5" />
+            <span className="text-xs ml-1">Discard</span>
+          </Button>
+
+          <Button
+            size="sm"
+            nativeButton={false}
+            render={<Link href={`/requests/new?draftId=${draft.id}`} />}
+            className="h-8 gap-1.5"
+          >
+            <span>Resume</span>
+            <ArrowRight className="size-3.5" />
+          </Button>
+        </div>
+
+        <ConfirmDialog
+          open={confirmingDelete}
+          onOpenChange={setConfirmingDelete}
+          title="Discard Draft?"
+          description="Are you sure you want to discard this draft? All saved progress for this request will be permanently removed."
+          confirmLabel="Discard Draft"
+          onConfirm={() => {
+            onDelete(draft.id);
+            setConfirmingDelete(false);
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div
@@ -37,7 +119,7 @@ export function DraftCard({
     >
       {/* Top Accent */}
       <span
-        className="absolute top-0 inset-x-0 h-1 bg-amber-400 transition-all duration-300 group-hover:h-1.5"
+        className="absolute top-0 inset-x-0 h-[3px] bg-amber-400 transition-all duration-300 group-hover:h-1"
         aria-hidden="true"
       />
 

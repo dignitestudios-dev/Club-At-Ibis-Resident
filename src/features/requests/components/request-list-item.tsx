@@ -24,10 +24,12 @@ const STATUS_TOP_ACCENT: Record<RequestStatus, string> = {
 
 export function RequestListItem({
   request,
+  viewMode = "grid",
   className,
   style,
 }: {
   request: RequestRecord;
+  viewMode?: "grid" | "list";
   className?: string;
   style?: React.CSSProperties;
 }) {
@@ -36,6 +38,66 @@ export function RequestListItem({
   const description = request.fieldValues?.projectDescription as string | undefined;
   const hasFeedback = request.comments && request.comments.length > 0;
   const topAccent = STATUS_TOP_ACCENT[request.status] ?? "bg-slate-300";
+
+  if (viewMode === "list") {
+    return (
+      <Link
+        href={`/requests/${request.id}`}
+        style={style}
+        className={cn(
+          "group relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 overflow-hidden rounded-xl border border-slate-200/90 bg-white p-4 sm:p-4.5 pl-4.5 sm:pl-5 shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50/70 hover:border-slate-300 hover:shadow-md",
+          className
+        )}
+      >
+        {/* Left Side Status Accent Bar */}
+        <span
+          className={cn(
+            "absolute left-0 inset-y-0 w-[3px] transition-all duration-300 group-hover:w-1",
+            topAccent
+          )}
+          aria-hidden="true"
+        />
+
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="font-heading text-base sm:text-lg font-medium text-slate-900 group-hover:text-primary transition-colors truncate">
+              {requestType?.name ?? "Architectural Request"}
+            </h3>
+            <span className="rounded-md bg-slate-100 border border-slate-200/80 px-2 py-0.5 text-xs font-mono font-semibold text-slate-700">
+              {request.code}
+            </span>
+            {hasFeedback && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-300/80 px-2 py-0.5 text-[10px] font-semibold text-amber-900 shadow-2xs">
+                <MessageSquare className="size-3 text-amber-700" />
+                Note{request.comments.length > 1 ? "s" : ""}
+              </span>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+            {address && (
+              <span className="inline-flex items-center gap-1 text-slate-600 font-medium truncate max-w-xs">
+                <MapPin className="size-3 text-brand-gold shrink-0" />
+                {address}
+              </span>
+            )}
+            <span className="inline-flex items-center gap-1">
+              <Calendar className="size-3 text-slate-400 shrink-0" />
+              Submitted {formatDate(request.submittedAt ?? request.createdAt)}
+            </span>
+            <span>·</span>
+            <span>Last update {formatDate(request.updatedAt)}</span>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 pr-1">
+          <StatusBadge status={request.status} />
+          <span className="flex size-7 items-center justify-center rounded-lg bg-slate-50 border border-slate-200/60 text-muted-foreground transition-all duration-200 group-hover:bg-primary group-hover:text-white group-hover:translate-x-0.5 group-hover:border-primary shadow-2xs">
+            <ChevronRight className="size-3.5" />
+          </span>
+        </div>
+      </Link>
+    );
+  }
 
   return (
     <Link
@@ -50,7 +112,7 @@ export function RequestListItem({
       {/* Top Subtle Status Accent Bar */}
       <span
         className={cn(
-          "absolute top-0 inset-x-0 h-1 transition-all duration-300 group-hover:h-1.5",
+          "absolute top-0 inset-x-0 h-[3px] transition-all duration-300 group-hover:h-1",
           topAccent
         )}
         aria-hidden="true"
