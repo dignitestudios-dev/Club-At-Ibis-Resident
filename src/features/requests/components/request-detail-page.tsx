@@ -23,8 +23,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { FilePreviewDialog, type PreviewableFile } from "@/components/shared/file-preview-dialog";
+import dynamic from "next/dynamic";
+import { type PreviewableFile } from "@/components/shared/file-preview-dialog";
 import { StatusBadge } from "@/features/requests/components/status-badge";
+
+const FilePreviewDialog = dynamic(
+  () => import("@/components/shared/file-preview-dialog").then((m) => m.FilePreviewDialog),
+  { ssr: false }
+);
 import { Timeline } from "@/features/requests/components/timeline";
 import { CommentFeed } from "@/features/requests/components/comment-feed";
 import { EmptyState } from "@/components/shared/empty-state";

@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { cn } from "@/utils/cn";
 
 const STATUS_CONFIG: Record<
@@ -54,7 +55,7 @@ const STATUS_CONFIG: Record<
   },
 };
 
-export function StatusBadge({
+export const StatusBadge = memo(function StatusBadge({
   status,
   className,
 }: {
@@ -80,4 +81,4 @@ export function StatusBadge({
       {config.label}
     </span>
   );
-}
+});

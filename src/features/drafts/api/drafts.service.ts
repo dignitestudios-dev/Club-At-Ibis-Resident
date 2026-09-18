@@ -4,13 +4,13 @@ export async function getDraftsForResident(residentId: string): Promise<RequestD
   const all = db.getDrafts().filter((d) => d.residentId === residentId);
   return delay(
     [...all].sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1)),
-    300
+    80
   );
 }
 
 export async function getDraftById(id: string): Promise<RequestDraft | undefined> {
   const found = db.getDrafts().find((d) => d.id === id);
-  return delay(found, 250);
+  return delay(found, 60);
 }
 
 export async function saveDraft(payload: SaveDraftPayload): Promise<RequestDraft> {
@@ -32,7 +32,7 @@ export async function saveDraft(payload: SaveDraftPayload): Promise<RequestDraft
       const next = [...all];
       next[idx] = updated;
       db.setDrafts(next);
-      return delay(updated, 300);
+      return delay(updated, 150);
     }
   }
 
@@ -50,12 +50,12 @@ export async function saveDraft(payload: SaveDraftPayload): Promise<RequestDraft
   };
 
   db.setDrafts([record, ...all]);
-  return delay(record, 350);
+  return delay(record, 150);
 }
 
 export async function deleteDraft(id: string): Promise<void> {
   const all = db.getDrafts();
   const filtered = all.filter((d) => d.id !== id);
   db.setDrafts(filtered);
-  return delay(undefined, 300);
+  return delay(undefined, 100);
 }

@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { ArrowDown, ArrowUp, type LucideIcon } from "lucide-react";
 import { cn } from "@/utils/cn";
 
@@ -39,7 +40,7 @@ const ACCENT_CLASSES = {
   },
 } as const;
 
-export function StatCard({
+export const StatCard = memo(function StatCard({
   label,
   value,
   icon: Icon,
@@ -111,4 +112,4 @@ export function StatCard({
       </div>
     </div>
   );
-}
+});

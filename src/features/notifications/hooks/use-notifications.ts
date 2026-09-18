@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useCallback } from "react";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useNotificationsQuery } from "@/features/notifications/api/notifications.queries";
 import {
@@ -13,14 +14,33 @@ export function useNotifications() {
   const markRead = useMarkNotificationReadMutation();
   const markAllRead = useMarkAllNotificationsReadMutation();
 
-  const unreadCount = (notifications ?? []).filter((n) => !n.read).length;
+  const unreadCount = useMemo(() => {
+    return (notifications ?? []).filter((n) => !n.read).length;
+  }, [notifications]);
+
+  const handleMarkRead = useCallback(
+    (id: string) => {
+      markRead.mutate(id);
+    },
+    [markRead]
+  );
+
+  const handleMarkAllRead = useCallback(() => {
+    if (user) {
+      markAllRead.mutate(user.id);
+    }
+  }, [user, markAllRead]);
+
+  const notificationsList = useMemo(() => {
+    return notifications ?? [];
+  }, [notifications]);
 
   return {
-    notifications: notifications ?? [],
+    notifications: notificationsList,
     isLoading,
     unreadCount,
-    markRead: (id: string) => markRead.mutate(id),
-    markAllRead: () => user && markAllRead.mutate(user.id),
+    markRead: handleMarkRead,
+    markAllRead: handleMarkAllRead,
     isMarkingAllRead: markAllRead.isPending,
   };
 }

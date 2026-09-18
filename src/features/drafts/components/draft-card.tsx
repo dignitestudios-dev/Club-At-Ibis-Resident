@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import Link from "next/link";
 import { ArrowRight, Trash2, Clock, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { getRequestTypeById } from "@/lib/mock/request-types";
 import { formatRelative } from "@/utils/format";
 import { cn } from "@/utils/cn";
 
-export function DraftCard({
+export const DraftCard = memo(function DraftCard({
   draft,
   onDelete,
   isDeleting,
@@ -196,4 +196,4 @@ export function DraftCard({
       />
     </div>
   );
-}
+});

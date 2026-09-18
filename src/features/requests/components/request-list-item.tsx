@@ -1,3 +1,4 @@
+import { memo } from "react";
 import Link from "next/link";
 import {
   ChevronRight,
@@ -22,7 +23,7 @@ const STATUS_TOP_ACCENT: Record<RequestStatus, string> = {
   withdrawn: "bg-slate-400 dark:bg-slate-600",
 };
 
-export function RequestListItem({
+export const RequestListItem = memo(function RequestListItem({
   request,
   viewMode = "grid",
   className,
@@ -175,4 +176,4 @@ export function RequestListItem({
       </div>
     </Link>
   );
-}
+});

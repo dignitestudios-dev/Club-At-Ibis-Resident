@@ -24,13 +24,13 @@ export async function getRequestsForResident(residentId: string): Promise<Reques
   const all = db.getRequests().filter((r) => r.residentId === residentId);
   return delay(
     [...all].sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1)),
-    400
+    80
   );
 }
 
 export async function getRequestById(id: string): Promise<RequestRecord | undefined> {
   const found = db.getRequests().find((r) => r.id === id);
-  return delay(found, 300);
+  return delay(found, 60);
 }
 
 export async function createRequest(payload: CreateRequestPayload): Promise<RequestRecord> {
@@ -62,7 +62,7 @@ export async function createRequest(payload: CreateRequestPayload): Promise<Requ
     submittedAt: now,
   };
   db.setRequests([record, ...all]);
-  return delay(record, 700);
+  return delay(record, 200);
 }
 
 export async function resubmitRequest(payload: ResubmitRequestPayload): Promise<RequestRecord> {
@@ -99,7 +99,7 @@ export async function resubmitRequest(payload: ResubmitRequestPayload): Promise<
     title: "Request resubmitted",
     message: `Your revised ${requestType?.name ?? "request"} (${updated.code}) was resubmitted successfully.`,
   });
-  return delay(updated, 600);
+  return delay(updated, 200);
 }
 
 export async function withdrawRequest(id: string): Promise<RequestRecord> {
@@ -135,5 +135,5 @@ export async function withdrawRequest(id: string): Promise<RequestRecord> {
     title: "Request withdrawn",
     message: `Your ${requestType?.name ?? "request"} (${updated.code}) has been withdrawn.`,
   });
-  return delay(updated, 500);
+  return delay(updated, 180);
 }

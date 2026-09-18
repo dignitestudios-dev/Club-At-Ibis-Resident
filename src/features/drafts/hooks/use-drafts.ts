@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback } from "react";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useResidentDraftsQuery } from "@/features/drafts/api/drafts.queries";
 import { useDeleteDraftMutation } from "@/features/drafts/api/drafts.mutations";
@@ -11,16 +12,19 @@ export function useDrafts() {
   const { data: drafts = [], isLoading } = useResidentDraftsQuery(user?.id);
   const { mutate: deleteDraftMutate, isPending: isDeleting } = useDeleteDraftMutation();
 
-  function deleteDraft(id: string) {
-    deleteDraftMutate(id, {
-      onSuccess: () => {
-        toast.success("Draft discarded.");
-      },
-      onError: () => {
-        toast.error("Failed to delete draft.");
-      },
-    });
-  }
+  const deleteDraft = useCallback(
+    (id: string) => {
+      deleteDraftMutate(id, {
+        onSuccess: () => {
+          toast.success("Draft discarded.");
+        },
+        onError: () => {
+          toast.error("Failed to delete draft.");
+        },
+      });
+    },
+    [deleteDraftMutate, toast]
+  );
 
   return {
     drafts,
