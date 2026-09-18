@@ -25,8 +25,8 @@ export default function RegisterForm() {
 
   return (
     <div className="space-y-4">
-      <div className="space-y-0.5 text-center">
-        <h1 className="font-heading text-xl font-medium text-foreground">Create your account</h1>
+      <div className="space-y-1 text-center">
+        <h1 className="font-heading text-xl sm:text-2xl font-medium text-foreground">Create your account</h1>
         <p className="text-xs text-muted-foreground">
           Register to submit and track ARB requests for your property.
         </p>
