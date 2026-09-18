@@ -50,7 +50,7 @@ export function ChangePasswordForm() {
                     <PasswordInput
                       id="currentPassword"
                       autoComplete="current-password"
-                      placeholder="Enter current password"
+                      placeholder="******"
                       aria-invalid={!!errors.currentPassword}
                       value={field.value ?? ""}
                       onChange={field.onChange}
@@ -79,7 +79,7 @@ export function ChangePasswordForm() {
                       <PasswordInput
                         id="newPassword"
                         autoComplete="new-password"
-                        placeholder="At least 8 characters"
+                        placeholder="******"
                         aria-invalid={!!errors.newPassword}
                         showStrength
                         value={field.value ?? ""}
@@ -108,7 +108,7 @@ export function ChangePasswordForm() {
                       <PasswordInput
                         id="confirmNewPassword"
                         autoComplete="new-password"
-                        placeholder="Repeat new password"
+                        placeholder="******"
                         aria-invalid={!!errors.confirmNewPassword}
                         value={field.value ?? ""}
                         onChange={field.onChange}

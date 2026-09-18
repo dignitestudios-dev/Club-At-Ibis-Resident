@@ -50,8 +50,8 @@ export function getPasswordStrength(password: string): PasswordStrength {
     return {
       score: 4,
       label: "Strong",
-      colorClass: "bg-emerald-600",
-      textColorClass: "text-emerald-700 font-semibold",
+      colorClass: "bg-emerald-600 dark:bg-emerald-500",
+      textColorClass: "text-emerald-700 dark:text-emerald-400 font-semibold",
       percent: 100,
       rules,
     };
@@ -61,8 +61,8 @@ export function getPasswordStrength(password: string): PasswordStrength {
     return {
       score: 3,
       label: "Good",
-      colorClass: "bg-blue-600",
-      textColorClass: "text-blue-700",
+      colorClass: "bg-blue-600 dark:bg-blue-500",
+      textColorClass: "text-blue-700 dark:text-blue-400 font-medium",
       percent: 75,
       rules,
     };
@@ -72,8 +72,8 @@ export function getPasswordStrength(password: string): PasswordStrength {
     return {
       score: 2,
       label: "Fair",
-      colorClass: "bg-amber-500",
-      textColorClass: "text-amber-700",
+      colorClass: "bg-amber-500 dark:bg-amber-400",
+      textColorClass: "text-amber-700 dark:text-amber-400 font-medium",
       percent: 50,
       rules,
     };
@@ -82,8 +82,8 @@ export function getPasswordStrength(password: string): PasswordStrength {
   return {
     score: 1,
     label: "Weak",
-    colorClass: "bg-rose-500",
-    textColorClass: "text-rose-700",
+    colorClass: "bg-rose-500 dark:bg-rose-400",
+    textColorClass: "text-rose-700 dark:text-rose-400 font-medium",
     percent: 25,
     rules,
   };
@@ -115,7 +115,7 @@ export function PasswordStrengthMeter({
             key={step}
             className={cn(
               "h-full flex-1 rounded-full transition-all duration-300",
-              step <= strength.score ? strength.colorClass : "bg-slate-200"
+              step <= strength.score ? strength.colorClass : "bg-slate-200 dark:bg-slate-800"
             )}
           />
         ))}

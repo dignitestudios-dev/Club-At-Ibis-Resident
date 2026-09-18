@@ -60,7 +60,7 @@ export default function ResetPasswordForm({ token }: { token: string }) {
                   <PasswordInput
                     id="password"
                     autoComplete="new-password"
-                    placeholder="At least 8 characters"
+                    placeholder="******"
                     aria-invalid={!!errors.password}
                     showStrength
                     value={field.value ?? ""}
@@ -87,7 +87,7 @@ export default function ResetPasswordForm({ token }: { token: string }) {
                   <PasswordInput
                     id="confirmPassword"
                     autoComplete="new-password"
-                    placeholder="Repeat new password"
+                    placeholder="******"
                     aria-invalid={!!errors.confirmPassword}
                     value={field.value ?? ""}
                     onChange={field.onChange}

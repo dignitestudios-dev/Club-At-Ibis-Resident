@@ -1,8 +1,6 @@
 "use client";
 
-import Link from "next/link";
 import { Controller } from "react-hook-form";
-import { LogIn, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/shared/password-input";
@@ -27,24 +25,6 @@ export default function RegisterForm() {
 
   return (
     <div className="space-y-4">
-      {/* Creative Auth Tab Switcher */}
-      <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-xl border border-slate-200/80">
-        <Link
-          href="/auth/login"
-          className="flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-lg text-muted-foreground hover:text-foreground transition-all"
-        >
-          <LogIn className="size-3.5" />
-          Sign In
-        </Link>
-        <Link
-          href="/auth/register"
-          className="flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-lg bg-white text-primary shadow-xs transition-all"
-        >
-          <UserPlus className="size-3.5" />
-          Create Account
-        </Link>
-      </div>
-
       <div className="space-y-0.5 text-center">
         <h1 className="font-heading text-xl font-medium text-foreground">Create your account</h1>
         <p className="text-xs text-muted-foreground">
@@ -121,6 +101,7 @@ export default function RegisterForm() {
                     <PasswordInput
                       id="password"
                       autoComplete="new-password"
+                      placeholder="******"
                       aria-invalid={!!errors.password}
                       showStrength
                       value={field.value ?? ""}
@@ -147,6 +128,7 @@ export default function RegisterForm() {
                     <PasswordInput
                       id="confirmPassword"
                       autoComplete="new-password"
+                      placeholder="******"
                       aria-invalid={!!errors.confirmPassword}
                       value={field.value ?? ""}
                       onChange={field.onChange}

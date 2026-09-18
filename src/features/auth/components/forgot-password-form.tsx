@@ -25,7 +25,7 @@ export default function ForgotPasswordForm() {
   if (submitted) {
     return (
       <div className="space-y-6 text-center">
-        <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+        <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/60 dark:border-emerald-800/60 text-emerald-600 dark:text-emerald-400">
           <MailCheck className="size-5" />
         </div>
         <div className="space-y-1.5">

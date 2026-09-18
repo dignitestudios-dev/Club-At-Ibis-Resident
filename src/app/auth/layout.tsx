@@ -1,5 +1,7 @@
 import Image from "next/image";
 import { Logo } from "@/components/shared/logo";
+import { ThemeToggle } from "@/components/shared/theme-toggle";
+import { AuthTabs } from "@/features/auth/components/auth-tabs";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -32,37 +34,50 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       {/* Top Header Bar */}
       <header className="relative z-10 flex shrink-0 items-center justify-between px-6 py-3.5 lg:px-10">
         <Logo variant="ivory" size={30} />
-        <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-0.5 text-xs font-medium text-white backdrop-blur-md">
-          <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          Resident Portal
-        </span>
+        <div className="flex items-center gap-2">
+          <ThemeToggle className="text-white/80 hover:text-white hover:bg-white/10" />
+          <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-0.5 text-xs font-medium text-white backdrop-blur-md">
+            <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Resident Portal
+          </span>
+        </div>
       </header>
 
       {/* Main Center Auth Card with Fixed Height & Scrollable Body */}
       <main className="relative z-10 flex flex-1 items-center justify-center px-4 py-2 sm:px-6 min-h-0 overflow-hidden">
-        <div className="relative w-full max-w-[450px] h-[530px] max-h-[calc(100svh-90px)] flex flex-col rounded-2xl border border-white/30 bg-white/95 shadow-2xl backdrop-blur-xl overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+        <div className="relative w-full max-w-[460px] h-[580px] max-h-[calc(100svh-80px)] flex flex-col rounded-2xl border border-white/30 dark:border-white/10 bg-white/95 dark:bg-[#121c2d]/95 shadow-2xl backdrop-blur-xl overflow-hidden animate-in fade-in zoom-in-95 duration-300">
           {/* Subtle Watermark Inside Auth Card Corner */}
-          <div className="pointer-events-none absolute -right-10 -top-10 select-none opacity-[0.05] z-0">
+          <div className="pointer-events-none absolute -right-10 -top-10 select-none opacity-[0.05] dark:opacity-[0.06] z-0">
             <Image
               src="/brand/ibis-mark-navy.png"
               alt=""
               width={240}
               height={158}
-              className="h-auto w-[200px] object-contain"
+              className="h-auto w-[200px] object-contain dark:hidden"
+            />
+            <Image
+              src="/brand/ibis-mark-gold.png"
+              alt=""
+              width={240}
+              height={158}
+              className="h-auto w-[200px] object-contain hidden dark:block"
             />
           </div>
 
           {/* Fixed Card Header */}
-          <div className="relative z-10 shrink-0 pt-4 pb-2.5 px-6 sm:px-8 border-b border-slate-100 flex flex-col items-center justify-center gap-0.5">
+          <div className="relative z-10 shrink-0 pt-4 pb-2.5 px-6 sm:px-8 border-b border-slate-100 dark:border-slate-800 flex flex-col items-center justify-center gap-0.5">
             <Logo variant="navy" size={26} />
             <p className="text-[10px] font-semibold tracking-widest text-brand-gold uppercase">
               Architectural Review Board
             </p>
           </div>
 
+          {/* Fixed Top Auth Nav Tabs (renders on login & register) */}
+          <AuthTabs />
+
           {/* Scrollable Form Area with Custom Scrollbar */}
-          <div className="relative z-10 flex-1 overflow-y-auto custom-scrollbar px-6 py-4 sm:px-8 flex flex-col">
-            <div className="my-auto w-full">
+          <div className="relative z-10 flex-1 overflow-y-auto custom-scrollbar px-6 py-3 sm:px-8 flex flex-col">
+            <div className="w-full">
               {children}
             </div>
           </div>
