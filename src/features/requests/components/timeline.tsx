@@ -25,68 +25,68 @@ const EVENT_CONFIG: Record<
   submitted: {
     icon: Send,
     label: "Submitted for Review",
-    nodeBg: "bg-primary text-white ring-primary/20",
-    badgeBg: "bg-slate-100 text-slate-800 border-slate-200/80",
+    nodeBg: "bg-primary text-primary-foreground ring-primary/20",
+    badgeBg: "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border-slate-200/80 dark:border-slate-700/80",
   },
   updated: {
     icon: FileEdit,
     label: "Request Updated",
-    nodeBg: "bg-slate-100 text-slate-700 ring-slate-200/50",
-    badgeBg: "bg-slate-100 text-slate-700 border-slate-200/80",
+    nodeBg: "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 ring-slate-200/50 dark:ring-slate-700/50",
+    badgeBg: "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200/80 dark:border-slate-700/80",
   },
   assigned: {
     icon: UserCheck,
     label: "Reviewer Assigned",
-    nodeBg: "bg-slate-100 text-slate-800 ring-slate-200/50",
-    badgeBg: "bg-slate-100 text-slate-800 border-slate-200/80",
+    nodeBg: "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 ring-slate-200/50 dark:ring-slate-700/50",
+    badgeBg: "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border-slate-200/80 dark:border-slate-700/80",
   },
   comment: {
     icon: MessageSquare,
     label: "Reviewer Feedback",
-    nodeBg: "bg-amber-100 text-amber-900 ring-amber-200/50",
-    badgeBg: "bg-amber-50 text-amber-950 border-amber-200/80",
+    nodeBg: "bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-300 ring-amber-200/50 dark:ring-amber-800/50",
+    badgeBg: "bg-amber-50 dark:bg-amber-950/50 text-amber-950 dark:text-amber-300 border-amber-200/80 dark:border-amber-800/80",
   },
   changes_required: {
     icon: FileEdit,
     label: "Changes Required",
-    nodeBg: "bg-amber-500 text-white ring-amber-200",
-    badgeBg: "bg-amber-50 text-amber-950 border-amber-200/80",
+    nodeBg: "bg-amber-500 text-white ring-amber-200 dark:ring-amber-900",
+    badgeBg: "bg-amber-50 dark:bg-amber-950/50 text-amber-950 dark:text-amber-300 border-amber-200/80 dark:border-amber-800/80",
   },
   resubmitted: {
     icon: Send,
     label: "Revised & Resubmitted",
-    nodeBg: "bg-purple-600 text-white ring-purple-200",
-    badgeBg: "bg-purple-50 text-purple-950 border-purple-200/80",
+    nodeBg: "bg-purple-600 text-white ring-purple-200 dark:ring-purple-900",
+    badgeBg: "bg-purple-50 dark:bg-purple-950/50 text-purple-950 dark:text-purple-300 border-purple-200/80 dark:border-purple-800/80",
   },
   approved: {
     icon: CheckCircle2,
     label: "ARB Approved",
-    nodeBg: "bg-emerald-600 text-white ring-emerald-200",
-    badgeBg: "bg-emerald-50 text-emerald-950 border-emerald-200/80",
+    nodeBg: "bg-emerald-600 text-white ring-emerald-200 dark:ring-emerald-900",
+    badgeBg: "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-950 dark:text-emerald-300 border-emerald-200/80 dark:border-emerald-800/80",
   },
   rejected: {
     icon: XCircle,
     label: "Not Approved",
-    nodeBg: "bg-rose-600 text-white ring-rose-200",
-    badgeBg: "bg-rose-50 text-rose-950 border-rose-200/80",
+    nodeBg: "bg-rose-600 text-white ring-rose-200 dark:ring-rose-900",
+    badgeBg: "bg-rose-50 dark:bg-rose-950/50 text-rose-950 dark:text-rose-300 border-rose-200/80 dark:border-rose-800/80",
   },
   completed: {
     icon: CheckCircle2,
     label: "Completed & Closed Out",
-    nodeBg: "bg-emerald-600 text-white ring-emerald-200",
-    badgeBg: "bg-emerald-50 text-emerald-950 border-emerald-200/80",
+    nodeBg: "bg-emerald-600 text-white ring-emerald-200 dark:ring-emerald-900",
+    badgeBg: "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-950 dark:text-emerald-300 border-emerald-200/80 dark:border-emerald-800/80",
   },
   withdrawn: {
     icon: UserX,
     label: "Withdrawn",
-    nodeBg: "bg-slate-300 text-slate-700 ring-slate-200/50",
-    badgeBg: "bg-slate-100 text-slate-700 border-slate-200/80",
+    nodeBg: "bg-slate-300 dark:bg-slate-700 text-slate-700 dark:text-slate-200 ring-slate-200/50 dark:ring-slate-700/50",
+    badgeBg: "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200/80 dark:border-slate-700/80",
   },
   refund_updated: {
     icon: Banknote,
     label: "Deposit / Refund Update",
-    nodeBg: "bg-slate-100 text-slate-800 ring-slate-200/50",
-    badgeBg: "bg-slate-100 text-slate-800 border-slate-200/80",
+    nodeBg: "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 ring-slate-200/50 dark:ring-slate-700/50",
+    badgeBg: "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border-slate-200/80 dark:border-slate-700/80",
   },
 };
 
@@ -108,7 +108,7 @@ export function Timeline({ entries }: { entries: ActivityEntry[] }) {
               {/* Node Icon */}
               <span
                 className={cn(
-                  "flex size-8 shrink-0 items-center justify-center rounded-full border-2 border-white shadow-2xs transition-transform duration-200 group-hover:scale-110",
+                  "flex size-8 shrink-0 items-center justify-center rounded-full border-2 border-card shadow-2xs transition-transform duration-200 group-hover:scale-110",
                   config.nodeBg,
                   isLatest && "ring-4 ring-primary/20"
                 )}
@@ -119,7 +119,7 @@ export function Timeline({ entries }: { entries: ActivityEntry[] }) {
               {/* Vertical connecting line to next item */}
               {!isLast && (
                 <span
-                  className="w-[2px] flex-1 bg-slate-200 my-1.5"
+                  className="w-[2px] flex-1 bg-border my-1.5"
                   aria-hidden="true"
                 />
               )}
@@ -130,11 +130,11 @@ export function Timeline({ entries }: { entries: ActivityEntry[] }) {
               {/* Header: Label + Latest badge + Relative Time */}
               <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-slate-900">
+                  <span className="text-sm font-semibold text-foreground">
                     {config.label}
                   </span>
                   {isLatest && (
-                    <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-bold text-primary tracking-wider uppercase">
+                    <span className="rounded-full bg-primary/10 dark:bg-primary/20 px-2.5 py-0.5 text-[10px] font-bold text-primary dark:text-amber-300 tracking-wider uppercase">
                       LATEST
                     </span>
                   )}
@@ -149,16 +149,16 @@ export function Timeline({ entries }: { entries: ActivityEntry[] }) {
               </div>
 
               {/* Message */}
-              <p className="text-sm text-slate-700 leading-relaxed font-normal">
+              <p className="text-sm text-foreground/85 leading-relaxed font-normal">
                 {entry.message}
               </p>
 
               {/* Footer: Actor + Exact Date */}
-              <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground pt-1.5 border-t border-slate-100">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground pt-1.5 border-t border-border/60">
                 <span>
-                  By <span className="font-semibold text-slate-800">{entry.actor}</span>
+                  By <span className="font-semibold text-foreground">{entry.actor}</span>
                 </span>
-                <span className="text-slate-500">{formatDateTime(entry.createdAt)}</span>
+                <span className="text-muted-foreground">{formatDateTime(entry.createdAt)}</span>
               </div>
             </div>
           </div>

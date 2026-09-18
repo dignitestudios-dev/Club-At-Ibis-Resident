@@ -148,7 +148,7 @@ export default function ProfileForm() {
                 <ShieldCheck className="size-4 text-emerald-600" />
                 Status
               </span>
-              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200/80 bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-800">
+              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200/80 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 text-xs font-medium text-emerald-800 dark:text-emerald-300">
                 Active Resident
               </span>
             </div>

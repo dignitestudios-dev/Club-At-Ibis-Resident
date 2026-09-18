@@ -67,7 +67,7 @@ export function RequestReview({
       {groups.map((group) => (
         <div key={group.title} className="space-y-2.5">
           <p className="text-sm font-medium text-foreground">{group.title}</p>
-          <dl className="grid gap-3 rounded-xl border border-border bg-white p-4 shadow-2xs sm:grid-cols-2">
+          <dl className="grid gap-3 rounded-xl border border-border bg-white dark:bg-card p-4 shadow-2xs sm:grid-cols-2">
             {group.fields.map((field) => {
               if (field.type === "file") {
                 const files = uploads?.[field.id] ?? (Array.isArray(values[field.id]) ? (values[field.id] as DropzoneFile[]) : []);
@@ -84,7 +84,7 @@ export function RequestReview({
                               key={file.id}
                               type="button"
                               onClick={() => handleFileClick(file)}
-                              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-foreground transition-all duration-200 hover:border-primary/50 hover:bg-white hover:text-primary hover:shadow-2xs"
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-slate-50 dark:bg-slate-800/80 px-2.5 py-1.5 text-xs font-medium text-foreground transition-all duration-200 hover:border-primary/50 hover:bg-white dark:hover:bg-slate-800 hover:text-primary hover:shadow-2xs"
                             >
                               <FileText className="size-3.5 text-primary" />
                               <span className="max-w-44 truncate">{file.name}</span>

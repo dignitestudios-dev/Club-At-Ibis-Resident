@@ -62,7 +62,7 @@ export function FileDropzone({
             addFiles(e.dataTransfer.files);
           }}
           className={cn(
-            "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed bg-white p-6 text-center shadow-2xs transition-all duration-200 hover:border-primary/60 hover:bg-slate-50",
+            "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed bg-white dark:bg-card p-6 text-center shadow-2xs transition-all duration-200 hover:border-primary/60 hover:bg-slate-50 dark:hover:bg-slate-800/50",
             dragOver ? "border-primary bg-primary/5" : "border-input",
             invalid && "border-destructive bg-destructive/5"
           )}
@@ -105,7 +105,7 @@ export function FileDropzone({
                 "flex items-center gap-2.5 rounded-lg border px-3 py-2 text-sm shadow-2xs transition-all",
                 disabled
                   ? "border-border/80 bg-muted/20 text-muted-foreground"
-                  : "border-border bg-white text-foreground"
+                  : "border-border bg-white dark:bg-card text-foreground"
               )}
             >
               <FileText className="size-4 shrink-0 text-primary/70" />

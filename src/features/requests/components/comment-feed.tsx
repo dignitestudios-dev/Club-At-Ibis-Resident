@@ -26,8 +26,8 @@ export function CommentFeed({ comments }: { comments: CommentEntry[] }) {
             className={cn(
               "rounded-xl border p-4.5 shadow-2xs transition-colors",
               isArb
-                ? "border-slate-200/90 bg-slate-50/70"
-                : "border-border/80 bg-white"
+                ? "border-border bg-slate-50/70 dark:bg-slate-900/60"
+                : "border-border/80 bg-card"
             )}
           >
             <div className="flex items-center justify-between gap-3 mb-2">
@@ -36,8 +36,8 @@ export function CommentFeed({ comments }: { comments: CommentEntry[] }) {
                   className={cn(
                     "flex size-7 shrink-0 items-center justify-center rounded-lg text-xs font-semibold",
                     isArb
-                      ? "bg-primary text-white"
-                      : "bg-slate-200 text-slate-700"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
                   )}
                 >
                   {isArb ? <ShieldCheck className="size-3.5" /> : <User className="size-3.5" />}

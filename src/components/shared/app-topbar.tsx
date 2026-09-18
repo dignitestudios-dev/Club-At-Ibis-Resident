@@ -7,13 +7,14 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { AppSidebar } from "@/components/shared/app-sidebar";
 import { Logo } from "@/components/shared/logo";
 import { NotificationBell } from "@/features/notifications/components/notification-bell";
+import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { UserMenu } from "@/components/shared/user-menu";
 
 export function AppTopbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-card px-4 lg:px-6">
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-card px-4 lg:px-6 transition-colors duration-200">
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <Button
           variant="ghost"
@@ -34,6 +35,7 @@ export function AppTopbar() {
       </div>
 
       <div className="ml-auto flex items-center gap-1.5">
+        <ThemeToggle />
         <NotificationBell />
         <UserMenu />
       </div>

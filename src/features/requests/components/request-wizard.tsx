@@ -210,7 +210,7 @@ function RequestTypeWizard({
                 onClick={() => handleSaveDraft({ redirect: true })}
                 disabled={isSavingDraft || isPending}
               >
-                {isSavingDraft ? <Spinner className="size-4" /> : <Bookmark className="size-4 text-brand-navy" />}
+                {isSavingDraft ? <Spinner className="size-4" /> : <Bookmark className="size-4 text-brand-navy dark:text-brand-gold" />}
                 Save as Draft
               </Button>
 

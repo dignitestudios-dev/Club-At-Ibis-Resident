@@ -2,7 +2,7 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {
   --color-background: var(--background);
@@ -60,7 +60,7 @@
   --brand-blue: #1e3a5f;
   --brand-gold: #a0874a;
 
-  /* Surface tokens — sleek architectural luxury (deep navy / off-white / slate / champagne gold) */
+  /* Surface tokens — sleek architectural luxury */
   --background: #f8fafc;
   --foreground: #0f172a;
   --card: #ffffff;
@@ -85,48 +85,55 @@
   --chart-4: #334155;
   --chart-5: #64748b;
   --radius: 0.5rem;
-  --sidebar: #112636;
-  --sidebar-foreground: #cbd5e1;
-  --sidebar-primary: #a0874a;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #334155;
+  --sidebar-primary: #112636;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #193247;
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #1a3246;
-  --sidebar-ring: #a0874a;
+  --sidebar-accent: #f1f5f9;
+  --sidebar-accent-foreground: #0f172a;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #112636;
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  /* Brand marks */
+  --brand-navy: #0f172a;
+  --brand-ivory: #1e293b;
+  --brand-blue: #3b82f6;
+  --brand-gold: #d4af37;
+
+  /* Eye-Comfort Slate-Navy Dark Theme (eliminates eye fatigue & harsh glare) */
+  --background: #0d1522;
+  --foreground: #e2e8f0;
+  --card: #131f30;
+  --card-foreground: #e2e8f0;
+  --popover: #131f30;
+  --popover-foreground: #e2e8f0;
+  --primary: #d4af37;
+  --primary-foreground: #0d1522;
+  --secondary: #1a293f;
+  --secondary-foreground: #e2e8f0;
+  --muted: #1a293f;
+  --muted-foreground: #94a3b8;
+  --accent: #20314a;
+  --accent-foreground: #f8fafc;
+  --destructive: #f87171;
+  --border: #23344d;
+  --input: #23344d;
+  --ring: #d4af37;
+  --chart-1: #d4af37;
+  --chart-2: #60a5fa;
+  --chart-3: #34d399;
+  --chart-4: #fbbf24;
+  --chart-5: #a78bfa;
+  --sidebar: #101a29;
+  --sidebar-foreground: #cbd5e1;
+  --sidebar-primary: #d4af37;
+  --sidebar-primary-foreground: #0d1522;
+  --sidebar-accent: #172437;
+  --sidebar-accent-foreground: #f8fafc;
+  --sidebar-border: #1e2e44;
+  --sidebar-ring: #d4af37;
 }
 
 @layer base {
@@ -134,7 +141,7 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground antialiased selection:bg-primary/15 selection:text-primary;
+    @apply bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary transition-colors duration-200;
   }
   html {
     @apply font-sans;
@@ -160,15 +167,22 @@
     scrollbar-width: thin;
     scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
   }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.2);
+  }
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.4);
+  }
 }
 
 @layer utilities {
   /* Subtle luxury glass styling */
   .glass-card {
-    @apply bg-white/90 backdrop-blur-md border border-border/80 shadow-2xs;
+    @apply bg-white/90 dark:bg-card/85 backdrop-blur-md border border-border/80 shadow-2xs;
   }
   .glass-topbar {
-    @apply bg-white/85 backdrop-blur-md border-b border-border/80;
+    @apply bg-white/85 dark:bg-card/85 backdrop-blur-md border-b border-border/80;
   }
   .custom-scrollbar {
     scrollbar-width: thin;

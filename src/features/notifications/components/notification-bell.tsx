@@ -30,34 +30,34 @@ function getNotificationAvatar(type: NotificationType) {
     case "completed":
     case "approval_letter":
       return {
-        icon: <CheckCircle2 className="size-4 text-emerald-600" />,
-        bg: "bg-emerald-50 border-emerald-200/60",
+        icon: <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />,
+        bg: "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200/60 dark:border-emerald-800/60",
       };
     case "revision_required":
     case "action_required":
       return {
-        icon: <AlertTriangle className="size-4 text-amber-600" />,
-        bg: "bg-amber-50 border-amber-200/60",
+        icon: <AlertTriangle className="size-4 text-amber-600 dark:text-amber-400" />,
+        bg: "bg-amber-50 dark:bg-amber-950/40 border-amber-200/60 dark:border-amber-800/60",
       };
     case "feedback":
       return {
-        icon: <MessageSquare className="size-4 text-blue-600" />,
-        bg: "bg-blue-50 border-blue-200/60",
+        icon: <MessageSquare className="size-4 text-blue-600 dark:text-blue-400" />,
+        bg: "bg-blue-50 dark:bg-blue-950/40 border-blue-200/60 dark:border-blue-800/60",
       };
     case "resubmitted":
       return {
-        icon: <Clock className="size-4 text-purple-600" />,
-        bg: "bg-purple-50 border-purple-200/60",
+        icon: <Clock className="size-4 text-purple-600 dark:text-purple-400" />,
+        bg: "bg-purple-50 dark:bg-purple-950/40 border-purple-200/60 dark:border-purple-800/60",
       };
     case "rejected":
       return {
-        icon: <XCircle className="size-4 text-rose-600" />,
-        bg: "bg-rose-50 border-rose-200/60",
+        icon: <XCircle className="size-4 text-rose-600 dark:text-rose-400" />,
+        bg: "bg-rose-50 dark:bg-rose-950/40 border-rose-200/60 dark:border-rose-800/60",
       };
     default:
       return {
         icon: <FileText className="size-4 text-primary" />,
-        bg: "bg-slate-100 border-slate-200/60",
+        bg: "bg-slate-100 dark:bg-slate-800 border-slate-200/60 dark:border-slate-700",
       };
   }
 }
@@ -77,7 +77,7 @@ export function NotificationBell() {
         )}
       </PopoverTrigger>
       <PopoverContent align="end" className="w-92 sm:w-96 p-0 shadow-xl border-border/80">
-        <div className="flex items-center justify-between border-b border-border/80 bg-slate-50/50 px-4 py-3">
+        <div className="flex items-center justify-between border-b border-border/80 bg-slate-50/50 dark:bg-slate-900/50 px-4 py-3">
           <div className="flex items-center gap-2">
             <p className="font-heading text-base font-semibold text-foreground">Notifications</p>
             {unreadCount > 0 && (
@@ -132,8 +132,8 @@ export function NotificationBell() {
                         setOpen(false);
                       }}
                       className={cn(
-                        "flex gap-3 px-4 py-3.5 transition-colors hover:bg-slate-50",
-                        !notification.read ? "bg-white" : "bg-white/60 text-muted-foreground"
+                        "flex gap-3 px-4 py-3.5 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/60",
+                        !notification.read ? "bg-white dark:bg-card" : "bg-white/60 dark:bg-card/60 text-muted-foreground"
                       )}
                     >
                       <span
@@ -173,7 +173,7 @@ export function NotificationBell() {
           </ScrollArea>
         )}
 
-        <div className="border-t border-border/80 bg-slate-50/50 p-2 text-center">
+        <div className="border-t border-border/80 bg-slate-50/50 dark:bg-slate-900/50 p-2 text-center">
           <Link
             href="/notifications"
             onClick={() => setOpen(false)}

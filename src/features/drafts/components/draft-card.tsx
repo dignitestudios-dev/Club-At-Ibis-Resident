@@ -34,7 +34,7 @@ export function DraftCard({
       <div
         style={style}
         className={cn(
-          "group relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 overflow-hidden rounded-xl border border-amber-200/80 bg-white p-4 sm:p-4.5 pl-4.5 sm:pl-5 shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-md",
+          "group relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 overflow-hidden rounded-xl border border-amber-200/80 dark:border-amber-900/50 bg-card p-4 sm:p-4.5 pl-4.5 sm:pl-5 shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:border-amber-300 dark:hover:border-amber-700 hover:shadow-md",
           className
         )}
       >
@@ -46,10 +46,10 @@ export function DraftCard({
 
         <div className="min-w-0 flex-1 space-y-1.5">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-heading text-base sm:text-lg font-medium text-slate-900 group-hover:text-primary transition-colors truncate">
+            <h3 className="font-heading text-base sm:text-lg font-medium text-foreground group-hover:text-primary transition-colors truncate">
               {requestType?.name ?? "Architectural Request"}
             </h3>
-            <span className="rounded-md bg-amber-50 border border-amber-200/90 px-2 py-0.5 text-xs font-mono font-semibold text-amber-900">
+            <span className="rounded-md bg-amber-50 dark:bg-amber-950/40 border border-amber-200/90 dark:border-amber-800/60 px-2 py-0.5 text-xs font-mono font-semibold text-amber-900 dark:text-amber-300">
               Draft
             </span>
             <span className="text-xs text-muted-foreground font-medium">
@@ -58,7 +58,7 @@ export function DraftCard({
           </div>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
             {address && (
-              <span className="inline-flex items-center gap-1 text-slate-600 font-medium truncate max-w-xs">
+              <span className="inline-flex items-center gap-1 text-slate-600 dark:text-slate-300 font-medium truncate max-w-xs">
                 <MapPin className="size-3 text-brand-gold shrink-0" />
                 {address}
               </span>
@@ -70,7 +70,7 @@ export function DraftCard({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-amber-100 pr-1">
+        <div className="flex items-center gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-amber-100 dark:border-amber-900/40 pr-1">
           <Button
             variant="ghost"
             size="sm"
@@ -113,7 +113,7 @@ export function DraftCard({
     <div
       style={style}
       className={cn(
-        "group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-amber-200/80 bg-white p-5 shadow-2xs transition-all duration-300 hover:-translate-y-1 hover:border-amber-300 hover:shadow-md",
+        "group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-amber-200/80 dark:border-amber-900/50 bg-card p-5 shadow-2xs transition-all duration-300 hover:-translate-y-1 hover:border-amber-300 dark:hover:border-amber-700 hover:shadow-md",
         className
       )}
     >
@@ -125,7 +125,7 @@ export function DraftCard({
 
       <div className="space-y-3 pt-1">
         <div className="flex items-center justify-between gap-2.5">
-          <span className="rounded-lg bg-amber-50 border border-amber-200/90 px-2.5 py-1 text-xs font-mono font-semibold text-amber-900 shadow-2xs tracking-wide">
+          <span className="rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200/90 dark:border-amber-800/60 px-2.5 py-1 text-xs font-mono font-semibold text-amber-900 dark:text-amber-300 shadow-2xs tracking-wide">
             Draft
           </span>
           <span className="text-xs text-muted-foreground font-medium">
@@ -134,7 +134,7 @@ export function DraftCard({
         </div>
 
         <div className="space-y-1.5">
-          <h3 className="font-heading text-lg sm:text-xl font-medium text-slate-900 group-hover:text-primary transition-colors line-clamp-1">
+          <h3 className="font-heading text-lg sm:text-xl font-medium text-foreground group-hover:text-primary transition-colors line-clamp-1">
             {requestType?.name ?? "Architectural Request"}
           </h3>
           <p className="text-xs text-muted-foreground leading-relaxed min-h-[2.25rem]">
@@ -143,9 +143,9 @@ export function DraftCard({
         </div>
       </div>
 
-      <div className="pt-3 mt-4 border-t border-slate-100 space-y-3">
+      <div className="pt-3 mt-4 border-t border-border/60 space-y-3">
         {address && (
-          <div className="flex items-center gap-1.5 text-xs text-slate-700 font-medium truncate">
+          <div className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300 font-medium truncate">
             <MapPin className="size-3.5 text-brand-gold shrink-0" />
             <span className="truncate">{address}</span>
           </div>

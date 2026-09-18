@@ -47,16 +47,16 @@ export default function DashboardOverview() {
 
       {/* Draft Notification Banner */}
       {drafts.length > 0 && (
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 rounded-2xl border border-amber-300/80 bg-gradient-to-r from-amber-50/90 to-amber-50/40 p-4.5 text-amber-950 shadow-2xs animate-in fade-in zoom-in-95 duration-400">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 rounded-2xl border border-amber-300/80 dark:border-amber-800/80 bg-gradient-to-r from-amber-50/90 to-amber-50/40 dark:from-amber-950/40 dark:to-amber-950/20 p-4.5 text-amber-950 dark:text-amber-200 shadow-2xs animate-in fade-in zoom-in-95 duration-400">
           <div className="flex items-center gap-3.5">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-900 border border-amber-300/70 shadow-2xs">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-950/70 text-amber-900 dark:text-amber-300 border border-amber-300/70 dark:border-amber-700/60 shadow-2xs">
               <FileEdit className="size-5" />
             </span>
             <div>
-              <p className="text-sm font-semibold text-amber-950">
+              <p className="text-sm font-semibold text-amber-950 dark:text-amber-200">
                 You have {drafts.length} saved in-progress draft{drafts.length > 1 ? "s" : ""}
               </p>
-              <p className="text-xs text-amber-900/80">
+              <p className="text-xs text-amber-900/80 dark:text-amber-400/80">
                 Your unsaved work is preserved. Resume right where you left off.
               </p>
             </div>
@@ -66,7 +66,7 @@ export default function DashboardOverview() {
             variant="outline"
             nativeButton={false}
             render={<Link href="/requests?tab=drafts" />}
-            className="shrink-0 border-amber-300/80 bg-white text-amber-950 hover:bg-amber-100/60 font-medium shadow-2xs transition-transform duration-200 hover:scale-[1.02]"
+            className="shrink-0 border-amber-300/80 dark:border-amber-700/70 bg-white dark:bg-slate-900 text-amber-950 dark:text-amber-300 hover:bg-amber-100/60 dark:hover:bg-slate-800 font-medium shadow-2xs transition-transform duration-200 hover:scale-[1.02]"
           >
             Review Saved Drafts
             <ArrowRight className="size-3.5 ml-1" />

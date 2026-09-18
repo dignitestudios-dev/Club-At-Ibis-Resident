@@ -158,15 +158,15 @@ export default function RequestsListPage() {
       {/* Header Controls: Tab Switcher & View Switcher */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2 duration-400 delay-75">
         {/* Simplified, Modern Pill Tab Switcher */}
-        <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-xl border border-slate-200/80 w-fit max-w-full overflow-x-auto">
+        <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 dark:bg-slate-900/90 rounded-xl border border-slate-200/80 dark:border-slate-800 w-fit max-w-full overflow-x-auto">
           {/* Tab 1: Active Requests */}
           <button
             type="button"
             onClick={() => handleTabChange("requests")}
             className={cn(
-              "flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all shrink-0",
+              "flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all shrink-0 cursor-pointer",
               activeTab === "requests"
-                ? "bg-white text-primary shadow-xs"
+                ? "bg-white dark:bg-slate-800 text-primary dark:text-foreground shadow-xs"
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
@@ -176,8 +176,8 @@ export default function RequestsListPage() {
               className={cn(
                 "rounded-full px-1.5 py-0.2 text-[11px] font-bold",
                 activeTab === "requests"
-                  ? "bg-primary/10 text-primary"
-                  : "bg-slate-200 text-muted-foreground"
+                  ? "bg-primary/10 dark:bg-primary/20 text-primary dark:text-amber-300"
+                  : "bg-slate-200 dark:bg-slate-800 text-muted-foreground"
               )}
             >
               {allActiveRequests.length}
@@ -189,9 +189,9 @@ export default function RequestsListPage() {
             type="button"
             onClick={() => handleTabChange("history")}
             className={cn(
-              "flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all shrink-0",
+              "flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all shrink-0 cursor-pointer",
               activeTab === "history"
-                ? "bg-white text-primary shadow-xs"
+                ? "bg-white dark:bg-slate-800 text-primary dark:text-foreground shadow-xs"
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
@@ -201,8 +201,8 @@ export default function RequestsListPage() {
               className={cn(
                 "rounded-full px-1.5 py-0.2 text-[11px] font-bold",
                 activeTab === "history"
-                  ? "bg-emerald-100 text-emerald-800"
-                  : "bg-slate-200 text-muted-foreground"
+                  ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300"
+                  : "bg-slate-200 dark:bg-slate-800 text-muted-foreground"
               )}
             >
               {allHistoryRequests.length}
@@ -214,9 +214,9 @@ export default function RequestsListPage() {
             type="button"
             onClick={() => handleTabChange("drafts")}
             className={cn(
-              "flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all shrink-0",
+              "flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all shrink-0 cursor-pointer",
               activeTab === "drafts"
-                ? "bg-white text-primary shadow-xs"
+                ? "bg-white dark:bg-slate-800 text-primary dark:text-foreground shadow-xs"
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
@@ -227,8 +227,8 @@ export default function RequestsListPage() {
                 className={cn(
                   "rounded-full px-1.5 py-0.2 text-[11px] font-bold",
                   activeTab === "drafts"
-                    ? "bg-amber-100 text-amber-900"
-                    : "bg-amber-100/70 text-amber-800"
+                    ? "bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300"
+                    : "bg-amber-100/70 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400"
                 )}
               >
                 {drafts.length}
@@ -238,14 +238,14 @@ export default function RequestsListPage() {
         </div>
 
         {/* View Switcher: Cards vs List */}
-        <div className="flex items-center gap-1 p-1 bg-slate-100/90 rounded-xl border border-slate-200/80 shrink-0 self-start sm:self-auto">
+        <div className="flex items-center gap-1 p-1 bg-slate-100/90 dark:bg-slate-900/90 rounded-xl border border-slate-200/80 dark:border-slate-800 shrink-0 self-start sm:self-auto">
           <button
             type="button"
             onClick={() => handleViewModeChange("grid")}
             className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all",
+              "flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer",
               viewMode === "grid"
-                ? "bg-white text-primary shadow-xs"
+                ? "bg-white dark:bg-slate-800 text-primary dark:text-foreground shadow-xs"
                 : "text-muted-foreground hover:text-foreground"
             )}
             title="Card Grid View"
@@ -258,9 +258,9 @@ export default function RequestsListPage() {
             type="button"
             onClick={() => handleViewModeChange("list")}
             className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all",
+              "flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer",
               viewMode === "list"
-                ? "bg-white text-primary shadow-xs"
+                ? "bg-white dark:bg-slate-800 text-primary dark:text-foreground shadow-xs"
                 : "text-muted-foreground hover:text-foreground"
             )}
             title="List View"
@@ -284,13 +284,13 @@ export default function RequestsListPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by code, type, details..."
-                className="pl-8 pr-8 bg-white"
+                className="pl-8 pr-8 bg-card dark:bg-card border-border"
               />
               {search && (
                 <button
                   type="button"
                   onClick={() => setSearch("")}
-                  className="absolute top-1/2 right-2.5 -translate-y-1/2 rounded-full p-1 text-muted-foreground hover:bg-slate-100 hover:text-foreground transition-colors"
+                  className="absolute top-1/2 right-2.5 -translate-y-1/2 rounded-full p-1 text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-foreground transition-colors cursor-pointer"
                   aria-label="Clear search"
                 >
                   <X className="size-3.5" />
@@ -304,7 +304,7 @@ export default function RequestsListPage() {
               value={status}
               onValueChange={(v) => setStatus(v as RequestStatus | "all")}
             >
-              <SelectTrigger className="w-full bg-white">
+              <SelectTrigger className="w-full bg-card dark:bg-card border-border">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
@@ -322,7 +322,7 @@ export default function RequestsListPage() {
               value={requestTypeId}
               onValueChange={(v) => setRequestTypeId(v as string)}
             >
-              <SelectTrigger className="w-full bg-white">
+              <SelectTrigger className="w-full bg-card dark:bg-card border-border">
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
@@ -340,7 +340,7 @@ export default function RequestsListPage() {
               value={period}
               onValueChange={(v) => setPeriod(v as DatePeriod)}
             >
-              <SelectTrigger className="w-full bg-white">
+              <SelectTrigger className="w-full bg-card dark:bg-card border-border">
                 <SelectValue placeholder="Timeframe" />
               </SelectTrigger>
               <SelectContent>
@@ -360,7 +360,7 @@ export default function RequestsListPage() {
               <button
                 type="button"
                 onClick={resetFilters}
-                className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
+                className="inline-flex items-center gap-1 font-medium text-primary hover:underline cursor-pointer"
               >
                 <RotateCcw className="size-3" />
                 Reset filters
@@ -443,13 +443,13 @@ export default function RequestsListPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search history records..."
-                className="pl-8 pr-8 bg-white"
+                className="pl-8 pr-8 bg-card dark:bg-card border-border"
               />
               {search && (
                 <button
                   type="button"
                   onClick={() => setSearch("")}
-                  className="absolute top-1/2 right-2.5 -translate-y-1/2 rounded-full p-1 text-muted-foreground hover:bg-slate-100 hover:text-foreground transition-colors"
+                  className="absolute top-1/2 right-2.5 -translate-y-1/2 rounded-full p-1 text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-foreground transition-colors cursor-pointer"
                   aria-label="Clear search"
                 >
                   <X className="size-3.5" />
@@ -463,7 +463,7 @@ export default function RequestsListPage() {
               value={status}
               onValueChange={(v) => setStatus(v as RequestStatus | "all")}
             >
-              <SelectTrigger className="w-full bg-white">
+              <SelectTrigger className="w-full bg-card dark:bg-card border-border">
                 <SelectValue placeholder="All History Outcomes" />
               </SelectTrigger>
               <SelectContent>
@@ -481,7 +481,7 @@ export default function RequestsListPage() {
               value={requestTypeId}
               onValueChange={(v) => setRequestTypeId(v as string)}
             >
-              <SelectTrigger className="w-full bg-white">
+              <SelectTrigger className="w-full bg-card dark:bg-card border-border">
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
@@ -499,7 +499,7 @@ export default function RequestsListPage() {
               value={period}
               onValueChange={(v) => setPeriod(v as DatePeriod)}
             >
-              <SelectTrigger className="w-full bg-white">
+              <SelectTrigger className="w-full bg-card dark:bg-card border-border">
                 <SelectValue placeholder="Timeframe" />
               </SelectTrigger>
               <SelectContent>
@@ -519,7 +519,7 @@ export default function RequestsListPage() {
               <button
                 type="button"
                 onClick={resetFilters}
-                className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
+                className="inline-flex items-center gap-1 font-medium text-primary hover:underline cursor-pointer"
               >
                 <RotateCcw className="size-3" />
                 Reset filters

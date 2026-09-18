@@ -113,11 +113,11 @@ export function FilePreviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl max-h-[92vh] flex flex-col p-0 overflow-hidden">
+      <DialogContent className="sm:max-w-4xl max-h-[92vh] flex flex-col p-0 overflow-hidden border border-border shadow-2xl">
         {/* Header */}
-        <DialogHeader className="flex flex-row items-center justify-between border-b border-border bg-slate-50/80 px-5 py-3.5">
+        <DialogHeader className="flex flex-row items-center justify-between border-b border-border bg-slate-50/90 dark:bg-card px-5 py-3.5">
           <div className="flex items-center gap-2.5 min-w-0">
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary">
               {isImage ? <ImageIcon className="size-4" /> : <FileText className="size-4" />}
             </span>
             <div className="min-w-0">
@@ -125,7 +125,10 @@ export function FilePreviewDialog({
                 <DialogTitle className="truncate text-sm font-semibold text-foreground">
                   {file.name}
                 </DialogTitle>
-                <Badge variant="outline" className="shrink-0 text-[10px] font-bold">
+                <Badge
+                  variant="secondary"
+                  className="shrink-0 text-[10px] font-bold tracking-wider uppercase bg-slate-200/80 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300/60 dark:border-slate-700"
+                >
                   {ext}
                 </Badge>
               </div>
@@ -141,22 +144,24 @@ export function FilePreviewDialog({
               size="icon-sm"
               onClick={() => setZoom((z) => Math.max(0.5, z - 0.25))}
               title="Zoom out"
+              className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200/70 dark:hover:bg-slate-800"
             >
-              <ZoomOut className="size-4 text-muted-foreground" />
+              <ZoomOut className="size-4" />
             </Button>
             <Button
               variant="ghost"
               size="icon-sm"
               onClick={() => setZoom((z) => Math.min(2.5, z + 0.25))}
               title="Zoom in"
+              className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200/70 dark:hover:bg-slate-800"
             >
-              <ZoomIn className="size-4 text-muted-foreground" />
+              <ZoomIn className="size-4" />
             </Button>
             <Button
-              variant="outline"
+              variant="default"
               size="sm"
               onClick={handleDownload}
-              className="gap-1.5 text-xs h-8 ml-2"
+              className="gap-1.5 text-xs h-8 ml-2 shadow-2xs font-medium"
             >
               <Download className="size-3.5" />
               Download
@@ -165,7 +170,7 @@ export function FilePreviewDialog({
         </DialogHeader>
 
         {/* Viewport Content */}
-        <div className="relative flex-1 min-h-[420px] max-h-[72vh] overflow-auto bg-slate-950 flex items-center justify-center p-4">
+        <div className="relative flex-1 min-h-[420px] max-h-[72vh] overflow-auto bg-slate-950/95 dark:bg-[#070d17] flex items-center justify-center p-4">
           {isPdf && objectUrl && file.file ? (
             <iframe
               src={objectUrl}
@@ -179,15 +184,20 @@ export function FilePreviewDialog({
                 src={displayUrl}
                 alt={file.name}
                 style={{ transform: `scale(${zoom})`, transformOrigin: "center center" }}
-                className="max-h-[65vh] max-w-full rounded-lg object-contain shadow-2xl transition-transform duration-200"
+                className="max-h-[65vh] max-w-full rounded-lg object-contain shadow-2xl transition-transform duration-200 border border-white/10"
               />
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <DialogFooter className="border-t border-border bg-slate-50/80 px-5 py-2.5 flex items-center justify-end">
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+        <DialogFooter className="border-t border-border bg-slate-50/90 dark:bg-card px-5 py-2.5 flex items-center justify-end">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+            className="bg-white dark:bg-slate-800 border-border hover:bg-slate-100 dark:hover:bg-slate-700 text-foreground"
+          >
             Close
           </Button>
         </DialogFooter>

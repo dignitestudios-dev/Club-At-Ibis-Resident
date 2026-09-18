@@ -107,17 +107,17 @@ export default function RequestDetailPage({ id }: { id: string }) {
 
       {/* Unified Single Directive Banner for Changes Required */}
       {request.status === "changes_required" && !revising && (
-        <div className="rounded-2xl border border-amber-300 bg-gradient-to-r from-amber-50 to-amber-100/40 p-5 sm:p-6 shadow-2xs space-y-4 animate-in fade-in duration-300">
+        <div className="rounded-2xl border border-amber-300 dark:border-amber-800/80 bg-gradient-to-r from-amber-50 to-amber-100/40 dark:from-amber-950/50 dark:to-amber-950/20 p-5 sm:p-6 shadow-2xs space-y-4 animate-in fade-in duration-300">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-start gap-3.5">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-900 border border-amber-300/80 shadow-2xs">
-                <AlertTriangle className="size-5 text-amber-700" />
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-300 border border-amber-300/80 dark:border-amber-700/60 shadow-2xs">
+                <AlertTriangle className="size-5 text-amber-700 dark:text-amber-400" />
               </span>
               <div className="space-y-1">
-                <h3 className="font-heading text-lg font-medium text-amber-950">
+                <h3 className="font-heading text-lg font-medium text-amber-950 dark:text-amber-200">
                   ARB Action Required — Changes Requested
                 </h3>
-                <p className="text-xs sm:text-sm text-amber-900/90 leading-relaxed">
+                <p className="text-xs sm:text-sm text-amber-900/90 dark:text-amber-300/90 leading-relaxed">
                   The Review Board has flagged items on this submission. Review the directive below, revise the indicated details, and resubmit.
                 </p>
               </div>
@@ -133,17 +133,17 @@ export default function RequestDetailPage({ id }: { id: string }) {
 
           {/* Latest Reviewer Directives & Comment */}
           {request.comments.length > 0 && (
-            <div className="rounded-xl border border-amber-200/90 bg-white/90 p-4 text-xs text-amber-950 space-y-1.5 shadow-2xs">
-              <div className="flex items-center justify-between font-semibold text-[11px] text-amber-900 uppercase tracking-wider">
+            <div className="rounded-xl border border-amber-200/90 dark:border-amber-800/60 bg-white/90 dark:bg-card/90 p-4 text-xs text-amber-950 dark:text-amber-200 space-y-1.5 shadow-2xs">
+              <div className="flex items-center justify-between font-semibold text-[11px] text-amber-900 dark:text-amber-300 uppercase tracking-wider">
                 <span className="flex items-center gap-1.5">
-                  <MessageSquare className="size-3.5 text-amber-700" />
+                  <MessageSquare className="size-3.5 text-amber-700 dark:text-amber-400" />
                   Reviewer Directive
                 </span>
                 <span className="font-normal text-muted-foreground">
                   {request.comments[request.comments.length - 1].author} · {formatRelative(request.comments[request.comments.length - 1].createdAt)}
                 </span>
               </div>
-              <p className="font-medium italic text-slate-800 leading-relaxed text-sm">
+              <p className="font-medium italic text-slate-800 dark:text-slate-200 leading-relaxed text-sm">
                 &ldquo;{request.comments[request.comments.length - 1].message}&rdquo;
               </p>
             </div>
@@ -152,10 +152,10 @@ export default function RequestDetailPage({ id }: { id: string }) {
       )}
 
       {request.status === "resubmitted" && (
-        <Alert className="border-purple-200 bg-purple-50/80">
-          <Info className="size-4 text-purple-700" />
-          <AlertTitle className="text-purple-900">Resubmitted</AlertTitle>
-          <AlertDescription className="text-purple-800">
+        <Alert className="border-purple-200 dark:border-purple-800/60 bg-purple-50/80 dark:bg-purple-950/40">
+          <Info className="size-4 text-purple-700 dark:text-purple-400" />
+          <AlertTitle className="text-purple-900 dark:text-purple-200">Resubmitted</AlertTitle>
+          <AlertDescription className="text-purple-800 dark:text-purple-300">
             Your revised request has been resubmitted and is awaiting reviewer follow-up.
           </AlertDescription>
         </Alert>
@@ -170,10 +170,10 @@ export default function RequestDetailPage({ id }: { id: string }) {
       )}
 
       {request.status === "approved" && (
-        <Alert className="border-emerald-200 bg-emerald-50">
-          <CheckCircle2 className="size-4 text-emerald-600" />
-          <AlertTitle className="text-emerald-900">Request approved</AlertTitle>
-          <AlertDescription className="text-emerald-800">
+        <Alert className="border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/40">
+          <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
+          <AlertTitle className="text-emerald-900 dark:text-emerald-200">Request approved</AlertTitle>
+          <AlertDescription className="text-emerald-800 dark:text-emerald-300">
             Final processing (deposit, if applicable, and the approval letter) is in
             progress. You'll be notified once this request is marked completed.
           </AlertDescription>
@@ -181,15 +181,15 @@ export default function RequestDetailPage({ id }: { id: string }) {
       )}
 
       {request.status === "completed" && request.approvalLetterAvailable && (
-        <Alert className="border-emerald-200 bg-emerald-50">
-          <CheckCircle2 className="size-4 text-emerald-600" />
-          <AlertTitle className="text-emerald-900">Request completed</AlertTitle>
+        <Alert className="border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/40">
+          <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
+          <AlertTitle className="text-emerald-900 dark:text-emerald-200">Request completed</AlertTitle>
           <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <span className="text-emerald-800">Your final approval letter is ready to download.</span>
+            <span className="text-emerald-800 dark:text-emerald-300">Your final approval letter is ready to download.</span>
             <Button
               size="sm"
               variant="outline"
-              className="shrink-0 bg-white"
+              className="shrink-0 bg-card"
               onClick={() => {
                 const doc = request.approvalLetter ?? {
                   name: `${request.code}-approval-letter.pdf`,
@@ -234,13 +234,13 @@ export default function RequestDetailPage({ id }: { id: string }) {
 
       {/* Reviewer feedback banner for non-changes-required statuses */}
       {request.comments.length > 0 && !revising && request.status !== "changes_required" && (
-        <div className="rounded-2xl border border-border/80 bg-slate-50/80 p-4 sm:p-5 shadow-2xs space-y-2 animate-in fade-in duration-200">
+        <div className="rounded-2xl border border-border/80 bg-slate-50/80 dark:bg-slate-900/60 p-4 sm:p-5 shadow-2xs space-y-2 animate-in fade-in duration-200">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <span className="flex size-7 items-center justify-center rounded-lg bg-slate-200 text-slate-800 border border-slate-300/60 shadow-2xs">
+              <span className="flex size-7 items-center justify-center rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300/60 dark:border-slate-700/60 shadow-2xs">
                 <MessageSquare className="size-3.5" />
               </span>
-              <p className="text-xs font-semibold text-slate-900 uppercase tracking-wider">
+              <p className="text-xs font-semibold text-foreground uppercase tracking-wider">
                 ARB Reviewer Note
               </p>
             </div>
@@ -305,7 +305,7 @@ export default function RequestDetailPage({ id }: { id: string }) {
                               {files.map((file) => (
                                 <li
                                   key={file.id}
-                                  className="flex items-center gap-3 rounded-lg border border-border/80 bg-white p-3 shadow-2xs transition-all duration-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow-xs"
+                                  className="flex items-center gap-3 rounded-lg border border-border/80 bg-white dark:bg-card p-3 shadow-2xs transition-all duration-200 hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-xs"
                                 >
                                   <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                                     <FileText className="size-4.5" />
@@ -323,7 +323,7 @@ export default function RequestDetailPage({ id }: { id: string }) {
                                       variant="outline"
                                       size="xs"
                                       onClick={() => setPreviewFile(file)}
-                                      className="gap-1 bg-white"
+                                      className="gap-1 bg-white dark:bg-card"
                                     >
                                       View
                                     </Button>
@@ -358,8 +358,8 @@ export default function RequestDetailPage({ id }: { id: string }) {
         </div>
 
         <div className="space-y-6">
-          <Card className="border-slate-200/90 shadow-2xs overflow-hidden">
-            <CardHeader className="pb-3 border-b border-slate-100">
+          <Card className="border-slate-200/90 dark:border-slate-800 shadow-2xs overflow-hidden bg-white dark:bg-card">
+            <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800/80">
               <div className="flex items-center gap-2.5">
                 <span className="flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
                   <Clock className="size-3.5" />
@@ -376,10 +376,10 @@ export default function RequestDetailPage({ id }: { id: string }) {
           </Card>
 
           {(request.depositRequired || request.decidedAt) && (
-            <Card className="border-slate-200/90 shadow-2xs overflow-hidden">
-              <CardHeader className="pb-3 border-b border-slate-100">
+            <Card className="border-slate-200/90 dark:border-slate-800 shadow-2xs overflow-hidden bg-white dark:bg-card">
+              <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800/80">
                 <div className="flex items-center gap-2.5">
-                  <span className="flex size-7 items-center justify-center rounded-lg bg-slate-100 text-slate-800 border border-slate-200/80">
+                  <span className="flex size-7 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700">
                     <ReceiptText className="size-3.5" />
                   </span>
                   <div>
@@ -390,31 +390,31 @@ export default function RequestDetailPage({ id }: { id: string }) {
               </CardHeader>
               <CardContent className="space-y-3 pt-4">
                 {request.depositRequired && (
-                  <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-3.5 space-y-2.5">
+                  <div className="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50 p-3.5 space-y-2.5">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="flex size-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-800">
+                        <span className="flex size-6 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400">
                           <DollarSign className="size-3.5" />
                         </span>
-                        <span className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                        <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                           Deposit Required
                         </span>
                       </div>
-                      <span className="font-mono text-base font-bold text-slate-900">
+                      <span className="font-mono text-base font-bold text-slate-900 dark:text-slate-100">
                         ${request.depositAmount?.toLocaleString() ?? "—"}
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between pt-2 border-t border-slate-200/70 text-xs">
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-200/70 dark:border-slate-800 text-xs">
                       <span className="text-muted-foreground font-medium">Deposit Status</span>
                       {request.depositReceived ? (
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-300/80 px-2.5 py-0.5 font-semibold text-emerald-800 shadow-2xs">
-                          <CheckCircle2 className="size-3 text-emerald-600" />
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300/80 dark:border-emerald-800/60 px-2.5 py-0.5 font-semibold text-emerald-800 dark:text-emerald-400 shadow-2xs">
+                          <CheckCircle2 className="size-3 text-emerald-600 dark:text-emerald-400" />
                           Received
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-300/80 px-2.5 py-0.5 font-semibold text-amber-900">
-                          <Clock className="size-3 text-amber-600" />
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-300/80 dark:border-amber-800/60 px-2.5 py-0.5 font-semibold text-amber-900 dark:text-amber-400">
+                          <Clock className="size-3 text-amber-600 dark:text-amber-400" />
                           Outstanding
                         </span>
                       )}
@@ -423,17 +423,17 @@ export default function RequestDetailPage({ id }: { id: string }) {
                 )}
 
                 {request.decidedAt && (
-                  <div className="rounded-xl border border-slate-200/80 bg-white p-3.5 flex items-center justify-between shadow-2xs">
+                  <div className="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-3.5 flex items-center justify-between shadow-2xs">
                     <div className="flex items-center gap-2.5">
-                      <span className="flex size-7 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+                      <span className="flex size-7 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                         <CalendarCheck className="size-3.5 text-primary" />
                       </span>
                       <div>
-                        <p className="text-xs font-semibold text-slate-900">Decision Date</p>
+                        <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">Decision Date</p>
                         <p className="text-[11px] text-muted-foreground">{formatRelative(request.decidedAt)}</p>
                       </div>
                     </div>
-                    <span className="text-xs font-semibold text-slate-800 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200/70">
+                    <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-md border border-slate-200/70 dark:border-slate-700">
                       {formatDate(request.decidedAt)}
                     </span>
                   </div>
@@ -443,10 +443,10 @@ export default function RequestDetailPage({ id }: { id: string }) {
           )}
 
           {request.depositReceived && (
-            <Card className="border-slate-200/90 shadow-2xs overflow-hidden">
-              <CardHeader className="pb-3 border-b border-slate-100">
+            <Card className="border-slate-200/90 dark:border-slate-800 shadow-2xs overflow-hidden bg-white dark:bg-card">
+              <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800/80">
                 <div className="flex items-center gap-2.5">
-                  <span className="flex size-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200/80">
+                  <span className="flex size-7 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/60">
                     <Banknote className="size-3.5" />
                   </span>
                   <div>
@@ -457,61 +457,61 @@ export default function RequestDetailPage({ id }: { id: string }) {
               </CardHeader>
               <CardContent className="space-y-3 pt-4">
                 {request.refundStatus === "refunded" ? (
-                  <div className="rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50/90 via-white to-emerald-50/40 p-4 space-y-3 shadow-2xs">
+                  <div className="rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-gradient-to-br from-emerald-50/90 via-white to-emerald-50/40 dark:from-emerald-950/40 dark:via-slate-900/80 dark:to-emerald-950/20 p-4 space-y-3 shadow-2xs">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="flex size-7 items-center justify-center rounded-full bg-emerald-100 text-emerald-800">
+                        <span className="flex size-7 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300">
                           <CheckCircle2 className="size-4" />
                         </span>
-                        <span className="text-xs font-semibold text-emerald-950 uppercase tracking-wider">
+                        <span className="text-xs font-semibold text-emerald-950 dark:text-emerald-300 uppercase tracking-wider">
                           Refund Processed
                         </span>
                       </div>
                       {request.depositAmount && (
-                        <span className="font-mono text-base font-bold text-emerald-900">
+                        <span className="font-mono text-base font-bold text-emerald-900 dark:text-emerald-300">
                           ${request.depositAmount.toLocaleString()}
                         </span>
                       )}
                     </div>
                     {request.refundDate && (
-                      <div className="flex items-center justify-between text-xs text-emerald-900/80 pt-2 border-t border-emerald-200/60">
+                      <div className="flex items-center justify-between text-xs text-emerald-900/80 dark:text-emerald-300/80 pt-2 border-t border-emerald-200/60 dark:border-emerald-800/50">
                         <span className="flex items-center gap-1">
-                          <CalendarCheck className="size-3 text-emerald-700" />
+                          <CalendarCheck className="size-3 text-emerald-700 dark:text-emerald-400" />
                           Disbursement Date
                         </span>
-                        <span className="font-semibold text-emerald-950">{formatDate(request.refundDate)}</span>
+                        <span className="font-semibold text-emerald-950 dark:text-emerald-200">{formatDate(request.refundDate)}</span>
                       </div>
                     )}
-                    <p className="text-xs text-emerald-900/85 leading-relaxed pt-1">
-                      Your security deposit has been refunded to your original payment method.
+                    <p className="text-xs text-emerald-900/85 dark:text-emerald-300/85 leading-relaxed pt-1">
+                       Your security deposit has been refunded to your original payment method.
                     </p>
                   </div>
                 ) : request.refundStatus === "awaiting" ? (
-                  <div className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50/90 via-white to-amber-50/40 p-4 space-y-2.5 shadow-2xs">
+                  <div className="rounded-xl border border-amber-200 dark:border-amber-800/60 bg-gradient-to-br from-amber-50/90 via-white to-amber-50/40 dark:from-amber-950/40 dark:via-slate-900/80 dark:to-amber-950/20 p-4 space-y-2.5 shadow-2xs">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="flex size-7 items-center justify-center rounded-full bg-amber-100 text-amber-800">
+                        <span className="flex size-7 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300">
                           <Clock className="size-4" />
                         </span>
-                        <span className="text-xs font-semibold text-amber-950 uppercase tracking-wider">
+                        <span className="text-xs font-semibold text-amber-950 dark:text-amber-300 uppercase tracking-wider">
                           Pending Closeout
                         </span>
                       </div>
                       {request.depositAmount && (
-                        <span className="font-mono text-base font-bold text-amber-900">
+                        <span className="font-mono text-base font-bold text-amber-900 dark:text-amber-300">
                           ${request.depositAmount.toLocaleString()}
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-amber-900/90 leading-relaxed">
+                    <p className="text-xs text-amber-900/90 dark:text-amber-300/90 leading-relaxed">
                       Your deposit refund is queued and will be disbursed following final project inspection and completion sign-off.
                     </p>
                   </div>
                 ) : request.refundStatus === "no_refund" ? (
-                  <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-3.5 space-y-2">
+                  <div className="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50 p-3.5 space-y-2">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="font-medium text-slate-600">Refund Status</span>
-                      <span className="rounded-full bg-slate-200 px-2.5 py-0.5 font-medium text-slate-700">
+                      <span className="font-medium text-slate-600 dark:text-slate-400">Refund Status</span>
+                      <span className="rounded-full bg-slate-200 dark:bg-slate-800 px-2.5 py-0.5 font-medium text-slate-700 dark:text-slate-300">
                         No Refund Issued
                       </span>
                     </div>
@@ -520,9 +520,9 @@ export default function RequestDetailPage({ id }: { id: string }) {
                     </p>
                   </div>
                 ) : (
-                  <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-3.5 space-y-2">
+                  <div className="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50 p-3.5 space-y-2">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="font-medium text-slate-600">Refund Status</span>
+                      <span className="font-medium text-slate-600 dark:text-slate-400">Refund Status</span>
                       <span className="text-muted-foreground italic font-medium">Eligible upon closeout</span>
                     </div>
                     <p className="text-xs text-muted-foreground leading-relaxed">

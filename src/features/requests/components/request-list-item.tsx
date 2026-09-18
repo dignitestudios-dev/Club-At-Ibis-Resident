@@ -11,7 +11,7 @@ import { formatDate } from "@/utils/format";
 import { cn } from "@/utils/cn";
 
 const STATUS_TOP_ACCENT: Record<RequestStatus, string> = {
-  draft: "bg-slate-300",
+  draft: "bg-slate-300 dark:bg-slate-600",
   submitted: "bg-primary",
   under_review: "bg-sky-500",
   changes_required: "bg-amber-500",
@@ -19,7 +19,7 @@ const STATUS_TOP_ACCENT: Record<RequestStatus, string> = {
   approved: "bg-emerald-500",
   rejected: "bg-rose-500",
   completed: "bg-emerald-600",
-  withdrawn: "bg-slate-400",
+  withdrawn: "bg-slate-400 dark:bg-slate-600",
 };
 
 export function RequestListItem({
@@ -45,7 +45,7 @@ export function RequestListItem({
         href={`/requests/${request.id}`}
         style={style}
         className={cn(
-          "group relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 overflow-hidden rounded-xl border border-slate-200/90 bg-white p-4 sm:p-4.5 pl-4.5 sm:pl-5 shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50/70 hover:border-slate-300 hover:shadow-md",
+          "group relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 overflow-hidden rounded-xl border border-border/80 bg-card p-4 sm:p-4.5 pl-4.5 sm:pl-5 shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50/70 dark:hover:bg-slate-800/40 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-md",
           className
         )}
       >
@@ -60,22 +60,22 @@ export function RequestListItem({
 
         <div className="min-w-0 flex-1 space-y-1.5">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-heading text-base sm:text-lg font-medium text-slate-900 group-hover:text-primary transition-colors truncate">
+            <h3 className="font-heading text-base sm:text-lg font-medium text-foreground group-hover:text-primary transition-colors truncate">
               {requestType?.name ?? "Architectural Request"}
             </h3>
-            <span className="rounded-md bg-slate-100 border border-slate-200/80 px-2 py-0.5 text-xs font-mono font-semibold text-slate-700">
+            <span className="rounded-md bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 px-2 py-0.5 text-xs font-mono font-semibold text-slate-700 dark:text-slate-200">
               {request.code}
             </span>
             {hasFeedback && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-300/80 px-2 py-0.5 text-[10px] font-semibold text-amber-900 shadow-2xs">
-                <MessageSquare className="size-3 text-amber-700" />
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-300/80 dark:border-amber-700/60 px-2 py-0.5 text-[10px] font-semibold text-amber-900 dark:text-amber-300 shadow-2xs">
+                <MessageSquare className="size-3 text-amber-700 dark:text-amber-400" />
                 Note{request.comments.length > 1 ? "s" : ""}
               </span>
             )}
           </div>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
             {address && (
-              <span className="inline-flex items-center gap-1 text-slate-600 font-medium truncate max-w-xs">
+              <span className="inline-flex items-center gap-1 text-slate-600 dark:text-slate-300 font-medium truncate max-w-xs">
                 <MapPin className="size-3 text-brand-gold shrink-0" />
                 {address}
               </span>
@@ -89,9 +89,9 @@ export function RequestListItem({
           </div>
         </div>
 
-        <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 pr-1">
+        <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/60 pr-1">
           <StatusBadge status={request.status} />
-          <span className="flex size-7 items-center justify-center rounded-lg bg-slate-50 border border-slate-200/60 text-muted-foreground transition-all duration-200 group-hover:bg-primary group-hover:text-white group-hover:translate-x-0.5 group-hover:border-primary shadow-2xs">
+          <span className="flex size-7 items-center justify-center rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-border/60 text-muted-foreground transition-all duration-200 group-hover:bg-primary group-hover:text-primary-foreground group-hover:translate-x-0.5 group-hover:border-primary shadow-2xs">
             <ChevronRight className="size-3.5" />
           </span>
         </div>
@@ -104,8 +104,8 @@ export function RequestListItem({
       href={`/requests/${request.id}`}
       style={style}
       className={cn(
-        "group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-5 shadow-2xs transition-all duration-300",
-        "hover:-translate-y-1 hover:border-slate-300 hover:shadow-md hover:bg-slate-50/40",
+        "group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/80 bg-card p-5 shadow-2xs transition-all duration-300",
+        "hover:-translate-y-1 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-md hover:bg-slate-50/40 dark:hover:bg-slate-800/30",
         className
       )}
     >
@@ -121,14 +121,14 @@ export function RequestListItem({
       <div className="space-y-3 pt-1">
         {/* Top Header: Code Badge + Status Badge */}
         <div className="flex items-center justify-between gap-2.5">
-          <span className="rounded-lg bg-slate-100 border border-slate-200/90 px-2.5 py-1 text-xs font-mono font-semibold text-slate-800 shadow-2xs tracking-wide">
+          <span className="rounded-lg bg-slate-100 dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700/80 px-2.5 py-1 text-xs font-mono font-semibold text-slate-800 dark:text-slate-200 shadow-2xs tracking-wide">
             {request.code}
           </span>
 
           <div className="flex items-center gap-1.5 shrink-0">
             {hasFeedback && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-300/80 px-2 py-0.5 text-[10px] font-semibold text-amber-900 shadow-2xs">
-                <MessageSquare className="size-3 text-amber-700" />
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-300/80 dark:border-amber-700/60 px-2 py-0.5 text-[10px] font-semibold text-amber-900 dark:text-amber-300 shadow-2xs">
+                <MessageSquare className="size-3 text-amber-700 dark:text-amber-400" />
                 Note{request.comments.length > 1 ? "s" : ""}
               </span>
             )}
@@ -138,11 +138,11 @@ export function RequestListItem({
 
         {/* Title & Description */}
         <div className="space-y-1.5">
-          <h3 className="font-heading text-lg sm:text-xl font-medium text-slate-900 group-hover:text-primary transition-colors line-clamp-1">
+          <h3 className="font-heading text-lg sm:text-xl font-medium text-foreground group-hover:text-primary transition-colors line-clamp-1">
             {requestType?.name ?? "Architectural Request"}
           </h3>
           {description ? (
-            <p className="text-xs text-slate-600 line-clamp-2 font-normal leading-relaxed min-h-[2.25rem]">
+            <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 font-normal leading-relaxed min-h-[2.25rem]">
               {description}
             </p>
           ) : (
@@ -154,9 +154,9 @@ export function RequestListItem({
       </div>
 
       {/* Footer: Property Address, Date & Action */}
-      <div className="pt-3 mt-4 border-t border-slate-100 space-y-2.5">
+      <div className="pt-3 mt-4 border-t border-border/60 space-y-2.5">
         {address && (
-          <div className="flex items-center gap-1.5 text-xs text-slate-700 font-medium truncate">
+          <div className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300 font-medium truncate">
             <MapPin className="size-3.5 text-brand-gold shrink-0" />
             <span className="truncate">{address}</span>
           </div>
@@ -168,7 +168,7 @@ export function RequestListItem({
             Submitted {formatDate(request.submittedAt ?? request.createdAt)}
           </span>
 
-          <span className="flex size-7 items-center justify-center rounded-lg bg-slate-50 border border-slate-200/60 text-muted-foreground transition-all duration-200 group-hover:bg-primary group-hover:text-white group-hover:translate-x-0.5 group-hover:border-primary shadow-2xs">
+          <span className="flex size-7 items-center justify-center rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-border/60 text-muted-foreground transition-all duration-200 group-hover:bg-primary group-hover:text-primary-foreground group-hover:translate-x-0.5 group-hover:border-primary shadow-2xs">
             <ChevronRight className="size-3.5" />
           </span>
         </div>

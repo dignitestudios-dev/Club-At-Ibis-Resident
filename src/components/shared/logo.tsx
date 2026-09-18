@@ -46,14 +46,35 @@ export function Logo({
         className
       )}
     >
-      <Image
-        src={MARKS[variant]}
-        alt="Club At Ibis"
-        width={Math.round(size * MARK_ASPECT_RATIO)}
-        height={size}
-        className="shrink-0 object-contain"
-        priority
-      />
+      {variant === "navy" ? (
+        <>
+          <Image
+            src={MARKS.navy}
+            alt="Club At Ibis"
+            width={Math.round(size * MARK_ASPECT_RATIO)}
+            height={size}
+            className="shrink-0 object-contain dark:hidden"
+            priority
+          />
+          <Image
+            src={MARKS.gold}
+            alt="Club At Ibis"
+            width={Math.round(size * MARK_ASPECT_RATIO)}
+            height={size}
+            className="hidden shrink-0 object-contain dark:block"
+            priority
+          />
+        </>
+      ) : (
+        <Image
+          src={MARKS[variant]}
+          alt="Club At Ibis"
+          width={Math.round(size * MARK_ASPECT_RATIO)}
+          height={size}
+          className="shrink-0 object-contain"
+          priority
+        />
+      )}
       {showWordmark && (
         <div className={cn("flex flex-col", isVertical && "items-center")}>
           <span

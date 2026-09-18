@@ -34,59 +34,59 @@ function getNotificationVisuals(type: NotificationType) {
     case "completed":
     case "approval_letter":
       return {
-        icon: <CheckCircle2 className="size-4.5 text-emerald-700" />,
-        badgeClass: "bg-slate-100 text-slate-800 border-slate-200/80",
-        avatarBg: "bg-slate-50 border-slate-200/70",
+        icon: <CheckCircle2 className="size-4.5 text-emerald-600 dark:text-emerald-400" />,
+        badgeClass: "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200/80 dark:border-emerald-800/60",
+        avatarBg: "bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-200/70 dark:border-emerald-800/40",
         label: "Approved",
       };
     case "revision_required":
     case "action_required":
       return {
-        icon: <AlertTriangle className="size-4.5 text-amber-700" />,
-        badgeClass: "bg-amber-50 text-amber-950 border-amber-200/80",
-        avatarBg: "bg-amber-50/50 border-amber-200/60",
+        icon: <AlertTriangle className="size-4.5 text-amber-600 dark:text-amber-400" />,
+        badgeClass: "bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border-amber-200/80 dark:border-amber-800/60",
+        avatarBg: "bg-amber-50/50 dark:bg-amber-950/30 border-amber-200/60 dark:border-amber-800/40",
         label: "Action Required",
       };
     case "feedback":
       return {
-        icon: <MessageSquare className="size-4.5 text-slate-700" />,
-        badgeClass: "bg-slate-100 text-slate-800 border-slate-200/80",
-        avatarBg: "bg-slate-50 border-slate-200/70",
+        icon: <MessageSquare className="size-4.5 text-slate-700 dark:text-slate-300" />,
+        badgeClass: "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border-slate-200/80 dark:border-slate-700",
+        avatarBg: "bg-slate-50 dark:bg-slate-800/60 border-slate-200/70 dark:border-slate-700",
         label: "Feedback",
       };
     case "resubmitted":
       return {
-        icon: <Clock className="size-4.5 text-slate-700" />,
-        badgeClass: "bg-slate-100 text-slate-800 border-slate-200/80",
-        avatarBg: "bg-slate-50 border-slate-200/70",
+        icon: <Clock className="size-4.5 text-slate-700 dark:text-slate-300" />,
+        badgeClass: "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border-slate-200/80 dark:border-slate-700",
+        avatarBg: "bg-slate-50 dark:bg-slate-800/60 border-slate-200/70 dark:border-slate-700",
         label: "Resubmitted",
       };
     case "rejected":
       return {
-        icon: <XCircle className="size-4.5 text-rose-700" />,
-        badgeClass: "bg-rose-50 text-rose-950 border-rose-200/80",
-        avatarBg: "bg-rose-50/50 border-rose-200/60",
+        icon: <XCircle className="size-4.5 text-rose-600 dark:text-rose-400" />,
+        badgeClass: "bg-rose-50 dark:bg-rose-950/40 text-rose-950 dark:text-rose-300 border-rose-200/80 dark:border-rose-800/60",
+        avatarBg: "bg-rose-50/50 dark:bg-rose-950/30 border-rose-200/60 dark:border-rose-800/40",
         label: "Not Approved",
       };
     case "withdrawn":
       return {
-        icon: <UserX className="size-4.5 text-slate-600" />,
-        badgeClass: "bg-slate-100 text-slate-700 border-slate-200",
-        avatarBg: "bg-slate-50 border-slate-200/70",
+        icon: <UserX className="size-4.5 text-slate-600 dark:text-slate-400" />,
+        badgeClass: "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700",
+        avatarBg: "bg-slate-50 dark:bg-slate-800/60 border-slate-200/70 dark:border-slate-700",
         label: "Withdrawn",
       };
     case "refund_updated":
       return {
-        icon: <CreditCard className="size-4.5 text-slate-700" />,
-        badgeClass: "bg-slate-100 text-slate-800 border-slate-200",
-        avatarBg: "bg-slate-50 border-slate-200/70",
+        icon: <CreditCard className="size-4.5 text-slate-700 dark:text-slate-300" />,
+        badgeClass: "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-700",
+        avatarBg: "bg-slate-50 dark:bg-slate-800/60 border-slate-200/70 dark:border-slate-700",
         label: "Deposit / Refund",
       };
     default:
       return {
-        icon: <FileText className="size-4.5 text-slate-700" />,
-        badgeClass: "bg-slate-100 text-slate-700 border-slate-200",
-        avatarBg: "bg-slate-50 border-slate-200/70",
+        icon: <FileText className="size-4.5 text-slate-700 dark:text-slate-300" />,
+        badgeClass: "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700",
+        avatarBg: "bg-slate-50 dark:bg-slate-800/60 border-slate-200/70 dark:border-slate-700",
         label: "Update",
       };
   }
@@ -125,7 +125,7 @@ export default function NotificationList() {
               size="sm"
               onClick={handleMarkAll}
               disabled={isMarkingAllRead}
-              className="bg-white gap-1.5 shadow-2xs hover:border-primary/40 hover:bg-slate-50"
+              className="bg-white dark:bg-card gap-1.5 shadow-2xs hover:border-primary/40 hover:bg-slate-50 dark:hover:bg-slate-800"
             >
               <CheckCheck className="size-4 text-primary" />
               Mark all as read ({unreadCount})
@@ -143,7 +143,7 @@ export default function NotificationList() {
             "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all",
             filter === "all"
               ? "bg-primary text-white shadow-xs"
-              : "bg-white text-slate-700 border border-border/80 hover:bg-slate-50 hover:text-foreground"
+              : "bg-white dark:bg-card text-slate-700 dark:text-slate-300 border border-border/80 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-foreground"
           )}
         >
           <Layers className="size-3.5" />
@@ -151,7 +151,7 @@ export default function NotificationList() {
           <span
             className={cn(
               "rounded-full px-1.5 py-0.2 text-[10px]",
-              filter === "all" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
+              filter === "all" ? "bg-white/20 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
             )}
           >
             {notifications.length}
@@ -165,7 +165,7 @@ export default function NotificationList() {
             "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all",
             filter === "unread"
               ? "bg-primary text-white shadow-xs"
-              : "bg-white text-slate-700 border border-border/80 hover:bg-slate-50 hover:text-foreground"
+              : "bg-white dark:bg-card text-slate-700 dark:text-slate-300 border border-border/80 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-foreground"
           )}
         >
           <Bell className="size-3.5" />
@@ -174,7 +174,7 @@ export default function NotificationList() {
             <span
               className={cn(
                 "rounded-full px-1.5 py-0.2 text-[10px] font-semibold",
-                filter === "unread" ? "bg-white/20 text-white" : "bg-slate-800 text-white"
+                filter === "unread" ? "bg-white/20 text-white" : "bg-slate-800 dark:bg-slate-700 text-white"
               )}
             >
               {unreadCount}
@@ -211,10 +211,10 @@ export default function NotificationList() {
               <div
                 key={notification.id}
                 className={cn(
-                  "group relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border bg-white p-4.5 sm:p-5 shadow-2xs transition-all duration-200",
-                  "hover:-translate-y-0.5 hover:bg-slate-50 hover:border-slate-300 hover:shadow-md",
+                  "group relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border bg-white dark:bg-card p-4.5 sm:p-5 shadow-2xs transition-all duration-200",
+                  "hover:-translate-y-0.5 hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-md",
                   !notification.read
-                    ? "border-l-4 border-l-primary border-slate-200 shadow-xs"
+                    ? "border-l-4 border-l-primary border-slate-200 dark:border-slate-700 shadow-xs"
                     : "border-border/80"
                 )}
               >
@@ -265,13 +265,13 @@ export default function NotificationList() {
                   </div>
                 </div>
 
-                <div className="flex shrink-0 items-center gap-2 sm:self-center pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                <div className="flex shrink-0 items-center gap-2 sm:self-center pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-800">
                   {!notification.read && (
                     <Button
                       variant="ghost"
                       size="xs"
                       onClick={() => handleMarkOne(notification.id)}
-                      className="gap-1.5 text-xs text-muted-foreground hover:bg-slate-200/60 hover:text-foreground"
+                      className="gap-1.5 text-xs text-muted-foreground hover:bg-slate-200/60 dark:hover:bg-slate-800 hover:text-foreground"
                     >
                       <Check className="size-3.5" />
                       Mark read
@@ -281,7 +281,7 @@ export default function NotificationList() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="gap-1.5 bg-white hover:bg-slate-100 hover:border-primary/50 text-xs font-medium shadow-2xs"
+                      className="gap-1.5 bg-white dark:bg-card hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-primary/50 text-xs font-medium shadow-2xs"
                       nativeButton={false}
                       render={
                         <Link
