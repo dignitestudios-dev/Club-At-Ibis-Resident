@@ -196,7 +196,7 @@ export default function RequestsListPage() {
             )}
           >
             <History className="size-3.5" />
-            <span>History &amp; Closed</span>
+            <span>History</span>
             <span
               className={cn(
                 "rounded-full px-1.5 py-0.2 text-[11px] font-bold",

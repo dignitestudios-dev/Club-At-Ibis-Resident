@@ -85,14 +85,14 @@
   --chart-4: #334155;
   --chart-5: #64748b;
   --radius: 0.5rem;
-  --sidebar: #ffffff;
-  --sidebar-foreground: #334155;
-  --sidebar-primary: #112636;
+  --sidebar: #112636;
+  --sidebar-foreground: #cbd5e1;
+  --sidebar-primary: #a0874a;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f1f5f9;
-  --sidebar-accent-foreground: #0f172a;
-  --sidebar-border: #e2e8f0;
-  --sidebar-ring: #112636;
+  --sidebar-accent: #193247;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #1a3246;
+  --sidebar-ring: #a0874a;
 }
 
 .dark {

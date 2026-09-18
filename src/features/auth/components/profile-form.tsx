@@ -16,7 +16,7 @@ import { useProfile } from "@/features/auth/hooks/use-profile";
 import { formatDate } from "@/utils/format";
 
 import { ChangePasswordForm } from "@/features/auth/components/change-password-form";
-import { User, Calendar, ShieldCheck, Mail, Phone, Hash } from "lucide-react";
+import { User, Calendar, Mail, Phone, Hash } from "lucide-react";
 
 export default function ProfileForm() {
   const { form, onSubmit, isPending, user } = useProfile();
@@ -141,15 +141,6 @@ export default function ProfileForm() {
               </span>
               <span className="font-mono text-xs font-semibold text-primary">
                 {user.residentIdNumber}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-2 text-muted-foreground">
-                <ShieldCheck className="size-4 text-emerald-600" />
-                Status
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200/80 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 text-xs font-medium text-emerald-800 dark:text-emerald-300">
-                Active Resident
               </span>
             </div>
           </CardContent>
