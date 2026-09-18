@@ -25,9 +25,10 @@ export async function registerUser(payload: RegisterPayload): Promise<PublicResi
     await delay(null, 500);
     throw new Error("An account with this email already exists.");
   }
+  const randomIdNum = `RES-${Math.floor(10000 + Math.random() * 90000)}`;
   const resident: Resident = {
     id: crypto.randomUUID(),
-    residentIdNumber: payload.residentIdNumber,
+    residentIdNumber: payload.residentIdNumber || randomIdNum,
     firstName: payload.firstName,
     lastName: payload.lastName,
     email: payload.email,

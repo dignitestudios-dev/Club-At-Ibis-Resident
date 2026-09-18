@@ -6,6 +6,8 @@ interface Resident {
   email: string;
   password: string;
   phone?: string;
+  address?: string;
+  lotNo?: string;
   createdAt: string;
 }
 
@@ -17,7 +19,7 @@ interface LoginCredentials {
 }
 
 interface RegisterPayload {
-  residentIdNumber: string;
+  residentIdNumber?: string;
   firstName: string;
   lastName?: string;
   email: string;

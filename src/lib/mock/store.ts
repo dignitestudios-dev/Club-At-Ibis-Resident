@@ -6,7 +6,7 @@ import { seedDrafts } from "./drafts";
 // Bump this whenever the seed data shape changes (new/renamed fields,
 // statuses, etc.) so stale localStorage from a previous schema gets
 // replaced instead of causing runtime errors against the new code.
-const SCHEMA_VERSION = "7";
+const SCHEMA_VERSION = "8";
 
 const KEYS = {
   version: "cai.schema-version",

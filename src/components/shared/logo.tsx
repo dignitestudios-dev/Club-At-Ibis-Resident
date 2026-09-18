@@ -7,6 +7,9 @@ interface LogoProps {
   showWordmark?: boolean;
   href?: string;
   size?: number;
+  layout?: "horizontal" | "vertical";
+  subtitle?: string;
+  titleClassName?: string;
   className?: string;
 }
 
@@ -25,12 +28,24 @@ export function Logo({
   showWordmark = true,
   href,
   size = 28,
+  layout = "horizontal",
+  subtitle,
+  titleClassName,
   className,
 }: LogoProps) {
   const wordmarkColor = variant === "ivory" ? "text-white" : "text-foreground";
+  const isVertical = layout === "vertical";
 
   const content = (
-    <span className={cn("inline-flex items-center gap-2", className)}>
+    <span
+      className={cn(
+        "inline-flex",
+        isVertical
+          ? "flex-col items-center justify-center text-center gap-2"
+          : "items-center gap-2",
+        className
+      )}
+    >
       <Image
         src={MARKS[variant]}
         alt="Club At Ibis"
@@ -40,20 +55,29 @@ export function Logo({
         priority
       />
       {showWordmark && (
-        <span
-          className={cn(
-            "font-heading text-lg font-medium tracking-tight",
-            wordmarkColor
+        <div className={cn("flex flex-col", isVertical && "items-center")}>
+          <span
+            className={cn(
+              "font-heading font-medium tracking-tight leading-tight",
+              isVertical ? "text-2xl sm:text-[26px]" : "text-xl sm:text-2xl",
+              wordmarkColor,
+              titleClassName
+            )}
+          >
+            Club At Ibis
+          </span>
+          {subtitle && (
+            <span className="text-[10px] font-semibold tracking-widest text-brand-gold uppercase">
+              {subtitle}
+            </span>
           )}
-        >
-          Club At Ibis
-        </span>
+        </div>
       )}
     </span>
   );
 
   if (href) {
-    return <Link href={href}>{content}</Link>;
+    return <Link href={href} className="inline-block">{content}</Link>;
   }
 
   return content;

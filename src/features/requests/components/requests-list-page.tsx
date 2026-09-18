@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { PlusCircle, Search, FileText, FileEdit, ListChecks, History } from "lucide-react";
+import { PlusCircle, Search, FileText, FileEdit, ListChecks, History, RotateCcw, X } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
@@ -18,19 +18,37 @@ import {
 } from "@/components/ui/select";
 import { RequestListItem } from "@/features/requests/components/request-list-item";
 import { DraftCard } from "@/features/drafts/components/draft-card";
-import { useRequestsList } from "@/features/requests/hooks/use-requests-list";
+import { useRequestsList, type DatePeriod } from "@/features/requests/hooks/use-requests-list";
 import { useDrafts } from "@/features/drafts/hooks/use-drafts";
+import { requestTypes } from "@/lib/mock/request-types";
 import { cn } from "@/utils/cn";
 
 const ACTIVE_STATUS_OPTIONS: { label: string; value: RequestStatus | "all" }[] = [
-  { label: "All statuses", value: "all" },
+  { label: "All Active Statuses", value: "all" },
   { label: "Submitted", value: "submitted" },
   { label: "Under Review", value: "under_review" },
   { label: "Changes Required", value: "changes_required" },
   { label: "Resubmitted", value: "resubmitted" },
   { label: "Approved", value: "approved" },
-  { label: "Rejected", value: "rejected" },
+];
+
+const HISTORY_STATUS_OPTIONS: { label: string; value: RequestStatus | "all" }[] = [
+  { label: "All History Records", value: "all" },
+  { label: "Completed & Closed", value: "completed" },
+  { label: "Not Approved", value: "rejected" },
   { label: "Withdrawn", value: "withdrawn" },
+];
+
+const CATEGORY_OPTIONS: { label: string; value: string }[] = [
+  { label: "All Categories", value: "all" },
+  ...requestTypes.map((t) => ({ label: t.name, value: t.id })),
+];
+
+const PERIOD_OPTIONS: { label: string; value: DatePeriod }[] = [
+  { label: "All Time", value: "all" },
+  { label: "Last 30 Days", value: "30d" },
+  { label: "Last 90 Days", value: "90d" },
+  { label: "This Year (2026)", value: "year" },
 ];
 
 export default function RequestsListPage() {
@@ -61,8 +79,6 @@ export default function RequestsListPage() {
       params.delete("tab");
     } else {
       params.set("tab", tab);
-      // Status filter is specific to active submitted requests
-      params.delete("status");
     }
     const query = params.toString();
     router.replace(query ? `/requests?${query}` : "/requests");
@@ -71,86 +87,90 @@ export default function RequestsListPage() {
   const {
     activeRequests,
     allActiveRequests,
-    completedRequests,
-    allCompletedRequests,
+    historyRequests,
+    allHistoryRequests,
     isLoading: isLoadingRequests,
     search,
     setSearch,
     status,
     setStatus,
+    requestTypeId,
+    setRequestTypeId,
+    period,
+    setPeriod,
+    resetFilters,
   } = useRequestsList();
 
   const { drafts, isLoading: isLoadingDrafts, isDeleting, deleteDraft } = useDrafts();
 
-  return (
-    <div className="space-y-6">
-      <PageHeader
-        title="My Requests"
-        description="Track your active architectural requests, review past completed records, and continue saved drafts."
-        actions={
-          <Button nativeButton={false} render={<Link href="/requests/new" />}>
-            <PlusCircle />
-            New Request
-          </Button>
-        }
-      />
+  const hasActiveFilters =
+    search.trim() !== "" || status !== "all" || requestTypeId !== "all" || period !== "all";
 
-      {/* Tabs Switcher */}
-      <div className="flex flex-wrap items-center gap-2 sm:gap-6 border-b border-border">
-        {/* Tab 1: Submitted / Active Requests */}
+  return (
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <div className="animate-in fade-in slide-in-from-top-2 duration-400">
+        <PageHeader
+          title="My Requests"
+          description="Track your active architectural modifications, inspect past records, and resume saved drafts."
+          actions={
+            <Button nativeButton={false} render={<Link href="/requests/new" />}>
+              <PlusCircle className="size-4" />
+              New Request
+            </Button>
+          }
+        />
+      </div>
+
+      {/* Simplified, Modern Pill Tab Switcher */}
+      <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-xl border border-slate-200/80 w-fit max-w-full overflow-x-auto animate-in fade-in slide-in-from-top-2 duration-400 delay-75">
+        {/* Tab 1: Active Requests */}
         <button
           type="button"
           onClick={() => handleTabChange("requests")}
           className={cn(
-            "relative flex items-center gap-2 pb-3 text-sm font-medium transition-colors outline-none",
+            "flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all shrink-0",
             activeTab === "requests"
-              ? "text-primary font-semibold"
+              ? "bg-white text-primary shadow-xs"
               : "text-muted-foreground hover:text-foreground"
           )}
         >
-          <ListChecks className="size-4" />
-          <span>Submitted Requests</span>
+          <ListChecks className="size-3.5" />
+          <span>Active Requests</span>
           <span
             className={cn(
-              "rounded-full px-2 py-0.5 text-xs font-semibold",
+              "rounded-full px-1.5 py-0.2 text-[11px] font-bold",
               activeTab === "requests"
                 ? "bg-primary/10 text-primary"
-                : "bg-muted text-muted-foreground"
+                : "bg-slate-200 text-muted-foreground"
             )}
           >
             {allActiveRequests.length}
           </span>
-          {activeTab === "requests" && (
-            <span className="absolute right-0 bottom-0 left-0 h-0.5 bg-primary" />
-          )}
         </button>
 
-        {/* Tab 2: History (Completed Requests) */}
+        {/* Tab 2: History */}
         <button
           type="button"
           onClick={() => handleTabChange("history")}
           className={cn(
-            "relative flex items-center gap-2 pb-3 text-sm font-medium transition-colors outline-none",
+            "flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all shrink-0",
             activeTab === "history"
-              ? "text-primary font-semibold"
+              ? "bg-white text-primary shadow-xs"
               : "text-muted-foreground hover:text-foreground"
           )}
         >
-          <History className="size-4" />
-          <span>History</span>
+          <History className="size-3.5" />
+          <span>History &amp; Closed</span>
           <span
             className={cn(
-              "rounded-full px-2 py-0.5 text-xs font-semibold",
+              "rounded-full px-1.5 py-0.2 text-[11px] font-bold",
               activeTab === "history"
-                ? "bg-emerald-100 text-emerald-800 border border-emerald-300/60"
-                : "bg-muted text-muted-foreground"
+                ? "bg-emerald-100 text-emerald-800"
+                : "bg-slate-200 text-muted-foreground"
             )}
           >
-            {allCompletedRequests.length}
+            {allHistoryRequests.length}
           </span>
-          {activeTab === "history" && (
-            <span className="absolute right-0 bottom-0 left-0 h-0.5 bg-primary" />
-          )}
         </button>
 
         {/* Tab 3: Saved Drafts */}
@@ -158,52 +178,63 @@ export default function RequestsListPage() {
           type="button"
           onClick={() => handleTabChange("drafts")}
           className={cn(
-            "relative flex items-center gap-2 pb-3 text-sm font-medium transition-colors outline-none",
+            "flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all shrink-0",
             activeTab === "drafts"
-              ? "text-primary font-semibold"
+              ? "bg-white text-primary shadow-xs"
               : "text-muted-foreground hover:text-foreground"
           )}
         >
-          <FileEdit className="size-4" />
+          <FileEdit className="size-3.5" />
           <span>Saved Drafts</span>
           {drafts.length > 0 && (
             <span
               className={cn(
-                "rounded-full px-2 py-0.5 text-xs font-semibold",
+                "rounded-full px-1.5 py-0.2 text-[11px] font-bold",
                 activeTab === "drafts"
-                  ? "bg-amber-100 text-amber-900 border border-amber-300/60"
+                  ? "bg-amber-100 text-amber-900"
                   : "bg-amber-100/70 text-amber-800"
               )}
             >
               {drafts.length}
             </span>
           )}
-          {activeTab === "drafts" && (
-            <span className="absolute right-0 bottom-0 left-0 h-0.5 bg-primary" />
-          )}
         </button>
       </div>
 
-      {/* Submitted Requests Tab Content */}
+      {/* Submitted / Active Requests Tab Content */}
       {activeTab === "requests" && (
-        <div className="space-y-4">
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <div className="relative flex-1">
+        <div className="space-y-4 animate-in fade-in duration-300">
+          {/* Multi-Filter Bar */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+            {/* Search Input */}
+            <div className="relative">
               <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by request type, address, or code..."
-                className="pl-8"
+                placeholder="Search by code, type, details..."
+                className="pl-8 pr-8 bg-white"
               />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  className="absolute top-1/2 right-2.5 -translate-y-1/2 rounded-full p-1 text-muted-foreground hover:bg-slate-100 hover:text-foreground transition-colors"
+                  aria-label="Clear search"
+                >
+                  <X className="size-3.5" />
+                </button>
+              )}
             </div>
+
+            {/* Status Filter */}
             <Select
               items={ACTIVE_STATUS_OPTIONS}
               value={status}
               onValueChange={(v) => setStatus(v as RequestStatus | "all")}
             >
-              <SelectTrigger className="w-full sm:w-52">
-                <SelectValue />
+              <SelectTrigger className="w-full bg-white">
+                <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
                 {ACTIVE_STATUS_OPTIONS.map((opt) => (
@@ -213,74 +244,220 @@ export default function RequestsListPage() {
                 ))}
               </SelectContent>
             </Select>
+
+            {/* Category Filter */}
+            <Select
+              items={CATEGORY_OPTIONS}
+              value={requestTypeId}
+              onValueChange={(v) => setRequestTypeId(v as string)}
+            >
+              <SelectTrigger className="w-full bg-white">
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                {CATEGORY_OPTIONS.map((cat) => (
+                  <SelectItem key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Period Filter */}
+            <Select
+              items={PERIOD_OPTIONS}
+              value={period}
+              onValueChange={(v) => setPeriod(v as DatePeriod)}
+            >
+              <SelectTrigger className="w-full bg-white">
+                <SelectValue placeholder="Timeframe" />
+              </SelectTrigger>
+              <SelectContent>
+                {PERIOD_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
+          {/* Active Filter Clear Trigger */}
+          {hasActiveFilters && (
+            <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+              <span>Showing filtered results ({activeRequests.length} of {allActiveRequests.length})</span>
+              <button
+                type="button"
+                onClick={resetFilters}
+                className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
+              >
+                <RotateCcw className="size-3" />
+                Reset filters
+              </button>
+            </div>
+          )}
+
           {isLoadingRequests && (
-            <div className="space-y-3">
-              <Skeleton className="h-20 w-full rounded-lg" />
-              <Skeleton className="h-20 w-full rounded-lg" />
-              <Skeleton className="h-20 w-full rounded-lg" />
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4.5 animate-in fade-in duration-200">
+              <Skeleton className="h-56 w-full rounded-2xl" />
+              <Skeleton className="h-56 w-full rounded-2xl" />
+              <Skeleton className="h-56 w-full rounded-2xl" />
             </div>
           )}
 
           {!isLoadingRequests && activeRequests.length === 0 && (
-            <EmptyState
-              icon={FileText}
-              title="No active requests found"
-              description="Try adjusting your search or filters, or start a new architectural request."
-              action={
-                <Button nativeButton={false} render={<Link href="/requests/new" />}>
-                  <PlusCircle />
-                  Start New Request
-                </Button>
-              }
-            />
+            <div className="animate-in fade-in duration-300">
+              <EmptyState
+                icon={FileText}
+                title="No active requests found"
+                description="Try adjusting your search criteria or filters, or start a new architectural submission."
+                action={
+                  <Button nativeButton={false} render={<Link href="/requests/new" />}>
+                    <PlusCircle className="size-4" />
+                    Start New Request
+                  </Button>
+                }
+              />
+            </div>
           )}
 
           {!isLoadingRequests && activeRequests.length > 0 && (
-            <div className="space-y-3">
-              {activeRequests.map((request) => (
-                <RequestListItem key={request.id} request={request} />
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4.5">
+              {activeRequests.map((request, idx) => (
+                <RequestListItem
+                  key={request.id}
+                  request={request}
+                  className="animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-both"
+                  style={{ animationDelay: `${Math.min(idx * 50, 350)}ms` }}
+                />
               ))}
             </div>
           )}
         </div>
       )}
 
-      {/* History (Completed Requests) Tab Content */}
+      {/* History (Completed & Rejected Records) Tab Content */}
       {activeTab === "history" && (
-        <div className="space-y-4">
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <div className="relative flex-1">
+        <div className="space-y-4 animate-in fade-in duration-300">
+          {/* Multi-Filter Bar */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+            {/* Search Input */}
+            <div className="relative">
               <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search completed requests by type, address, or code..."
-                className="pl-8"
+                placeholder="Search history records..."
+                className="pl-8 pr-8 bg-white"
               />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  className="absolute top-1/2 right-2.5 -translate-y-1/2 rounded-full p-1 text-muted-foreground hover:bg-slate-100 hover:text-foreground transition-colors"
+                  aria-label="Clear search"
+                >
+                  <X className="size-3.5" />
+                </button>
+              )}
             </div>
+
+            {/* Status Filter */}
+            <Select
+              items={HISTORY_STATUS_OPTIONS}
+              value={status}
+              onValueChange={(v) => setStatus(v as RequestStatus | "all")}
+            >
+              <SelectTrigger className="w-full bg-white">
+                <SelectValue placeholder="All History Outcomes" />
+              </SelectTrigger>
+              <SelectContent>
+                {HISTORY_STATUS_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Category Filter */}
+            <Select
+              items={CATEGORY_OPTIONS}
+              value={requestTypeId}
+              onValueChange={(v) => setRequestTypeId(v as string)}
+            >
+              <SelectTrigger className="w-full bg-white">
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                {CATEGORY_OPTIONS.map((cat) => (
+                  <SelectItem key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Period Filter */}
+            <Select
+              items={PERIOD_OPTIONS}
+              value={period}
+              onValueChange={(v) => setPeriod(v as DatePeriod)}
+            >
+              <SelectTrigger className="w-full bg-white">
+                <SelectValue placeholder="Timeframe" />
+              </SelectTrigger>
+              <SelectContent>
+                {PERIOD_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          {isLoadingRequests && (
-            <div className="space-y-3">
-              <Skeleton className="h-20 w-full rounded-lg" />
-              <Skeleton className="h-20 w-full rounded-lg" />
+          {/* Active Filter Clear Trigger */}
+          {hasActiveFilters && (
+            <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+              <span>Showing filtered records ({historyRequests.length} of {allHistoryRequests.length})</span>
+              <button
+                type="button"
+                onClick={resetFilters}
+                className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
+              >
+                <RotateCcw className="size-3" />
+                Reset filters
+              </button>
             </div>
           )}
 
-          {!isLoadingRequests && completedRequests.length === 0 && (
-            <EmptyState
-              icon={History}
-              title="No completed records found"
-              description="Requests that have completed final inspection and ARB closeout will appear here in your permanent record."
-            />
+          {isLoadingRequests && (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4.5 animate-in fade-in duration-200">
+              <Skeleton className="h-56 w-full rounded-2xl" />
+              <Skeleton className="h-56 w-full rounded-2xl" />
+            </div>
           )}
 
-          {!isLoadingRequests && completedRequests.length > 0 && (
-            <div className="space-y-3">
-              {completedRequests.map((request) => (
-                <RequestListItem key={request.id} request={request} />
+          {!isLoadingRequests && historyRequests.length === 0 && (
+            <div className="animate-in fade-in duration-300">
+              <EmptyState
+                icon={History}
+                title="No historical records found"
+                description="Requests that have completed final inspection, concluded with a decision, or been archived will appear here in your permanent record."
+              />
+            </div>
+          )}
+
+          {!isLoadingRequests && historyRequests.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4.5">
+              {historyRequests.map((request, idx) => (
+                <RequestListItem
+                  key={request.id}
+                  request={request}
+                  className="animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-both"
+                  style={{ animationDelay: `${Math.min(idx * 50, 350)}ms` }}
+                />
               ))}
             </div>
           )}
@@ -289,36 +466,40 @@ export default function RequestsListPage() {
 
       {/* Saved Drafts Tab Content */}
       {activeTab === "drafts" && (
-        <div className="space-y-4">
+        <div className="space-y-4 animate-in fade-in duration-300">
           {isLoadingDrafts && (
-            <div className="space-y-3">
-              <Skeleton className="h-24 w-full rounded-xl" />
-              <Skeleton className="h-24 w-full rounded-xl" />
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4.5 animate-in fade-in duration-200">
+              <Skeleton className="h-56 w-full rounded-2xl" />
+              <Skeleton className="h-56 w-full rounded-2xl" />
             </div>
           )}
 
           {!isLoadingDrafts && drafts.length === 0 && (
-            <EmptyState
-              icon={FileEdit}
-              title="No saved drafts"
-              description="When you start a request and step away, your in-progress work is automatically saved here."
-              action={
-                <Button nativeButton={false} render={<Link href="/requests/new" />}>
-                  <PlusCircle />
-                  Start a Request
-                </Button>
-              }
-            />
+            <div className="animate-in fade-in duration-300">
+              <EmptyState
+                icon={FileEdit}
+                title="No saved drafts"
+                description="When you start a request and step away, your in-progress work is automatically saved here."
+                action={
+                  <Button nativeButton={false} render={<Link href="/requests/new" />}>
+                    <PlusCircle className="size-4" />
+                    Start a Request
+                  </Button>
+                }
+              />
+            </div>
           )}
 
           {!isLoadingDrafts && drafts.length > 0 && (
-            <div className="space-y-3">
-              {drafts.map((draft) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4.5">
+              {drafts.map((draft, idx) => (
                 <DraftCard
                   key={draft.id}
                   draft={draft}
                   onDelete={deleteDraft}
                   isDeleting={isDeleting}
+                  className="animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-both"
+                  style={{ animationDelay: `${Math.min(idx * 50, 350)}ms` }}
                 />
               ))}
             </div>

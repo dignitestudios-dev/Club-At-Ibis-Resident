@@ -1,37 +1,5 @@
-import {
-  PaintBucket,
-  Fence,
-  Trees,
-  Waves,
-  Home,
-  Building2,
-  HardHat,
-  DoorOpen,
-  Zap,
-  LayoutGrid,
-  Milestone,
-  ShieldCheck,
-  Construction,
-  ChevronRight,
-  type LucideIcon,
-} from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { cn } from "@/utils/cn";
-
-const ICONS: Record<string, LucideIcon> = {
-  PaintBucket,
-  Fence,
-  Trees,
-  Waves,
-  Home,
-  Building2,
-  HardHat,
-  DoorOpen,
-  Zap,
-  LayoutGrid,
-  Milestone,
-  ShieldCheck,
-  Construction,
-};
 
 export function RequestTypeCard({
   requestType,
@@ -40,29 +8,28 @@ export function RequestTypeCard({
   requestType: RequestType;
   onSelect: () => void;
 }) {
-  const Icon = ICONS[requestType.icon] ?? Home;
-
   return (
     <button
       type="button"
       onClick={onSelect}
       className={cn(
-        "group flex items-start gap-3.5 rounded-xl border border-border/80 bg-card p-4.5 text-left shadow-2xs transition-all duration-200",
-        "hover:-translate-y-0.5 hover:bg-slate-50 hover:border-brand-gold/70 hover:shadow-md"
+        "group flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-5 text-left shadow-2xs transition-all duration-300",
+        "hover:-translate-y-1 hover:border-primary/50 hover:bg-slate-50/40 hover:shadow-md cursor-pointer"
       )}
     >
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/8 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
-        <Icon className="size-5" />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block font-heading text-base font-medium text-foreground group-hover:text-primary transition-colors">
-          {requestType.name}
-        </span>
-        <span className="mt-0.5 block text-xs text-muted-foreground line-clamp-2">
+      <div className="space-y-2">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="font-heading text-lg sm:text-xl font-medium text-slate-900 group-hover:text-primary transition-colors">
+            {requestType.name}
+          </h3>
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-muted-foreground transition-all duration-200 group-hover:bg-primary group-hover:text-white group-hover:translate-x-0.5">
+            <ChevronRight className="size-4" />
+          </span>
+        </div>
+        <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
           {requestType.description}
-        </span>
-      </span>
-      <ChevronRight className="mt-1 size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary" />
+        </p>
+      </div>
     </button>
   );
 }

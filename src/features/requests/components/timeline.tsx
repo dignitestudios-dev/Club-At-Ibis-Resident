@@ -7,62 +7,163 @@ import {
   UserCheck,
   UserX,
   XCircle,
+  Clock,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/utils/cn";
-import { formatDateTime } from "@/utils/format";
+import { formatDateTime, formatRelative } from "@/utils/format";
 
-const ICONS: Record<ActivityEntry["type"], LucideIcon> = {
-  submitted: Send,
-  updated: FileEdit,
-  assigned: UserCheck,
-  comment: MessageSquare,
-  changes_required: FileEdit,
-  resubmitted: Send,
-  approved: CheckCircle2,
-  rejected: XCircle,
-  completed: CheckCircle2,
-  withdrawn: UserX,
-  refund_updated: Banknote,
+const EVENT_CONFIG: Record<
+  ActivityEntry["type"],
+  {
+    icon: LucideIcon;
+    label: string;
+    nodeBg: string;
+    badgeBg: string;
+  }
+> = {
+  submitted: {
+    icon: Send,
+    label: "Submitted for Review",
+    nodeBg: "bg-primary text-white ring-primary/20",
+    badgeBg: "bg-slate-100 text-slate-800 border-slate-200/80",
+  },
+  updated: {
+    icon: FileEdit,
+    label: "Request Updated",
+    nodeBg: "bg-slate-100 text-slate-700 ring-slate-200/50",
+    badgeBg: "bg-slate-100 text-slate-700 border-slate-200/80",
+  },
+  assigned: {
+    icon: UserCheck,
+    label: "Reviewer Assigned",
+    nodeBg: "bg-slate-100 text-slate-800 ring-slate-200/50",
+    badgeBg: "bg-slate-100 text-slate-800 border-slate-200/80",
+  },
+  comment: {
+    icon: MessageSquare,
+    label: "Reviewer Feedback",
+    nodeBg: "bg-amber-100 text-amber-900 ring-amber-200/50",
+    badgeBg: "bg-amber-50 text-amber-950 border-amber-200/80",
+  },
+  changes_required: {
+    icon: FileEdit,
+    label: "Changes Required",
+    nodeBg: "bg-amber-500 text-white ring-amber-200",
+    badgeBg: "bg-amber-50 text-amber-950 border-amber-200/80",
+  },
+  resubmitted: {
+    icon: Send,
+    label: "Revised & Resubmitted",
+    nodeBg: "bg-purple-600 text-white ring-purple-200",
+    badgeBg: "bg-purple-50 text-purple-950 border-purple-200/80",
+  },
+  approved: {
+    icon: CheckCircle2,
+    label: "ARB Approved",
+    nodeBg: "bg-emerald-600 text-white ring-emerald-200",
+    badgeBg: "bg-emerald-50 text-emerald-950 border-emerald-200/80",
+  },
+  rejected: {
+    icon: XCircle,
+    label: "Not Approved",
+    nodeBg: "bg-rose-600 text-white ring-rose-200",
+    badgeBg: "bg-rose-50 text-rose-950 border-rose-200/80",
+  },
+  completed: {
+    icon: CheckCircle2,
+    label: "Completed & Closed Out",
+    nodeBg: "bg-emerald-600 text-white ring-emerald-200",
+    badgeBg: "bg-emerald-50 text-emerald-950 border-emerald-200/80",
+  },
+  withdrawn: {
+    icon: UserX,
+    label: "Withdrawn",
+    nodeBg: "bg-slate-300 text-slate-700 ring-slate-200/50",
+    badgeBg: "bg-slate-100 text-slate-700 border-slate-200/80",
+  },
+  refund_updated: {
+    icon: Banknote,
+    label: "Deposit / Refund Update",
+    nodeBg: "bg-slate-100 text-slate-800 ring-slate-200/50",
+    badgeBg: "bg-slate-100 text-slate-800 border-slate-200/80",
+  },
 };
 
 export function Timeline({ entries }: { entries: ActivityEntry[] }) {
   const sorted = [...entries].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 
   return (
-    <ol className="space-y-0">
+    <div className="space-y-0">
       {sorted.map((entry, index) => {
-        const Icon = ICONS[entry.type];
+        const config = EVENT_CONFIG[entry.type] ?? EVENT_CONFIG.updated;
+        const Icon = config.icon;
+        const isLatest = index === 0;
         const isLast = index === sorted.length - 1;
 
         return (
-          <li key={entry.id} className="flex gap-3">
+          <div key={entry.id} className="relative flex gap-4 group">
+            {/* Left Column: Node Icon + Continuous Vertical Connecting Line */}
             <div className="flex flex-col items-center">
+              {/* Node Icon */}
               <span
                 className={cn(
-                  "flex size-7 shrink-0 items-center justify-center rounded-full border shadow-2xs",
-                  entry.type === "rejected"
-                    ? "bg-rose-50 text-rose-700 border-rose-200/80"
-                    : entry.type === "approved" || entry.type === "completed"
-                      ? "bg-emerald-50 text-emerald-700 border-emerald-200/80"
-                      : entry.type === "withdrawn"
-                        ? "bg-slate-100 text-slate-600 border-slate-200/80"
-                        : "bg-slate-100 text-slate-800 border-slate-200/80"
+                  "flex size-8 shrink-0 items-center justify-center rounded-full border-2 border-white shadow-2xs transition-transform duration-200 group-hover:scale-110",
+                  config.nodeBg,
+                  isLatest && "ring-4 ring-primary/20"
                 )}
               >
-                <Icon className="size-3.5" />
+                <Icon className="size-4" />
               </span>
-              {!isLast && <span className="my-1 w-px flex-1 bg-border" />}
+
+              {/* Vertical connecting line to next item */}
+              {!isLast && (
+                <span
+                  className="w-[2px] flex-1 bg-slate-200 my-1.5"
+                  aria-hidden="true"
+                />
+              )}
             </div>
-            <div className={cn("min-w-0 pb-5", isLast && "pb-0")}>
-              <p className="text-sm text-foreground">{entry.message}</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                {entry.actor} · {formatDateTime(entry.createdAt)}
+
+            {/* Right Column: Event Content */}
+            <div className={cn("min-w-0 flex-1 space-y-2", !isLast ? "pb-6" : "pb-1")}>
+              {/* Header: Label + Latest badge + Relative Time */}
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-slate-900">
+                    {config.label}
+                  </span>
+                  {isLatest && (
+                    <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-bold text-primary tracking-wider uppercase">
+                      LATEST
+                    </span>
+                  )}
+                </div>
+                <span
+                  className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"
+                  title={formatDateTime(entry.createdAt)}
+                >
+                  <Clock className="size-3.5 text-slate-400" />
+                  {formatRelative(entry.createdAt)}
+                </span>
+              </div>
+
+              {/* Message */}
+              <p className="text-sm text-slate-700 leading-relaxed font-normal">
+                {entry.message}
               </p>
+
+              {/* Footer: Actor + Exact Date */}
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground pt-1.5 border-t border-slate-100">
+                <span>
+                  By <span className="font-semibold text-slate-800">{entry.actor}</span>
+                </span>
+                <span className="text-slate-500">{formatDateTime(entry.createdAt)}</span>
+              </div>
             </div>
-          </li>
+          </div>
         );
       })}
-    </ol>
+    </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Controller } from "react-hook-form";
+import { LogIn, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/shared/password-input";
@@ -25,35 +26,35 @@ export default function RegisterForm() {
   } = form;
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-1.5">
-        <h1 className="font-heading text-2xl font-medium text-foreground">Create your account</h1>
-        <p className="text-sm text-muted-foreground">
+    <div className="space-y-4">
+      {/* Creative Auth Tab Switcher */}
+      <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-xl border border-slate-200/80">
+        <Link
+          href="/auth/login"
+          className="flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-lg text-muted-foreground hover:text-foreground transition-all"
+        >
+          <LogIn className="size-3.5" />
+          Sign In
+        </Link>
+        <Link
+          href="/auth/register"
+          className="flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-lg bg-white text-primary shadow-xs transition-all"
+        >
+          <UserPlus className="size-3.5" />
+          Create Account
+        </Link>
+      </div>
+
+      <div className="space-y-0.5 text-center">
+        <h1 className="font-heading text-xl font-medium text-foreground">Create your account</h1>
+        <p className="text-xs text-muted-foreground">
           Register to submit and track ARB requests for your property.
         </p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} noValidate>
-        <FieldGroup>
-          <Field data-invalid={!!errors.residentIdNumber}>
-            <FieldLabel htmlFor="residentIdNumber">
-              Resident ID
-              <span className="text-red-500 font-bold ml-0.5 text-sm leading-none" aria-hidden="true">*</span>
-            </FieldLabel>
-            <FieldContent>
-              <Input
-                id="residentIdNumber"
-                placeholder="RES-30291"
-                aria-invalid={!!errors.residentIdNumber}
-                {...register("residentIdNumber")}
-              />
-              <FieldError
-                errors={errors.residentIdNumber ? [errors.residentIdNumber] : []}
-              />
-            </FieldContent>
-          </Field>
-
-          <div className="grid grid-cols-2 gap-3">
+        <FieldGroup className="gap-3">
+          <div className="grid grid-cols-2 gap-2.5">
             <Field data-invalid={!!errors.firstName}>
               <FieldLabel htmlFor="firstName">
                 First name
@@ -63,6 +64,7 @@ export default function RegisterForm() {
                 <Input
                   id="firstName"
                   autoComplete="given-name"
+                  placeholder="First name"
                   aria-invalid={!!errors.firstName}
                   {...register("firstName")}
                 />
@@ -72,12 +74,13 @@ export default function RegisterForm() {
 
             <Field data-invalid={!!errors.lastName}>
               <FieldLabel htmlFor="lastName">
-                Last name <span className="text-xs text-muted-foreground font-normal">(Optional)</span>
+                Last name <span className="text-[10px] text-muted-foreground font-normal">(Optional)</span>
               </FieldLabel>
               <FieldContent>
                 <Input
                   id="lastName"
                   autoComplete="family-name"
+                  placeholder="Last name"
                   aria-invalid={!!errors.lastName}
                   {...register("lastName")}
                 />
@@ -104,7 +107,7 @@ export default function RegisterForm() {
             </FieldContent>
           </Field>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <Controller
               name="password"
               control={control}
@@ -159,19 +162,12 @@ export default function RegisterForm() {
             />
           </div>
 
-          <Button type="submit" className="w-full" disabled={isPending}>
+          <Button type="submit" className="w-full shadow-xs mt-1" disabled={isPending}>
             {isPending && <Spinner className="size-4" />}
-            Create account
+            Create Resident Account
           </Button>
         </FieldGroup>
       </form>
-
-      <p className="text-center text-sm text-muted-foreground">
-        Already registered?{" "}
-        <Link href="/auth/login" className="font-medium text-primary hover:underline">
-          Sign in
-        </Link>
-      </p>
     </div>
   );
 }

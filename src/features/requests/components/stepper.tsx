@@ -16,48 +16,68 @@ export function Stepper({
   className?: string;
 }) {
   return (
-    <ol className={cn("flex w-full items-start gap-1.5", className)}>
-      {steps.map((step, index) => {
-        const isComplete = index < currentIndex;
-        const isCurrent = index === currentIndex;
+    <div className={cn("w-full py-2", className)}>
+      <ol className="flex items-center w-full">
+        {steps.map((step, index) => {
+          const isComplete = index < currentIndex;
+          const isCurrent = index === currentIndex;
+          const isLast = index === steps.length - 1;
 
-        return (
-          <li key={step.id} className="flex flex-1 flex-col gap-2">
-            <div
+          return (
+            <li
+              key={step.id}
               className={cn(
-                "h-1.5 w-full rounded-full transition-colors",
-                isComplete || isCurrent ? "bg-primary" : "bg-border"
+                "flex items-center",
+                isLast ? "w-auto shrink-0" : "flex-1"
               )}
-            />
-            <div className="flex items-center gap-1.5">
-              <span
-                className={cn(
-                  "flex size-4 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold",
-                  isComplete
-                    ? "bg-primary text-primary-foreground"
-                    : isCurrent
-                      ? "border border-primary text-primary"
-                      : "border border-border text-muted-foreground"
-                )}
-              >
-                {isComplete ? <Check className="size-2.5" /> : index + 1}
-              </span>
-              <span
-                className={cn(
-                  "hidden truncate text-xs font-medium sm:block",
-                  isCurrent
-                    ? "text-foreground"
-                    : isComplete
-                      ? "text-foreground/80"
-                      : "text-muted-foreground"
-                )}
-              >
-                {step.title}
-              </span>
-            </div>
-          </li>
-        );
-      })}
-    </ol>
+            >
+              {/* Step Icon & Label */}
+              <div className="flex items-center gap-2.5">
+                <span
+                  className={cn(
+                    "flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold transition-all duration-200 shadow-2xs",
+                    isComplete
+                      ? "bg-primary text-white"
+                      : isCurrent
+                        ? "bg-primary text-white ring-4 ring-primary/15"
+                        : "bg-slate-100 text-slate-500 border border-border/80"
+                  )}
+                >
+                  {isComplete ? (
+                    <Check className="size-3.5 stroke-[2.5]" />
+                  ) : (
+                    <span>{index + 1}</span>
+                  )}
+                </span>
+                <span
+                  className={cn(
+                    "hidden sm:inline-block text-xs font-medium whitespace-nowrap transition-colors",
+                    isCurrent
+                      ? "font-semibold text-primary"
+                      : isComplete
+                        ? "text-foreground font-medium"
+                        : "text-muted-foreground"
+                  )}
+                >
+                  {step.title}
+                </span>
+              </div>
+
+              {/* Connecting Line */}
+              {!isLast && (
+                <div className="mx-3 sm:mx-4 flex-1 h-0.5 bg-slate-200 rounded-full overflow-hidden">
+                  <div
+                    className={cn(
+                      "h-full transition-all duration-300",
+                      isComplete ? "w-full bg-primary" : "w-0 bg-transparent"
+                    )}
+                  />
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    </div>
   );
 }

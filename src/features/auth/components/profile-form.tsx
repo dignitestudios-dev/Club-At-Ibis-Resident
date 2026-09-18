@@ -123,6 +123,17 @@ export default function ProfileForm() {
                 {formatDate(user.createdAt)}
               </span>
             </div>
+            {user.address && (
+              <div className="flex items-start justify-between gap-2">
+                <span className="flex items-center gap-2 text-muted-foreground">
+                  <User className="size-4 text-muted-foreground" />
+                  Property
+                </span>
+                <span className="text-right text-xs font-medium text-foreground">
+                  {user.address}
+                </span>
+              </div>
+            )}
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-2 text-muted-foreground">
                 <Hash className="size-4 text-muted-foreground" />
@@ -137,8 +148,8 @@ export default function ProfileForm() {
                 <ShieldCheck className="size-4 text-emerald-600" />
                 Status
               </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
-                Active Member
+              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200/80 bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-800">
+                Active Resident
               </span>
             </div>
           </CardContent>

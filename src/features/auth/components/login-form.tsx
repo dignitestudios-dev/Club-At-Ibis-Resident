@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Controller } from "react-hook-form";
+import { LogIn, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/shared/password-input";
@@ -14,6 +15,7 @@ import {
 } from "@/components/ui/field";
 import { Spinner } from "@/components/ui/spinner";
 import { useLogin } from "@/features/auth/hooks/use-login";
+import { cn } from "@/utils/cn";
 
 export default function LoginForm() {
   const { form, onSubmit, isPending } = useLogin();
@@ -26,10 +28,28 @@ export default function LoginForm() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1.5">
+      {/* Creative Auth Tab Switcher */}
+      <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-xl border border-slate-200/80">
+        <Link
+          href="/auth/login"
+          className="flex items-center justify-center gap-1.5 py-2 text-xs font-semibold rounded-lg bg-white text-primary shadow-xs transition-all"
+        >
+          <LogIn className="size-3.5" />
+          Sign In
+        </Link>
+        <Link
+          href="/auth/register"
+          className="flex items-center justify-center gap-1.5 py-2 text-xs font-semibold rounded-lg text-muted-foreground hover:text-foreground transition-all"
+        >
+          <UserPlus className="size-3.5" />
+          Create Account
+        </Link>
+      </div>
+
+      <div className="space-y-1 text-center">
         <h1 className="font-heading text-2xl font-medium text-foreground">Welcome back</h1>
-        <p className="text-sm text-muted-foreground">
-          Sign in to manage your architectural requests.
+        <p className="text-xs text-muted-foreground">
+          Enter your resident credentials to manage your requests.
         </p>
       </div>
 
@@ -80,23 +100,16 @@ export default function LoginForm() {
             )}
           />
 
-          <Button type="submit" className="w-full" disabled={isPending}>
+          <Button type="submit" className="w-full shadow-xs" disabled={isPending}>
             {isPending && <Spinner className="size-4" />}
-            Sign in
+            Sign in to Portal
           </Button>
         </FieldGroup>
       </form>
 
-      <p className="text-center text-sm text-muted-foreground">
-        Not a resident yet?{" "}
-        <Link href="/auth/register" className="font-medium text-primary hover:underline">
-          Create an account
-        </Link>
-      </p>
-
-      <p className="rounded-lg bg-muted/60 p-3 text-center text-xs text-muted-foreground">
-        Demo account pre-filled — avery.collins@example.com / password123
-      </p>
+      <div className="rounded-xl border border-slate-200/80 bg-slate-50/80 p-3 text-center text-xs text-muted-foreground">
+        <span className="font-medium text-slate-700">Demo Resident:</span> avery.collins@example.com / password123
+      </div>
     </div>
   );
 }

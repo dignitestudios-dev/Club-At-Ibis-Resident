@@ -26,9 +26,9 @@ export default function DraftsListPage() {
       />
 
       {isLoading && (
-        <div className="space-y-3">
-          <Skeleton className="h-24 w-full rounded-xl" />
-          <Skeleton className="h-24 w-full rounded-xl" />
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4.5">
+          <Skeleton className="h-56 w-full rounded-2xl" />
+          <Skeleton className="h-56 w-full rounded-2xl" />
         </div>
       )}
 
@@ -39,7 +39,7 @@ export default function DraftsListPage() {
           description="When you start a request and step away, your in-progress work is automatically saved here."
           action={
             <Button nativeButton={false} render={<Link href="/requests/new" />}>
-              <PlusCircle />
+              <PlusCircle className="size-4" />
               Start a Request
             </Button>
           }
@@ -47,7 +47,7 @@ export default function DraftsListPage() {
       )}
 
       {!isLoading && drafts.length > 0 && (
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4.5">
           {drafts.map((draft) => (
             <DraftCard
               key={draft.id}

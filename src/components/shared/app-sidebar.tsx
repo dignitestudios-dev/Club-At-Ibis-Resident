@@ -13,7 +13,6 @@ function findActiveHref(pathname: string, items: NavItem[]): string | null {
     (item) => item.href !== "/dashboard" && pathname.startsWith(`${item.href}/`)
   );
   if (matches.length === 0) return null;
-  // Longest matching prefix wins
   return matches.reduce((best, item) =>
     item.href.length > best.href.length ? item : best
   ).href;
@@ -26,50 +25,62 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
-      <div className="flex h-14 items-center border-b border-sidebar-border px-5">
-        <Logo variant="ivory" href="/dashboard" />
+      {/* Header with larger stacked logo on top and Club At Ibis below */}
+      <div className="flex flex-col items-center justify-center border-b border-sidebar-border px-4 py-5 text-center">
+        <Logo
+          variant="ivory"
+          href="/dashboard"
+          size={52}
+          layout="vertical"
+          titleClassName="text-[26px] sm:text-3xl font-medium tracking-tight text-white"
+        />
       </div>
-      <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-4">
+
+      {/* Navigation */}
+      <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-4 custom-scrollbar">
         {navGroups.map((group) => (
           <div key={group.label} className="space-y-1">
-            <p className="px-3 text-[11px] font-semibold tracking-wider text-sidebar-foreground/50 uppercase">
+            <p className="px-3 text-[10px] font-semibold tracking-wider text-slate-400/70 uppercase">
               {group.label}
             </p>
-            {group.items.map((item) => {
-              const isActive = item.href === activeHref;
-              const Icon = item.icon;
+            <div className="space-y-0.5">
+              {group.items.map((item) => {
+                const isActive = item.href === activeHref;
+                const Icon = item.icon;
 
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={onNavigate}
-                  className={cn(
-                    "relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
-                    isActive
-                      ? "bg-sidebar-accent text-white shadow-xs"
-                      : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-white"
-                  )}
-                >
-                  {isActive && (
-                    <span className="absolute top-1/2 left-0 h-5 w-1 -translate-y-1/2 rounded-r-md bg-brand-gold" />
-                  )}
-                  <Icon
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={onNavigate}
                     className={cn(
-                      "size-4.5 shrink-0 transition-colors",
-                      isActive ? "text-brand-gold" : "text-sidebar-foreground/60"
+                      "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150",
+                      isActive
+                        ? "bg-sidebar-accent text-white font-medium shadow-2xs"
+                        : "text-slate-300/85 hover:bg-white/5 hover:text-white"
                     )}
-                  />
-                  {item.label}
-                </Link>
-              );
-            })}
+                  >
+                    {isActive && (
+                      <span className="absolute top-1/2 left-0 h-4 w-1 -translate-y-1/2 rounded-r bg-brand-gold" />
+                    )}
+                    <Icon
+                      className={cn(
+                        "size-4 shrink-0 transition-colors",
+                        isActive ? "text-brand-gold" : "text-slate-400 group-hover:text-slate-200"
+                      )}
+                    />
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
         ))}
       </nav>
-      <div className="border-t border-sidebar-border px-5 py-4">
-        <p className="text-xs font-medium text-white/90">Club At Ibis</p>
-        <p className="text-[11px] text-sidebar-foreground/60">Architectural Review Board</p>
+
+      {/* Clean, Subtle Footer */}
+      <div className="border-t border-sidebar-border px-5 py-3 text-center">
+        <p className="text-[10px] text-slate-400">Architectural Review Board</p>
       </div>
     </div>
   );

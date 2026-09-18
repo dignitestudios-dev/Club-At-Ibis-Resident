@@ -1,8 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { FileText, Clock, AlertCircle, CheckCircle2, PlusCircle, FileEdit } from "lucide-react";
-import { PageHeader } from "@/components/shared/page-header";
+import {
+  FileText,
+  Clock,
+  AlertCircle,
+  CheckCircle2,
+  PlusCircle,
+  FileEdit,
+  ArrowRight,
+} from "lucide-react";
 import { StatCard } from "@/components/shared/stat-card";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
@@ -14,30 +21,43 @@ export default function DashboardOverview() {
   const { user, recentRequests, drafts, isLoading, stats } = useDashboard();
 
   return (
-    <div className="space-y-8">
-      <PageHeader
-        title={`Welcome back, ${user?.firstName ?? ""}`}
-        description="Here's an overview of your architectural requests."
-        actions={
-          <Button nativeButton={false} render={<Link href="/requests/new" />}>
-            <PlusCircle />
+    <div className="space-y-8 animate-in fade-in duration-500">
+      {/* Top Welcome Section with Slide-in */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between animate-in fade-in slide-in-from-top-3 duration-500">
+        <div className="space-y-1">
+          <h1 className="font-heading text-2xl font-medium tracking-tight text-foreground sm:text-3xl">
+            Welcome back, {user?.firstName ?? "Resident"}
+          </h1>
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            Manage your architectural modifications, review ARB decisions, and track submittal progress.
+          </p>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-2">
+          <Button
+            nativeButton={false}
+            render={<Link href="/requests/new" />}
+            className="shadow-xs transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
+          >
+            <PlusCircle className="size-4" />
             New Request
           </Button>
-        }
-      />
+        </div>
+      </div>
 
+      {/* Draft Notification Banner */}
       {drafts.length > 0 && (
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl border border-amber-200/80 bg-amber-50/60 p-4 text-amber-950 shadow-2xs">
-          <div className="flex items-center gap-3">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-800 border border-amber-300/60">
-              <FileEdit className="size-4.5" />
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 rounded-2xl border border-amber-300/80 bg-gradient-to-r from-amber-50/90 to-amber-50/40 p-4.5 text-amber-950 shadow-2xs animate-in fade-in zoom-in-95 duration-400">
+          <div className="flex items-center gap-3.5">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-900 border border-amber-300/70 shadow-2xs">
+              <FileEdit className="size-5" />
             </span>
             <div>
               <p className="text-sm font-semibold text-amber-950">
                 You have {drafts.length} saved in-progress draft{drafts.length > 1 ? "s" : ""}
               </p>
-              <p className="text-xs text-amber-800">
-                Resume right where you left off or submit when ready.
+              <p className="text-xs text-amber-900/80">
+                Your unsaved work is preserved. Resume right where you left off.
               </p>
             </div>
           </div>
@@ -46,43 +66,68 @@ export default function DashboardOverview() {
             variant="outline"
             nativeButton={false}
             render={<Link href="/requests?tab=drafts" />}
-            className="shrink-0 border-amber-300 bg-white text-amber-900 hover:bg-amber-50 font-medium"
+            className="shrink-0 border-amber-300/80 bg-white text-amber-950 hover:bg-amber-100/60 font-medium shadow-2xs transition-transform duration-200 hover:scale-[1.02]"
           >
             Review Saved Drafts
+            <ArrowRight className="size-3.5 ml-1" />
           </Button>
         </div>
       )}
 
+      {/* Metrics Row with Staggered Entrance */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label="Total requests" value={stats.total} icon={FileText} accent="slate" />
-        <StatCard label="Pending review" value={stats.pending} icon={Clock} accent="blue" />
         <StatCard
-          label="Needs your action"
+          label="Total Requests"
+          value={stats.total}
+          icon={FileText}
+          accent="navy"
+          className="animate-in fade-in slide-in-from-bottom-3 duration-500 fill-mode-both"
+        />
+        <StatCard
+          label="Pending Review"
+          value={stats.pending}
+          icon={Clock}
+          accent="blue"
+          className="animate-in fade-in slide-in-from-bottom-3 duration-500 delay-100 fill-mode-both"
+        />
+        <StatCard
+          label="Needs Your Action"
           value={stats.needsAction}
           icon={AlertCircle}
           accent="amber"
+          className="animate-in fade-in slide-in-from-bottom-3 duration-500 delay-200 fill-mode-both"
         />
         <StatCard
-          label="Approved"
+          label="Approved / Active"
           value={stats.approved}
           icon={CheckCircle2}
           accent="emerald"
+          className="animate-in fade-in slide-in-from-bottom-3 duration-500 delay-300 fill-mode-both"
         />
       </div>
 
-      <div className="space-y-3">
+      {/* Recent Requests Section */}
+      <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-600 delay-200 fill-mode-both">
         <div className="flex items-center justify-between">
-          <h2 className="font-heading text-xl font-medium text-foreground">Recent Requests</h2>
-          <Button variant="link" size="sm" nativeButton={false} render={<Link href="/requests" />}>
-            View all
-          </Button>
+          <div>
+            <h2 className="font-heading text-xl font-medium text-foreground">Recent Requests</h2>
+            <p className="text-xs text-muted-foreground">Your latest active submissions and updates</p>
+          </div>
+          {stats.total > 0 && (
+            <Link
+              href="/requests"
+              className="text-sm font-medium text-primary hover:underline"
+            >
+              View all Requests
+            </Link>
+          )}
         </div>
 
         {isLoading && (
-          <div className="space-y-3">
-            <Skeleton className="h-20 w-full rounded-lg" />
-            <Skeleton className="h-20 w-full rounded-lg" />
-            <Skeleton className="h-20 w-full rounded-lg" />
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4.5">
+            <Skeleton className="h-56 w-full rounded-2xl animate-pulse" />
+            <Skeleton className="h-56 w-full rounded-2xl animate-pulse" />
+            <Skeleton className="h-56 w-full rounded-2xl animate-pulse" />
           </div>
         )}
 
@@ -90,20 +135,26 @@ export default function DashboardOverview() {
           <EmptyState
             icon={FileText}
             title="No requests yet"
-            description="Start your first architectural request to get ARB review underway."
+            description="Submit your first architectural modification to begin the ARB review workflow."
             action={
               <Button nativeButton={false} render={<Link href="/requests/new" />}>
-                <PlusCircle />
-                New Request
+                <PlusCircle className="size-4" />
+                Start New Request
               </Button>
             }
           />
         )}
 
         {!isLoading && recentRequests.length > 0 && (
-          <div className="space-y-3">
-            {recentRequests.map((request) => (
-              <RequestListItem key={request.id} request={request} />
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4.5">
+            {recentRequests.map((request, idx) => (
+              <RequestListItem
+                key={request.id}
+                request={request}
+                className={`animate-in fade-in slide-in-from-bottom-2 duration-400 fill-mode-both ${
+                  idx === 1 ? "delay-75" : idx === 2 ? "delay-150" : idx > 2 ? "delay-200" : ""
+                }`}
+              />
             ))}
           </div>
         )}
