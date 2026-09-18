@@ -1,7 +1,6 @@
 import Image from "next/image";
 import { Logo } from "@/components/shared/logo";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
-import { AuthTabs } from "@/features/auth/components/auth-tabs";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -72,14 +71,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             </p>
           </div>
 
-          {/* Fixed Top Auth Nav Tabs (renders on login & register) */}
-          <AuthTabs />
-
-          {/* Scrollable Form Area with Custom Scrollbar */}
-          <div className="relative z-10 flex-1 overflow-y-auto custom-scrollbar px-6 py-3 sm:px-8 flex flex-col">
-            <div className="w-full">
-              {children}
-            </div>
+          {/* Card Body Area */}
+          <div className="relative z-10 flex-1 flex flex-col min-h-0 overflow-hidden">
+            {children}
           </div>
         </div>
       </main>

@@ -25,19 +25,21 @@ export default function ResetPasswordForm({ token }: { token: string }) {
 
   if (!token) {
     return (
-      <Alert variant="destructive">
-        <AlertTriangle className="size-4" />
-        <AlertTitle>Invalid reset link</AlertTitle>
-        <AlertDescription>
-          This password reset link is missing or invalid. Request a new one from the sign-in
-          page.
-        </AlertDescription>
-      </Alert>
+      <div className="flex-1 overflow-y-auto custom-scrollbar px-6 py-6 sm:px-8">
+        <Alert variant="destructive">
+          <AlertTriangle className="size-4" />
+          <AlertTitle>Invalid reset link</AlertTitle>
+          <AlertDescription>
+            This password reset link is missing or invalid. Request a new one from the sign-in
+            page.
+          </AlertDescription>
+        </Alert>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="flex-1 overflow-y-auto custom-scrollbar px-6 py-4 sm:px-8 space-y-6">
       <div className="space-y-1.5">
         <h1 className="font-heading text-2xl font-medium text-foreground">Set a new password</h1>
         <p className="text-sm text-muted-foreground">

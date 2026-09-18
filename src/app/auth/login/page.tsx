@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import LoginForm from "@/features/auth/components/login-form";
+import { AuthView } from "@/features/auth/components/auth-view";
 
 export const metadata: Metadata = { title: "Sign In · Club At Ibis" };
 
 export default function LoginPage() {
-  return <LoginForm />;
+  return <AuthView initialTab="login" />;
 }

@@ -24,7 +24,7 @@ export default function ForgotPasswordForm() {
 
   if (submitted) {
     return (
-      <div className="space-y-6 text-center">
+      <div className="flex-1 overflow-y-auto custom-scrollbar px-6 py-6 sm:px-8 space-y-6 text-center">
         <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/60 dark:border-emerald-800/60 text-emerald-600 dark:text-emerald-400">
           <MailCheck className="size-5" />
         </div>
@@ -35,7 +35,7 @@ export default function ForgotPasswordForm() {
             password.
           </p>
         </div>
-        <Link href="/auth/login" className="text-sm font-medium text-primary hover:underline">
+        <Link href="/auth/login" className="text-sm font-medium text-primary hover:underline block pt-2">
           Back to sign in
         </Link>
       </div>
@@ -43,7 +43,7 @@ export default function ForgotPasswordForm() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="flex-1 overflow-y-auto custom-scrollbar px-6 py-4 sm:px-8 space-y-6">
       <div className="space-y-1.5">
         <h1 className="font-heading text-2xl font-medium text-foreground">Forgot password?</h1>
         <p className="text-sm text-muted-foreground">
