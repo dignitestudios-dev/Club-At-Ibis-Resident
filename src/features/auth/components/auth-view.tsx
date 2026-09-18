@@ -92,38 +92,13 @@ export function AuthView({ initialTab = "login" }: AuthViewProps) {
         </div>
       </div>
 
-      {/* Sliding Form Panels Container */}
+      {/* Form Container with Smooth Field Animation (no horizontal sliding) */}
       <div
         ref={scrollRef}
-        className="relative flex-1 overflow-x-hidden overflow-y-auto custom-scrollbar px-6 py-2 sm:px-8"
+        className="relative flex-1 overflow-y-auto custom-scrollbar px-6 py-2 sm:px-8"
       >
-        <div
-          className="flex w-[200%] transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] items-start"
-          style={{
-            transform: tab === "register" ? "translateX(-50%)" : "translateX(0%)",
-          }}
-        >
-          {/* Sign In Panel */}
-          <div
-            className={cn(
-              "w-1/2 shrink-0 transition-opacity duration-300 pr-1",
-              tab === "login" ? "opacity-100" : "opacity-0 pointer-events-none"
-            )}
-            aria-hidden={tab !== "login"}
-          >
-            <LoginForm />
-          </div>
-
-          {/* Create Account Panel */}
-          <div
-            className={cn(
-              "w-1/2 shrink-0 transition-opacity duration-300 pl-1",
-              tab === "register" ? "opacity-100" : "opacity-0 pointer-events-none"
-            )}
-            aria-hidden={tab !== "register"}
-          >
-            <RegisterForm />
-          </div>
+        <div key={tab} className="w-full">
+          {tab === "login" ? <LoginForm /> : <RegisterForm />}
         </div>
       </div>
     </div>

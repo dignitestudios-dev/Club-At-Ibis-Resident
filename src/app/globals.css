@@ -188,4 +188,26 @@
     scrollbar-width: thin;
     scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
   }
+
+  /* Smooth Auth Field Entrance Animations */
+  @keyframes authFieldEnter {
+    0% {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .auth-field-enter {
+    animation: authFieldEnter 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .auth-stagger-1 { animation-delay: 0.02s; }
+  .auth-stagger-2 { animation-delay: 0.05s; }
+  .auth-stagger-3 { animation-delay: 0.08s; }
+  .auth-stagger-4 { animation-delay: 0.11s; }
+  .auth-stagger-5 { animation-delay: 0.14s; }
 }

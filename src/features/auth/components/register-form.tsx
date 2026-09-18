@@ -25,7 +25,7 @@ export default function RegisterForm() {
 
   return (
     <div className="space-y-4">
-      <div className="space-y-1 text-center">
+      <div className="space-y-1 text-center auth-field-enter auth-stagger-1">
         <h1 className="font-heading text-xl sm:text-2xl font-medium text-foreground">Create your account</h1>
         <p className="text-xs text-muted-foreground">
           Register to submit and track ARB requests for your property.
@@ -34,7 +34,7 @@ export default function RegisterForm() {
 
       <form onSubmit={handleSubmit(onSubmit)} noValidate>
         <FieldGroup className="gap-3">
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-2 gap-2.5 auth-field-enter auth-stagger-2">
             <Field data-invalid={!!errors.firstName}>
               <FieldLabel htmlFor="firstName">
                 First name
@@ -69,25 +69,27 @@ export default function RegisterForm() {
             </Field>
           </div>
 
-          <Field data-invalid={!!errors.email}>
-            <FieldLabel htmlFor="email">
-              Email address
-              <span className="text-red-500 font-bold ml-0.5 text-sm leading-none" aria-hidden="true">*</span>
-            </FieldLabel>
-            <FieldContent>
-              <Input
-                id="email"
-                type="email"
-                autoComplete="email"
-                placeholder="you@example.com"
-                aria-invalid={!!errors.email}
-                {...register("email")}
-              />
-              <FieldError errors={errors.email ? [errors.email] : []} />
-            </FieldContent>
-          </Field>
+          <div className="auth-field-enter auth-stagger-3">
+            <Field data-invalid={!!errors.email}>
+              <FieldLabel htmlFor="email">
+                Email address
+                <span className="text-red-500 font-bold ml-0.5 text-sm leading-none" aria-hidden="true">*</span>
+              </FieldLabel>
+              <FieldContent>
+                <Input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="you@example.com"
+                  aria-invalid={!!errors.email}
+                  {...register("email")}
+                />
+                <FieldError errors={errors.email ? [errors.email] : []} />
+              </FieldContent>
+            </Field>
+          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 auth-field-enter auth-stagger-4">
             <Controller
               name="password"
               control={control}
@@ -144,10 +146,12 @@ export default function RegisterForm() {
             />
           </div>
 
-          <Button type="submit" className="w-full shadow-xs mt-1" disabled={isPending}>
-            {isPending && <Spinner className="size-4" />}
-            Create Resident Account
-          </Button>
+          <div className="auth-field-enter auth-stagger-5">
+            <Button type="submit" className="w-full shadow-xs mt-1" disabled={isPending}>
+              {isPending && <Spinner className="size-4" />}
+              Create Resident Account
+            </Button>
+          </div>
         </FieldGroup>
       </form>
     </div>
