@@ -96,9 +96,9 @@ export default function RequestDetailPage({ id }: { id: string }) {
         </Card>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
-          <Card>
+      <div className="grid gap-6 lg:grid-cols-3 items-start">
+        <div className="space-y-6 lg:col-span-2 lg:sticky lg:top-20 self-start">
+          <Card className="shadow-2xs">
             <CardContent className="pt-1">
               <Tabs defaultValue="details">
                 <TabsList aria-label="Request sections">
@@ -138,7 +138,7 @@ export default function RequestDetailPage({ id }: { id: string }) {
           </Card>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-6 lg:col-span-1 lg:sticky lg:top-20 self-start">
           <RequestDetailSidebar request={request} />
         </div>
       </div>
