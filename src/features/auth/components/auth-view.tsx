@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useRef } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { LogIn, UserPlus } from "lucide-react";
 import LoginForm from "@/features/auth/components/login-form";
 import RegisterForm from "@/features/auth/components/register-form";
@@ -11,42 +12,25 @@ export interface AuthViewProps {
 }
 
 export function AuthView({ initialTab = "login" }: AuthViewProps) {
-  const [tab, setTab] = useState<"login" | "register">(initialTab);
+  const pathname = usePathname();
+  const router = useRouter();
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const tab: "login" | "register" = pathname?.includes("/register")
+    ? "register"
+    : pathname?.includes("/login")
+    ? "login"
+    : initialTab;
 
   const switchTab = (nextTab: "login" | "register") => {
     if (tab === nextTab) return;
-    setTab(nextTab);
     scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
-    if (typeof window !== "undefined") {
-      window.history.replaceState(
-        null,
-        "",
-        nextTab === "login" ? "/auth/login" : "/auth/register"
-      );
-      document.title =
-        nextTab === "login"
-          ? "Sign In · Club At Ibis"
-          : "Create Account · Club At Ibis";
+    if (nextTab === "login") {
+      router.push("/auth/login");
+    } else {
+      router.push("/auth/register");
     }
   };
-
-  useEffect(() => {
-    const handlePopState = () => {
-      if (typeof window !== "undefined") {
-        const path = window.location.pathname;
-        if (path === "/auth/register") {
-          setTab("register");
-          scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
-        } else if (path === "/auth/login") {
-          setTab("login");
-          scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
-        }
-      }
-    };
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
-  }, []);
 
   return (
     <div className="flex flex-col h-full min-h-0">

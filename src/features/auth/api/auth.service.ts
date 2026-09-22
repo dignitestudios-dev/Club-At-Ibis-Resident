@@ -1,150 +1,168 @@
-import { db, delay } from "@/lib/mock/store";
+import axiosInstance from "@/lib/axios";
 
-function toPublic(resident: Resident): PublicResident {
-  const { password: _password, ...rest } = resident;
-  return rest;
+/** Shape the backend's `publicUser` presenter returns for a RESIDENT account. */
+interface ResidentApiUser {
+  _id: string;
+  residentId?: string;
+  firstName: string;
+  lastName?: string;
+  email: string;
+  accountStatus: string;
+  credentialStatus: string;
+  phone?: string;
+  address?: string;
+  lotNo?: string;
+  createdAt: string;
+  lastLoginAt?: string | null;
+}
+
+function toPublicResident(u: ResidentApiUser): PublicResident {
+  return {
+    id: u._id,
+    residentIdNumber: u.residentId || "",
+    firstName: u.firstName,
+    lastName: u.lastName || "",
+    email: u.email,
+    phone: u.phone,
+    address: u.address,
+    lotNo: u.lotNo,
+    createdAt: u.createdAt,
+  };
 }
 
 export async function getCurrentUser(): Promise<PublicResident | null> {
   if (typeof window === "undefined") return null;
-
-  const isExplicitlyLoggedOut = localStorage.getItem("cai.logged-out") === "true";
-  if (isExplicitlyLoggedOut) return null;
-
-  const stored = localStorage.getItem("auth-user");
-  if (stored) {
-    try {
-      const parsed = JSON.parse(stored) as PublicResident;
-      if (parsed?.id) {
-        const residents = db.getResidents();
-        const found = residents.find((r) => r.id === parsed.id);
-        if (found) {
-          const fresh = toPublic(found);
-          localStorage.setItem("auth-user", JSON.stringify(fresh));
-          return delay(fresh, 60);
-        }
-        return delay(parsed, 60);
-      }
-    } catch {
-      // Fallback
-    }
+  if (!localStorage.getItem("auth-token")) return null;
+  try {
+    const { data } = await axiosInstance.get("/auth/me");
+    return toPublicResident(data.data.user);
+  } catch {
+    return null;
   }
-
-  const residents = db.getResidents();
-  if (residents.length > 0) {
-    const defaultDemo = toPublic(residents[0]);
-    localStorage.setItem("auth-user", JSON.stringify(defaultDemo));
-    localStorage.setItem("auth-token", `demo-token-${defaultDemo.id}`);
-    document.cookie = `auth-token=demo-token-${defaultDemo.id}; path=/; max-age=1209600; SameSite=Lax`;
-    return delay(defaultDemo, 60);
-  }
-
-  return delay(null, 60);
 }
 
-export async function getResidentById(id: string): Promise<PublicResident | null> {
-  const residents = db.getResidents();
-  const found = residents.find((r) => r.id === id);
-  if (!found) return delay(null, 60);
-  return delay(toPublic(found), 60);
+export async function getResidentById(_id: string): Promise<PublicResident | null> {
+  // Direct resident lookup delegates to getCurrentUser for self
+  return getCurrentUser();
 }
 
-export async function loginUser(credentials: LoginCredentials): Promise<PublicResident> {
-  const residents = db.getResidents();
-  const match = residents.find(
-    (r) =>
-      r.email.toLowerCase() === credentials.email.toLowerCase() &&
-      r.password === credentials.password
-  );
-  if (!match) {
-    await delay(null, 150);
-    throw new Error("Invalid email or password.");
-  }
-  return delay(toPublic(match), 180);
-}
-
-export async function registerUser(payload: RegisterPayload): Promise<PublicResident> {
-  const residents = db.getResidents();
-  if (residents.some((r) => r.email.toLowerCase() === payload.email.toLowerCase())) {
-    await delay(null, 150);
-    throw new Error("An account with this email already exists.");
-  }
-  const randomIdNum = `RES-${Math.floor(10000 + Math.random() * 90000)}`;
-  const resident: Resident = {
-    id: crypto.randomUUID(),
-    residentIdNumber: payload.residentIdNumber || randomIdNum,
-    firstName: payload.firstName,
-    lastName: payload.lastName,
-    email: payload.email,
-    password: payload.password,
-    createdAt: new Date().toISOString(),
+/**
+ * Log in as a resident. Callers store `token` in localStorage and Redux.
+ */
+export async function loginUser(credentials: LoginCredentials): Promise<{ token: string; user: PublicResident }> {
+  const { data } = await axiosInstance.post("/auth/login", {
+    ...credentials,
+    role: "RESIDENT",
+  });
+  return {
+    token: data.data.token,
+    user: toPublicResident(data.data.user),
   };
-  db.setResidents([...residents, resident]);
-  return delay(toPublic(resident), 200);
+}
+
+/**
+ * Register a new resident account.
+ * Note: Backend creates account in PENDING_EMAIL_VERIFICATION state.
+ */
+export async function registerUser(payload: RegisterPayload): Promise<{ user: PublicResident; message: string }> {
+  const { data } = await axiosInstance.post("/auth/residents", {
+    residentId: payload.residentId.trim(),
+    firstName: payload.firstName.trim(),
+    lastName: payload.lastName.trim(),
+    email: payload.email.trim().toLowerCase(),
+    password: payload.password,
+  });
+  return {
+    user: toPublicResident(data.data.user),
+    message: data.message || "Registration accepted. Verify your email before logging in.",
+  };
+}
+
+export async function logoutUser(): Promise<void> {
+  const token = typeof window !== "undefined" ? localStorage.getItem("auth-token") : null;
+  if (!token) return;
+  try {
+    await axiosInstance.post("/auth/logout", null, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  } catch {
+    // Best-effort — the caller clears local storage regardless
+  }
 }
 
 export async function requestPasswordReset({ email }: ForgotPasswordPayload): Promise<void> {
-  const residents = db.getResidents();
-  const match = residents.find((r) => r.email.toLowerCase() === email.toLowerCase());
-  // Always resolve the same way regardless of whether the email exists —
-  // this is a mock stand-in for a real email send; the "token" here is
-  // just the resident id, obfuscated, since there is no email transport.
-  if (match) {
-    console.info(`[mock email] Password reset link: /auth/reset-password?token=${btoa(match.id)}`);
-  }
-  return delay(undefined, 200);
+  await axiosInstance.post("/auth/password-reset-requests", {
+    email: email.trim().toLowerCase(),
+    role: "RESIDENT",
+  });
 }
 
 export async function resetPassword({
   token,
   password,
-}: ResetPasswordPayload): Promise<void> {
-  let residentId: string;
-  try {
-    residentId = atob(token);
-  } catch {
-    await delay(null, 150);
-    throw new Error("This reset link is invalid or has expired.");
-  }
-  const residents = db.getResidents();
-  const idx = residents.findIndex((r) => r.id === residentId);
-  if (idx === -1) {
-    await delay(null, 150);
-    throw new Error("This reset link is invalid or has expired.");
-  }
-  const next = [...residents];
-  next[idx] = { ...next[idx], password };
-  db.setResidents(next);
-  return delay(undefined, 180);
+}: {
+  token: string;
+  password: string;
+}): Promise<void> {
+  await axiosInstance.post("/auth/password-resets", {
+    token,
+    newPassword: password,
+  });
+}
+
+export async function changePassword(payload: ChangePasswordPayload): Promise<void> {
+  await axiosInstance.post("/auth/password-changes", {
+    currentPassword: payload.currentPassword,
+    newPassword: payload.newPassword,
+  });
 }
 
 export async function updateProfile(
-  id: string,
+  _id: string,
   updates: ProfileFormData
 ): Promise<PublicResident> {
-  const residents = db.getResidents();
-  const idx = residents.findIndex((r) => r.id === id);
-  if (idx === -1) throw new Error("Resident not found.");
-  const updated: Resident = { ...residents[idx], ...updates };
-  const next = [...residents];
-  next[idx] = updated;
-  db.setResidents(next);
-  return delay(toPublic(updated), 150);
+  // In v1, profile details are saved and cached in user session
+  const current = await getCurrentUser();
+  const updated: PublicResident = {
+    id: current?.id || _id,
+    residentIdNumber: current?.residentIdNumber || "",
+    email: current?.email || "",
+    firstName: updates.firstName,
+    lastName: updates.lastName || "",
+    phone: updates.phone,
+    address: current?.address,
+    lotNo: current?.lotNo,
+    createdAt: current?.createdAt || new Date().toISOString(),
+  };
+  localStorage.setItem("auth-user", JSON.stringify(updated));
+  return updated;
 }
 
-export async function changePassword(
-  id: string,
-  payload: ChangePasswordPayload
-): Promise<void> {
-  const residents = db.getResidents();
-  const idx = residents.findIndex((r) => r.id === id);
-  if (idx === -1) throw new Error("Resident not found.");
-  if (residents[idx].password !== payload.currentPassword) {
-    await delay(null, 150);
-    throw new Error("The current password you entered is incorrect.");
-  }
-  const next = [...residents];
-  next[idx] = { ...next[idx], password: payload.newPassword };
-  db.setResidents(next);
-  return delay(undefined, 180);
+export async function deleteAccount({ currentPassword }: { currentPassword: string }): Promise<void> {
+  await axiosInstance.delete("/auth/account", {
+    data: { currentPassword },
+  });
+}
+
+/** Verify/preview an email-verification link without consuming the token. */
+export async function inspectEmailVerification(token: string): Promise<TokenInspectionResult> {
+  const { data } = await axiosInstance.get("/auth/email-verifications", {
+    params: { token },
+  });
+  return data.data;
+}
+
+/** Confirm email verification with the single-use token. */
+export async function confirmEmailVerification({ token }: { token: string }): Promise<{ user: PublicResident }> {
+  const { data } = await axiosInstance.post("/auth/email-verifications/confirm", {
+    token,
+  });
+  return { user: toPublicResident(data.data.user) };
+}
+
+/** Request another verification email to be sent. */
+export async function resendEmailVerification({ email }: { email: string }): Promise<void> {
+  await axiosInstance.post("/auth/email-verifications", {
+    email: email.trim().toLowerCase(),
+  });
 }

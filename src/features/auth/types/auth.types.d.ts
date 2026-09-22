@@ -4,7 +4,7 @@ interface Resident {
   firstName: string;
   lastName?: string;
   email: string;
-  password: string;
+  password?: string;
   phone?: string;
   address?: string;
   lotNo?: string;
@@ -19,9 +19,9 @@ interface LoginCredentials {
 }
 
 interface RegisterPayload {
-  residentIdNumber?: string;
+  residentId: string;
   firstName: string;
-  lastName?: string;
+  lastName: string;
   email: string;
   password: string;
   confirmPassword: string;
@@ -52,4 +52,8 @@ interface ChangePasswordPayload {
   currentPassword: string;
   newPassword: string;
   confirmNewPassword: string;
+}
+
+interface TokenInspectionResult {
+  expiresAt: string;
 }

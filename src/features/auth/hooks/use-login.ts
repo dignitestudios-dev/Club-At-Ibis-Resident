@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
@@ -8,37 +9,55 @@ import { setUser } from "@/store/slices/auth.slice";
 import { useToast } from "@/hooks/use-toast";
 import { DEFAULT_REDIRECT } from "@/config/routes";
 import { loginSchema } from "@/features/auth/schemas/login.schema";
-import { useLoginMutation } from "@/features/auth/api/auth.mutations";
+import { useLoginMutation, useResendEmailVerificationMutation } from "@/features/auth/api/auth.mutations";
 
 export function useLogin() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const toast = useToast();
   const { mutate: login, isPending } = useLoginMutation();
+  const { mutate: resendVerification, isPending: isResendingVerification } = useResendEmailVerificationMutation();
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
 
   const form = useForm<LoginCredentials>({
     mode: "onChange",
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: "avery.collins@example.com", password: "password123" },
+    defaultValues: { email: "", password: "" },
   });
 
   function onSubmit(data: LoginCredentials) {
+    setUnverifiedEmail(null);
     login(data, {
-      onSuccess: (user) => {
-        const token = crypto.randomUUID();
+      onSuccess: ({ token, user }) => {
         localStorage.removeItem("cai.logged-out");
         localStorage.setItem("auth-token", token);
         localStorage.setItem("auth-user", JSON.stringify(user));
         document.cookie = `auth-token=${token}; path=/; max-age=1209600; SameSite=Lax`;
         dispatch(setUser(user));
         toast.success(`Welcome back, ${user.firstName}.`);
-        window.location.href = DEFAULT_REDIRECT;
+        router.push(DEFAULT_REDIRECT);
       },
-      onError: (error: Error) => {
+      onError: (error: Error & { code?: string }) => {
+        if (error.code === "EMAIL_VERIFICATION_REQUIRED" || error.message?.toLowerCase().includes("verification")) {
+          setUnverifiedEmail(data.email);
+        }
         toast.error(error.message || "Unable to sign in.");
       },
     });
   }
 
-  return { form, onSubmit, isPending };
+  function handleResendVerification() {
+    if (!unverifiedEmail) return;
+    resendVerification(
+      { email: unverifiedEmail },
+      {
+        onSuccess: () => {
+          toast.success("Verification link sent", "Please check your email inbox.");
+        },
+        onError: (err: Error) => toast.error(err.message),
+      }
+    );
+  }
+
+  return { form, onSubmit, isPending, unverifiedEmail, handleResendVerification, isResendingVerification };
 }

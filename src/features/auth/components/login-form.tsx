@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Controller } from "react-hook-form";
+import { AlertCircle, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/shared/password-input";
@@ -16,7 +17,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { useLogin } from "@/features/auth/hooks/use-login";
 
 export default function LoginForm() {
-  const { form, onSubmit, isPending } = useLogin();
+  const { form, onSubmit, isPending, unverifiedEmail, handleResendVerification, isResendingVerification } = useLogin();
   const {
     register,
     control,
@@ -32,6 +33,31 @@ export default function LoginForm() {
           Enter your resident credentials to manage your requests.
         </p>
       </div>
+
+      {unverifiedEmail && (
+        <div className="rounded-lg border border-amber-200/80 bg-amber-50/70 p-3 text-xs text-amber-900 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-200 space-y-2 auth-field-enter">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="size-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+            <div>
+              <p className="font-medium">Email verification required</p>
+              <p className="text-muted-foreground mt-0.5">
+                Your account is pending email verification. Please verify your email before logging in.
+              </p>
+            </div>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-full text-xs h-7"
+            onClick={handleResendVerification}
+            disabled={isResendingVerification}
+          >
+            {isResendingVerification ? <Spinner className="size-3" /> : <RotateCw className="size-3 mr-1" />}
+            Resend verification email
+          </Button>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit(onSubmit)} noValidate>
         <FieldGroup>

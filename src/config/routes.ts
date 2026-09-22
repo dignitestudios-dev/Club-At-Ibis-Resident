@@ -4,6 +4,7 @@ export const PUBLIC_ROUTES = [
   "/auth/register",
   "/auth/forgot-password",
   "/auth/reset-password",
+  "/auth/verify-email",
 ];
 
 export const PROTECTED_ROUTES = [
@@ -18,6 +19,7 @@ export const AUTH_PAGES = [
   "/auth/register",
   "/auth/forgot-password",
   "/auth/reset-password",
+  "/auth/verify-email",
 ];
 
 export const AUTH_REDIRECT = "/auth/login";

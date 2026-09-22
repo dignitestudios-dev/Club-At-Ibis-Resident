@@ -1,9 +1,9 @@
 import { z } from "zod";
+import { strongPassword } from "./register.schema";
 
 export const resetPasswordSchema = z
   .object({
-    token: z.string().min(1),
-    password: z.string().min(8, "Password must be at least 8 characters."),
+    password: strongPassword,
     confirmPassword: z.string().min(1, "Please confirm your password."),
   })
   .refine((data) => data.password === data.confirmPassword, {

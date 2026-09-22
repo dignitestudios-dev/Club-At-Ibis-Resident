@@ -1,9 +1,10 @@
 import { z } from "zod";
+import { strongPassword } from "./register.schema";
 
 export const changePasswordSchema = z
   .object({
     currentPassword: z.string().min(1, "Current password is required."),
-    newPassword: z.string().min(8, "New password must be at least 8 characters."),
+    newPassword: strongPassword,
     confirmNewPassword: z.string().min(1, "Please confirm your new password."),
   })
   .refine((data) => data.newPassword === data.confirmNewPassword, {
@@ -11,6 +12,6 @@ export const changePasswordSchema = z
     path: ["confirmNewPassword"],
   })
   .refine((data) => data.currentPassword !== data.newPassword, {
-    message: "New password must be different from current password.",
+    message: "New password must differ from current password.",
     path: ["newPassword"],
   });

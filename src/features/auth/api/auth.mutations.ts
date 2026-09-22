@@ -6,6 +6,9 @@ import {
   resetPassword,
   updateProfile,
   changePassword,
+  deleteAccount,
+  confirmEmailVerification,
+  resendEmailVerification,
 } from "./auth.service";
 import { authKeys } from "./auth.queries";
 
@@ -13,19 +16,15 @@ export function useLoginMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (credentials: LoginCredentials) => loginUser(credentials),
-    onSuccess: (user) => {
+    onSuccess: ({ user }) => {
       queryClient.setQueryData(authKeys.currentUser, user);
     },
   });
 }
 
 export function useRegisterMutation() {
-  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: RegisterPayload) => registerUser(payload),
-    onSuccess: (user) => {
-      queryClient.setQueryData(authKeys.currentUser, user);
-    },
   });
 }
 
@@ -37,7 +36,7 @@ export function useForgotPasswordMutation() {
 
 export function useResetPasswordMutation() {
   return useMutation({
-    mutationFn: (payload: ResetPasswordPayload) => resetPassword(payload),
+    mutationFn: (payload: { token: string; password: string }) => resetPassword(payload),
   });
 }
 
@@ -55,8 +54,28 @@ export function useUpdateProfileMutation() {
 
 export function useChangePasswordMutation() {
   return useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: ChangePasswordPayload }) =>
-      changePassword(id, payload),
+    mutationFn: (payload: ChangePasswordPayload) => changePassword(payload),
   });
 }
 
+export function useDeleteAccountMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: { currentPassword: string }) => deleteAccount(payload),
+    onSuccess: () => {
+      queryClient.setQueryData(authKeys.currentUser, null);
+    },
+  });
+}
+
+export function useConfirmEmailVerificationMutation() {
+  return useMutation({
+    mutationFn: (payload: { token: string }) => confirmEmailVerification(payload),
+  });
+}
+
+export function useResendEmailVerificationMutation() {
+  return useMutation({
+    mutationFn: (payload: { email: string }) => resendEmailVerification(payload),
+  });
+}
