@@ -51,6 +51,8 @@ export function ChangePasswordForm() {
                       id="currentPassword"
                       autoComplete="current-password"
                       placeholder="******"
+                      maxLength={128}
+                      disabled={isPending}
                       aria-invalid={!!errors.currentPassword}
                       value={field.value ?? ""}
                       onChange={field.onChange}
@@ -80,6 +82,8 @@ export function ChangePasswordForm() {
                         id="newPassword"
                         autoComplete="new-password"
                         placeholder="******"
+                        maxLength={128}
+                        disabled={isPending}
                         aria-invalid={!!errors.newPassword}
                         showStrength
                         value={field.value ?? ""}
@@ -109,6 +113,8 @@ export function ChangePasswordForm() {
                         id="confirmNewPassword"
                         autoComplete="new-password"
                         placeholder="******"
+                        maxLength={128}
+                        disabled={isPending}
                         aria-invalid={!!errors.confirmNewPassword}
                         value={field.value ?? ""}
                         onChange={field.onChange}

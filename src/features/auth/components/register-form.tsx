@@ -92,6 +92,7 @@ export default function RegisterForm() {
                   placeholder="e.g. e157D or 00123"
                   maxLength={20}
                   autoComplete="off"
+                  disabled={isPending}
                   aria-invalid={!!errors.residentId}
                   {...register("residentId")}
                 />
@@ -112,6 +113,7 @@ export default function RegisterForm() {
                   autoComplete="given-name"
                   placeholder="First name"
                   maxLength={30}
+                  disabled={isPending}
                   aria-invalid={!!errors.firstName}
                   {...register("firstName")}
                 />
@@ -130,6 +132,7 @@ export default function RegisterForm() {
                   autoComplete="family-name"
                   placeholder="Last name"
                   maxLength={30}
+                  disabled={isPending}
                   aria-invalid={!!errors.lastName}
                   {...register("lastName")}
                 />
@@ -151,6 +154,7 @@ export default function RegisterForm() {
                   autoComplete="email"
                   placeholder="you@example.com"
                   maxLength={100}
+                  disabled={isPending}
                   aria-invalid={!!errors.email}
                   {...register("email")}
                 />
@@ -176,6 +180,7 @@ export default function RegisterForm() {
                       placeholder="******"
                       aria-invalid={!!errors.password}
                       showStrength
+                      disabled={isPending}
                       value={field.value ?? ""}
                       onChange={field.onChange}
                       onBlur={field.onBlur}
@@ -202,6 +207,7 @@ export default function RegisterForm() {
                       autoComplete="new-password"
                       placeholder="******"
                       aria-invalid={!!errors.confirmPassword}
+                      disabled={isPending}
                       value={field.value ?? ""}
                       onChange={field.onChange}
                       onBlur={field.onBlur}

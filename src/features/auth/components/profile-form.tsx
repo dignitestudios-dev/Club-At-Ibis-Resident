@@ -13,6 +13,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { useProfile } from "@/features/auth/hooks/use-profile";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { formatDate } from "@/utils/format";
 
 import { ChangePasswordForm } from "@/features/auth/components/change-password-form";
@@ -23,8 +24,9 @@ export default function ProfileForm() {
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = form;
+  const guard = useUnsavedChanges(isDirty);
 
   if (!user) return null;
 
@@ -50,6 +52,8 @@ export default function ProfileForm() {
                     <FieldContent>
                       <Input
                         id="firstName"
+                        maxLength={30}
+                        disabled={isPending}
                         aria-invalid={!!errors.firstName}
                         {...register("firstName")}
                       />
@@ -63,6 +67,8 @@ export default function ProfileForm() {
                     <FieldContent>
                       <Input
                         id="lastName"
+                        maxLength={30}
+                        disabled={isPending}
                         aria-invalid={!!errors.lastName}
                         {...register("lastName")}
                       />
@@ -81,7 +87,13 @@ export default function ProfileForm() {
                   <Field data-invalid={!!errors.phone}>
                     <FieldLabel htmlFor="phone">Phone</FieldLabel>
                     <FieldContent>
-                      <Input id="phone" placeholder="(561) 555-0100" {...register("phone")} />
+                      <Input
+                        id="phone"
+                        placeholder="(561) 555-0100"
+                        maxLength={20}
+                        disabled={isPending}
+                        {...register("phone")}
+                      />
                       <FieldError errors={errors.phone ? [errors.phone] : []} />
                     </FieldContent>
                   </Field>
@@ -146,6 +158,8 @@ export default function ProfileForm() {
           </CardContent>
         </Card>
       </div>
+
+      {guard.dialog}
     </div>
   );
 }

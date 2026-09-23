@@ -70,6 +70,8 @@ export default function LoginForm() {
                   type="email"
                   autoComplete="email"
                   placeholder="you@example.com"
+                  maxLength={320}
+                  disabled={isPending}
                   aria-invalid={!!errors.email}
                   {...register("email")}
                 />
@@ -98,6 +100,8 @@ export default function LoginForm() {
                       id="password"
                       autoComplete="current-password"
                       placeholder="******"
+                      maxLength={128}
+                      disabled={isPending}
                       aria-invalid={!!errors.password}
                       value={field.value ?? ""}
                       onChange={field.onChange}

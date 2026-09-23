@@ -92,6 +92,8 @@ export default function ResetPasswordForm({ token }: { token: string }) {
                   type="email"
                   autoComplete="email"
                   placeholder="you@example.com"
+                  maxLength={320}
+                  disabled={isResending}
                   aria-invalid={!!resendErrors.email}
                   {...registerResend("email")}
                 />
@@ -139,6 +141,8 @@ export default function ResetPasswordForm({ token }: { token: string }) {
                     id="password"
                     autoComplete="new-password"
                     placeholder="******"
+                    maxLength={128}
+                    disabled={isResetting}
                     aria-invalid={!!resetErrors.password}
                     showStrength
                     value={field.value ?? ""}
@@ -166,6 +170,8 @@ export default function ResetPasswordForm({ token }: { token: string }) {
                     id="confirmPassword"
                     autoComplete="new-password"
                     placeholder="******"
+                    maxLength={128}
+                    disabled={isResetting}
                     aria-invalid={!!resetErrors.confirmPassword}
                     value={field.value ?? ""}
                     onChange={field.onChange}

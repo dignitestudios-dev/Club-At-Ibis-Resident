@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAppDispatch } from "@/store";
 import { setUser } from "@/store/slices/auth.slice";
 import { useToast } from "@/hooks/use-toast";
@@ -13,6 +13,8 @@ import { useLoginMutation, useResendEmailVerificationMutation } from "@/features
 
 export function useLogin() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnUrl = searchParams.get("returnUrl");
   const dispatch = useAppDispatch();
   const toast = useToast();
   const { mutate: login, isPending } = useLoginMutation();
@@ -35,7 +37,7 @@ export function useLogin() {
         document.cookie = `auth-token=${token}; path=/; max-age=1209600; SameSite=Lax`;
         dispatch(setUser(user));
         toast.success(`Welcome back, ${user.firstName}.`);
-        router.push(DEFAULT_REDIRECT);
+        window.location.href = returnUrl ? decodeURIComponent(returnUrl) : DEFAULT_REDIRECT;
       },
       onError: (error: Error & { code?: string }) => {
         if (error.code === "EMAIL_VERIFICATION_REQUIRED" || error.message?.toLowerCase().includes("verification")) {

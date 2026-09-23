@@ -61,6 +61,8 @@ export default function ForgotPasswordForm() {
                 type="email"
                 autoComplete="email"
                 placeholder="you@example.com"
+                maxLength={320}
+                disabled={isPending}
                 aria-invalid={!!errors.email}
                 {...register("email")}
               />
