@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { Suspense } from "react";
 import { Logo } from "@/components/shared/logo";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 
@@ -73,7 +74,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
           {/* Card Body Area */}
           <div className="relative z-10 flex-1 flex flex-col min-h-0 overflow-hidden">
-            {children}
+            <Suspense>{children}</Suspense>
           </div>
         </div>
       </main>
