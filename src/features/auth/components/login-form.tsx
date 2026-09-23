@@ -59,7 +59,7 @@ export default function LoginForm() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)} noValidate autoComplete="off">
+      <form onSubmit={handleSubmit(onSubmit)} noValidate>
         <FieldGroup>
           <div className="auth-field-enter auth-stagger-2">
             <Field data-invalid={!!errors.email}>
