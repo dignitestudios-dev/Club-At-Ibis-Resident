@@ -177,7 +177,7 @@ export default function RegisterForm() {
                     <PasswordInput
                       id="password"
                       autoComplete="new-password"
-                      placeholder="******"
+                      placeholder="Enter password"
                       aria-invalid={!!errors.password}
                       showStrength
                       disabled={isPending}
@@ -205,7 +205,7 @@ export default function RegisterForm() {
                     <PasswordInput
                       id="confirmPassword"
                       autoComplete="new-password"
-                      placeholder="******"
+                      placeholder="Confirm password"
                       aria-invalid={!!errors.confirmPassword}
                       disabled={isPending}
                       value={field.value ?? ""}

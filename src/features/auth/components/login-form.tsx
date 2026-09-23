@@ -59,7 +59,7 @@ export default function LoginForm() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)} noValidate>
+      <form onSubmit={handleSubmit(onSubmit)} noValidate autoComplete="off">
         <FieldGroup>
           <div className="auth-field-enter auth-stagger-2">
             <Field data-invalid={!!errors.email}>
@@ -99,7 +99,7 @@ export default function LoginForm() {
                     <PasswordInput
                       id="password"
                       autoComplete="current-password"
-                      placeholder="******"
+                      placeholder="Enter your password"
                       maxLength={128}
                       disabled={isPending}
                       aria-invalid={!!errors.password}

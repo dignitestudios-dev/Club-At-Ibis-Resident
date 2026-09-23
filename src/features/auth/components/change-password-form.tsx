@@ -50,7 +50,7 @@ export function ChangePasswordForm() {
                     <PasswordInput
                       id="currentPassword"
                       autoComplete="current-password"
-                      placeholder="******"
+                      placeholder="Current password"
                       maxLength={128}
                       disabled={isPending}
                       aria-invalid={!!errors.currentPassword}
@@ -81,7 +81,7 @@ export function ChangePasswordForm() {
                       <PasswordInput
                         id="newPassword"
                         autoComplete="new-password"
-                        placeholder="******"
+                        placeholder="New password"
                         maxLength={128}
                         disabled={isPending}
                         aria-invalid={!!errors.newPassword}
@@ -112,7 +112,7 @@ export function ChangePasswordForm() {
                       <PasswordInput
                         id="confirmNewPassword"
                         autoComplete="new-password"
-                        placeholder="******"
+                        placeholder="Confirm new password"
                         maxLength={128}
                         disabled={isPending}
                         aria-invalid={!!errors.confirmNewPassword}

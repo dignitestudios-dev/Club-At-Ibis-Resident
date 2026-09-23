@@ -140,7 +140,7 @@ export default function ResetPasswordForm({ token }: { token: string }) {
                   <PasswordInput
                     id="password"
                     autoComplete="new-password"
-                    placeholder="******"
+                    placeholder="New password"
                     maxLength={128}
                     disabled={isResetting}
                     aria-invalid={!!resetErrors.password}
@@ -169,7 +169,7 @@ export default function ResetPasswordForm({ token }: { token: string }) {
                   <PasswordInput
                     id="confirmPassword"
                     autoComplete="new-password"
-                    placeholder="******"
+                    placeholder="Confirm new password"
                     maxLength={128}
                     disabled={isResetting}
                     aria-invalid={!!resetErrors.confirmPassword}
