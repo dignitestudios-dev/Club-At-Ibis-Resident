@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { PlusCircle, FileText, FileEdit, History } from "lucide-react";
@@ -14,6 +14,7 @@ import { RequestsTabsHeader, type RequestsTabType } from "@/features/requests/co
 import { RequestsFilterToolbar } from "@/features/requests/components/list/requests-filter-toolbar";
 import { useRequestsList, type DatePeriod } from "@/features/requests/hooks/use-requests-list";
 import { useDrafts } from "@/features/drafts/hooks/use-drafts";
+import { useActiveCategoriesQuery } from "@/features/categories/api/categories.queries";
 import { requestTypes } from "@/lib/mock/request-types";
 import { cn } from "@/utils/cn";
 
@@ -35,10 +36,6 @@ const HISTORY_STATUS_OPTIONS: { label: string; value: RequestStatus | "all" }[] 
   { label: "Withdrawn", value: "withdrawn" },
 ];
 
-const CATEGORY_OPTIONS: { label: string; value: string }[] = [
-  { label: "All Categories", value: "all" },
-  ...requestTypes.map((t) => ({ label: t.name, value: t.id })),
-];
 
 const PERIOD_OPTIONS: { label: string; value: DatePeriod }[] = [
   { label: "All Time", value: "all" },
@@ -119,6 +116,21 @@ export default function RequestsListPage() {
   } = useRequestsList();
 
   const { drafts, isLoading: isLoadingDrafts, isDeleting, deleteDraft } = useDrafts();
+  const { data: activeCategoriesData } = useActiveCategoriesQuery();
+
+  const categoryOptions = useMemo(() => {
+    const backendCategories = activeCategoriesData?.categories ?? [];
+    if (backendCategories.length > 0) {
+      return [
+        { label: "All Categories", value: "all" },
+        ...backendCategories.map((c) => ({ label: c.name, value: c.id })),
+      ];
+    }
+    return [
+      { label: "All Categories", value: "all" },
+      ...requestTypes.map((t) => ({ label: t.name, value: t.id })),
+    ];
+  }, [activeCategoriesData?.categories]);
 
   const hasActiveFilters =
     search.trim() !== "" || status !== "all" || requestTypeId !== "all" || period !== "all";
@@ -169,7 +181,7 @@ export default function RequestsListPage() {
             statusPlaceholder="Filter by status"
             requestTypeId={requestTypeId}
             onRequestTypeChange={setRequestTypeId}
-            categoryOptions={CATEGORY_OPTIONS}
+            categoryOptions={categoryOptions}
             period={period}
             onPeriodChange={setPeriod}
             periodOptions={PERIOD_OPTIONS}
@@ -268,7 +280,7 @@ export default function RequestsListPage() {
             statusPlaceholder="All History Outcomes"
             requestTypeId={requestTypeId}
             onRequestTypeChange={setRequestTypeId}
-            categoryOptions={CATEGORY_OPTIONS}
+            categoryOptions={categoryOptions}
             period={period}
             onPeriodChange={setPeriod}
             periodOptions={PERIOD_OPTIONS}

@@ -23,8 +23,17 @@ export default function AuthRehydrator({ children }: { children: React.ReactNode
 
   useEffect(() => {
     const isExplicitlyLoggedOut = localStorage.getItem("cai.logged-out") === "true";
-    const token = localStorage.getItem("auth-token");
+    let token = localStorage.getItem("auth-token");
     const stored = localStorage.getItem("auth-user");
+
+    // Rehydrate token from cookie if missing from localStorage
+    if (!token && typeof document !== "undefined") {
+      const match = document.cookie.match(/(?:^|;\s*)auth-token=([^;]+)/);
+      if (match && match[1] && !isExplicitlyLoggedOut) {
+        token = match[1];
+        localStorage.setItem("auth-token", token);
+      }
+    }
 
     if (isExplicitlyLoggedOut || !token) {
       dispatch(clearUser());
@@ -32,13 +41,15 @@ export default function AuthRehydrator({ children }: { children: React.ReactNode
       return;
     }
 
+    // Ensure session cookie is set
+    document.cookie = `auth-token=${token}; path=/; max-age=1209600; SameSite=Lax`;
+
     if (stored) {
       try {
         const parsed: unknown = JSON.parse(stored);
         if (isValidResident(parsed)) {
           dispatch(setUser(parsed));
           queryClient.setQueryData(authKeys.currentUser, parsed);
-          document.cookie = `auth-token=${token}; path=/; max-age=1209600; SameSite=Lax`;
         }
       } catch {
         // Fall through
@@ -51,6 +62,7 @@ export default function AuthRehydrator({ children }: { children: React.ReactNode
         if (resident) {
           localStorage.setItem("auth-user", JSON.stringify(resident));
           dispatch(setUser(resident));
+          queryClient.setQueryData(authKeys.currentUser, resident);
         }
       })
       .catch(() => {

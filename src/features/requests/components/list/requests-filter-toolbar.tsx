@@ -71,7 +71,7 @@ export function RequestsFilterToolbar({
             aria-label={searchPlaceholder}
             className="pl-8 pr-8 bg-card dark:bg-card border-border"
           />
-          {search && (
+          {search && search.trim().length > 0 && (
             <button
               type="button"
               onClick={() => onSearchChange("")}

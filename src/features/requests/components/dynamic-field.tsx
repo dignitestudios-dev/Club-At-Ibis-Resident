@@ -1,10 +1,10 @@
 "use client";
 
+import { useMemo } from "react";
 import { Controller, type Control, type FieldErrors } from "react-hook-form";
 import {
   Field,
   FieldContent,
-  FieldDescription,
   FieldError,
   FieldLabel,
   FieldSet,
@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { FileDropzone } from "@/features/requests/components/file-dropzone";
+import { FieldHelpTooltip } from "@/components/shared/field-help-tooltip";
 
 export function DynamicField({
   field,
@@ -37,9 +38,24 @@ export function DynamicField({
 }) {
   const error = errors[field.id];
   const hasError = !disabled && !!error;
-  const descriptionId = field.helpText && !disabled ? `${field.id}-description` : undefined;
   const errorId = hasError ? `${field.id}-error` : undefined;
-  const describedBy = [descriptionId, errorId].filter(Boolean).join(" ") || undefined;
+
+  const normalizedOptions: FieldOption[] = useMemo(() => {
+    if (!field.options) return [];
+    return field.options.map((opt) =>
+      typeof opt === "string" ? { label: opt, value: opt } : opt
+    );
+  }, [field.options]);
+
+  const normalizedAccept = useMemo(() => {
+    if (!field.accept) return undefined;
+    if (Array.isArray(field.accept)) {
+      return field.accept
+        .map((a) => (a === "images" ? "image/*" : a === "pdf" ? ".pdf" : a))
+        .join(",");
+    }
+    return field.accept;
+  }, [field.accept]);
 
   return (
     <Controller
@@ -50,27 +66,33 @@ export function DynamicField({
           case "textarea":
             return (
               <Field data-invalid={hasError} data-disabled={disabled}>
-                <FieldLabel htmlFor={field.id}>
-                  {field.label}
+                <FieldLabel htmlFor={field.id} className="flex items-center gap-1">
+                  <span>{field.label}</span>
                   {field.required && !disabled && (
-                    <span className="text-red-500 font-bold ml-0.5 text-sm leading-none" aria-hidden="true">*</span>
+                    <span className="text-red-500 font-bold text-sm leading-none" aria-hidden="true">*</span>
                   )}
+                  {!disabled && <FieldHelpTooltip content={field.helpText} />}
                 </FieldLabel>
                 <FieldContent>
-                  {field.helpText && !disabled && (
-                    <FieldDescription id={descriptionId}>{field.helpText}</FieldDescription>
-                  )}
                   <Textarea
                     id={field.id}
                     placeholder={field.placeholder}
                     rows={3}
+                    maxLength={2000}
                     value={(rhf.value as string) ?? ""}
                     onChange={rhf.onChange}
                     disabled={disabled}
                     aria-required={field.required}
                     aria-invalid={hasError}
-                    aria-describedby={describedBy}
+                    aria-describedby={errorId}
                   />
+                  {!disabled && (
+                    <div className="flex justify-end mt-1">
+                      <span className="text-[11px] text-muted-foreground/70 tabular-nums">
+                        {((rhf.value as string) ?? "").length}/2000
+                      </span>
+                    </div>
+                  )}
                   {hasError && (
                     <FieldError id={errorId} errors={error ? [error as { message?: string }] : []} />
                   )}
@@ -81,16 +103,14 @@ export function DynamicField({
           case "number":
             return (
               <Field data-invalid={hasError} data-disabled={disabled}>
-                <FieldLabel htmlFor={field.id}>
-                  {field.label}
+                <FieldLabel htmlFor={field.id} className="flex items-center gap-1">
+                  <span>{field.label}</span>
                   {field.required && !disabled && (
-                    <span className="text-red-500 font-bold ml-0.5 text-sm leading-none" aria-hidden="true">*</span>
+                    <span className="text-red-500 font-bold text-sm leading-none" aria-hidden="true">*</span>
                   )}
+                  {!disabled && <FieldHelpTooltip content={field.helpText} />}
                 </FieldLabel>
                 <FieldContent>
-                  {field.helpText && !disabled && (
-                    <FieldDescription id={descriptionId}>{field.helpText}</FieldDescription>
-                  )}
                   <Input
                     id={field.id}
                     type="number"
@@ -100,7 +120,7 @@ export function DynamicField({
                     disabled={disabled}
                     aria-required={field.required}
                     aria-invalid={hasError}
-                    aria-describedby={describedBy}
+                    aria-describedby={errorId}
                   />
                   {hasError && (
                     <FieldError id={errorId} errors={error ? [error as { message?: string }] : []} />
@@ -112,18 +132,16 @@ export function DynamicField({
           case "select":
             return (
               <Field data-invalid={hasError} data-disabled={disabled}>
-                <FieldLabel htmlFor={field.id}>
-                  {field.label}
+                <FieldLabel htmlFor={field.id} className="flex items-center gap-1">
+                  <span>{field.label}</span>
                   {field.required && !disabled && (
-                    <span className="text-red-500 font-bold ml-0.5 text-sm leading-none" aria-hidden="true">*</span>
+                    <span className="text-red-500 font-bold text-sm leading-none" aria-hidden="true">*</span>
                   )}
+                  {!disabled && <FieldHelpTooltip content={field.helpText} />}
                 </FieldLabel>
                 <FieldContent>
-                  {field.helpText && !disabled && (
-                    <FieldDescription id={descriptionId}>{field.helpText}</FieldDescription>
-                  )}
                   <Select
-                    items={field.options}
+                    items={normalizedOptions}
                     value={(rhf.value as string) ?? ""}
                     onValueChange={rhf.onChange}
                     disabled={disabled}
@@ -133,13 +151,13 @@ export function DynamicField({
                       className="w-full"
                       aria-required={field.required}
                       aria-invalid={hasError}
-                      aria-describedby={describedBy}
+                      aria-describedby={errorId}
                       disabled={disabled}
                     >
                       <SelectValue placeholder="Select an option" />
                     </SelectTrigger>
                     <SelectContent>
-                      {field.options?.map((opt) => (
+                      {normalizedOptions.map((opt) => (
                         <SelectItem key={opt.value} value={opt.value}>
                           {opt.label}
                         </SelectItem>
@@ -155,24 +173,22 @@ export function DynamicField({
 
           case "radio":
             return (
-              <FieldSet data-invalid={hasError} data-disabled={disabled} aria-describedby={describedBy}>
-                <FieldLegend variant="label" className="text-sm font-medium text-foreground">
-                  {field.label}
+              <FieldSet data-invalid={hasError} data-disabled={disabled} aria-describedby={errorId}>
+                <FieldLegend variant="label" className="flex items-center gap-1 text-sm font-medium text-foreground">
+                  <span>{field.label}</span>
                   {field.required && !disabled && (
-                    <span className="text-red-500 font-bold ml-0.5 text-sm leading-none" aria-hidden="true">*</span>
+                    <span className="text-red-500 font-bold text-sm leading-none" aria-hidden="true">*</span>
                   )}
+                  {!disabled && <FieldHelpTooltip content={field.helpText} />}
                 </FieldLegend>
                 <FieldContent>
-                  {field.helpText && !disabled && (
-                    <FieldDescription id={descriptionId}>{field.helpText}</FieldDescription>
-                  )}
                   <RadioGroup
                     value={(rhf.value as string) ?? ""}
                     onValueChange={rhf.onChange}
                     disabled={disabled}
                     aria-required={field.required}
                   >
-                    {field.options?.map((opt) => (
+                    {normalizedOptions.map((opt) => (
                       <FieldLabel
                         key={opt.value}
                         htmlFor={`${field.id}-${opt.value}`}
@@ -196,19 +212,17 @@ export function DynamicField({
 
           case "checkbox":
             return (
-              <FieldSet data-invalid={hasError} data-disabled={disabled} aria-describedby={describedBy}>
-                <FieldLegend variant="label" className="text-sm font-medium text-foreground">
-                  {field.label}
+              <FieldSet data-invalid={hasError} data-disabled={disabled} aria-describedby={errorId}>
+                <FieldLegend variant="label" className="flex items-center gap-1 text-sm font-medium text-foreground">
+                  <span>{field.label}</span>
                   {field.required && !disabled && (
-                    <span className="text-red-500 font-bold ml-0.5 text-sm leading-none" aria-hidden="true">*</span>
+                    <span className="text-red-500 font-bold text-sm leading-none" aria-hidden="true">*</span>
                   )}
+                  {!disabled && <FieldHelpTooltip content={field.helpText} />}
                 </FieldLegend>
                 <FieldContent>
-                  {field.helpText && !disabled && (
-                    <FieldDescription id={descriptionId}>{field.helpText}</FieldDescription>
-                  )}
                   <div className="flex flex-col gap-2">
-                    {field.options?.map((opt) => {
+                    {normalizedOptions.map((opt) => {
                       const current: string[] = Array.isArray(rhf.value)
                         ? rhf.value
                         : [];
@@ -245,16 +259,14 @@ export function DynamicField({
           case "date":
             return (
               <Field data-invalid={hasError} data-disabled={disabled}>
-                <FieldLabel htmlFor={field.id}>
-                  {field.label}
+                <FieldLabel htmlFor={field.id} className="flex items-center gap-1">
+                  <span>{field.label}</span>
                   {field.required && !disabled && (
-                    <span className="text-red-500 font-bold ml-0.5 text-sm leading-none" aria-hidden="true">*</span>
+                    <span className="text-red-500 font-bold text-sm leading-none" aria-hidden="true">*</span>
                   )}
+                  {!disabled && <FieldHelpTooltip content={field.helpText} />}
                 </FieldLabel>
                 <FieldContent>
-                  {field.helpText && !disabled && (
-                    <FieldDescription id={descriptionId}>{field.helpText}</FieldDescription>
-                  )}
                   <Input
                     id={field.id}
                     type="date"
@@ -263,7 +275,7 @@ export function DynamicField({
                     disabled={disabled}
                     aria-required={field.required}
                     aria-invalid={hasError}
-                    aria-describedby={describedBy}
+                    aria-describedby={errorId}
                   />
                   {hasError && (
                     <FieldError id={errorId} errors={error ? [error as { message?: string }] : []} />
@@ -275,20 +287,18 @@ export function DynamicField({
           case "file":
             return (
               <Field data-invalid={hasError} data-disabled={disabled}>
-                <FieldLabel htmlFor={field.id}>
-                  {field.label}
+                <FieldLabel htmlFor={field.id} className="flex items-center gap-1">
+                  <span>{field.label}</span>
                   {field.required && !disabled && (
-                    <span className="text-red-500 font-bold ml-0.5 text-sm leading-none" aria-hidden="true">*</span>
+                    <span className="text-red-500 font-bold text-sm leading-none" aria-hidden="true">*</span>
                   )}
+                  {!disabled && <FieldHelpTooltip content={field.helpText} />}
                 </FieldLabel>
                 <FieldContent>
-                  {field.helpText && !disabled && (
-                    <FieldDescription id={descriptionId}>{field.helpText}</FieldDescription>
-                  )}
                   <FileDropzone
                     value={(rhf.value as DropzoneFile[]) ?? []}
                     onChange={rhf.onChange}
-                    accept={field.accept}
+                    accept={normalizedAccept}
                     multiple={field.multiple}
                     disabled={disabled}
                     invalid={hasError}
@@ -303,25 +313,24 @@ export function DynamicField({
           default:
             return (
               <Field data-invalid={hasError} data-disabled={disabled}>
-                <FieldLabel htmlFor={field.id}>
-                  {field.label}
+                <FieldLabel htmlFor={field.id} className="flex items-center gap-1">
+                  <span>{field.label}</span>
                   {field.required && !disabled && (
-                    <span className="text-red-500 font-bold ml-0.5 text-sm leading-none" aria-hidden="true">*</span>
+                    <span className="text-red-500 font-bold text-sm leading-none" aria-hidden="true">*</span>
                   )}
+                  {!disabled && <FieldHelpTooltip content={field.helpText} />}
                 </FieldLabel>
                 <FieldContent>
-                  {field.helpText && !disabled && (
-                    <FieldDescription id={descriptionId}>{field.helpText}</FieldDescription>
-                  )}
                   <Input
                     id={field.id}
+                    maxLength={255}
                     placeholder={field.placeholder}
                     value={(rhf.value as string) ?? ""}
                     onChange={rhf.onChange}
                     disabled={disabled}
                     aria-required={field.required}
                     aria-invalid={hasError}
-                    aria-describedby={describedBy}
+                    aria-describedby={errorId}
                   />
                   {hasError && (
                     <FieldError id={errorId} errors={error ? [error as { message?: string }] : []} />

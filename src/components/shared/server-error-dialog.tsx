@@ -28,7 +28,7 @@ export function ServerErrorDialog() {
           <div className="mb-1 flex size-11 items-center justify-center rounded-xl border border-rose-200/80 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/50 dark:text-rose-300">
             <AlertTriangle className="size-5" aria-hidden="true" />
           </div>
-          <DialogTitle className="font-heading text-xl font-medium">Something went wrong on our end</DialogTitle>
+          <DialogTitle className="font-heading text-xl font-medium">Something Went Wrong on Our End</DialogTitle>
           <DialogDescription>
             We&apos;re having trouble connecting right now. Please try again in a moment.
           </DialogDescription>

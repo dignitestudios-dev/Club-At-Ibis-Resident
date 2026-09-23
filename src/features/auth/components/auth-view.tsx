@@ -94,7 +94,7 @@ export function AuthView({ initialTab = "login" }: AuthViewProps) {
         role="tabpanel"
         aria-labelledby={tab === "login" ? "auth-login-tab" : "auth-register-tab"}
         ref={scrollRef}
-        className="relative flex-1 overflow-y-auto custom-scrollbar px-6 py-2 sm:px-8"
+        className="relative flex-1 overflow-y-auto custom-scrollbar px-6 pt-2 pb-6 sm:px-8 sm:pb-6"
       >
         <div key={tab} className="w-full">
           {tab === "login" ? <LoginForm /> : <RegisterForm />}

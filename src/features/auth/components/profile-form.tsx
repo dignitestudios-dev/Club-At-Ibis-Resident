@@ -46,7 +46,7 @@ export default function ProfileForm() {
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Field data-invalid={!!errors.firstName}>
                     <FieldLabel htmlFor="firstName">
-                      First name
+                      First Name
                       <span className="text-red-500 font-bold ml-0.5 text-sm leading-none" aria-hidden="true">*</span>
                     </FieldLabel>
                     <FieldContent>
@@ -62,7 +62,7 @@ export default function ProfileForm() {
                   </Field>
                   <Field data-invalid={!!errors.lastName}>
                     <FieldLabel htmlFor="lastName">
-                      Last name <span className="text-xs text-muted-foreground font-normal">(Optional)</span>
+                      Last Name <span className="text-xs text-muted-foreground font-normal">(Optional)</span>
                     </FieldLabel>
                     <FieldContent>
                       <Input
@@ -79,7 +79,7 @@ export default function ProfileForm() {
 
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Field>
-                    <FieldLabel htmlFor="email-readonly">Email address</FieldLabel>
+                    <FieldLabel htmlFor="email-readonly">Email Address</FieldLabel>
                     <FieldContent>
                       <Input id="email-readonly" value={user.email} disabled />
                     </FieldContent>
@@ -129,7 +129,7 @@ export default function ProfileForm() {
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-2 text-muted-foreground">
                 <Calendar className="size-4 text-muted-foreground" />
-                Member since
+                Member Since
               </span>
               <span className="font-medium text-foreground">
                 {formatDate(user.createdAt)}

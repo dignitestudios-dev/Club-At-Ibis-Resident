@@ -32,11 +32,38 @@ function toPublicResident(u: ResidentApiUser): PublicResident {
 
 export async function getCurrentUser(): Promise<PublicResident | null> {
   if (typeof window === "undefined") return null;
-  if (!localStorage.getItem("auth-token")) return null;
+  let token = localStorage.getItem("auth-token");
+  if (!token && typeof document !== "undefined") {
+    const match = document.cookie.match(/(?:^|;\s*)auth-token=([^;]+)/);
+    if (match && match[1]) {
+      token = match[1];
+      localStorage.setItem("auth-token", token);
+    }
+  }
+  if (!token) return null;
+
   try {
     const { data } = await axiosInstance.get("/auth/me");
-    return toPublicResident(data.data.user);
-  } catch {
+    const resident = toPublicResident(data.data.user);
+    if (resident) {
+      localStorage.setItem("auth-user", JSON.stringify(resident));
+    }
+    return resident;
+  } catch (err: any) {
+    if (err?.statusCode === 401 || err?.response?.status === 401) {
+      return null;
+    }
+    const stored = localStorage.getItem("auth-user");
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (parsed && typeof parsed === "object" && parsed.id) {
+          return parsed as PublicResident;
+        }
+      } catch {
+        // ignore
+      }
+    }
     return null;
   }
 }

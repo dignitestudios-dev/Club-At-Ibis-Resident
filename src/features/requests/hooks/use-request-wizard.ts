@@ -6,6 +6,12 @@ import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+import {
+  saveWizardState,
+  getWizardState,
+  clearWizardState,
+} from "@/features/requests/utils/request-storage";
 import { useCreateRequestMutation } from "@/features/requests/api/requests.mutations";
 import {
   useSaveDraftMutation,
@@ -13,11 +19,12 @@ import {
 } from "@/features/drafts/api/drafts.mutations";
 import { baseProjectInfoFields } from "@/lib/mock/request-types";
 import {
-  buildRequestTypeSchema,
+  buildCategoryFormSchema,
   defaultValuesForFields,
 } from "@/features/requests/schemas/request-step.schema";
+import type { ActiveCategory, CategoryFormField } from "@/features/categories/types/categories.types";
 
-interface WizardStep {
+export interface WizardStep {
   id: string;
   title: string;
   description: string;
@@ -25,9 +32,10 @@ interface WizardStep {
 }
 
 export function useRequestWizard(
-  requestType: RequestType,
+  categoryOrType: ActiveCategory | RequestType,
   onChangeType: () => void,
-  initialDraft?: RequestDraft | null
+  initialDraft?: RequestDraft | null,
+  dynamicFields?: CategoryFormField[]
 ) {
   const router = useRouter();
   const user = useCurrentUser();
@@ -36,20 +44,46 @@ export function useRequestWizard(
   const { mutate: saveDraftMutate, isPending: isSavingDraft } = useSaveDraftMutation();
   const { mutate: deleteDraftMutate } = useDeleteDraftMutation();
 
-  const [stepIndex, setStepIndex] = useState<number>(initialDraft?.stepIndex ?? 0);
+  const [stepIndex, setStepIndex] = useState<number>(() => {
+    if (typeof initialDraft?.stepIndex === "number") return initialDraft.stepIndex;
+    const stored = getWizardState();
+    if (stored && stored.requestTypeId === categoryOrType.id && typeof stored.stepIndex === "number") {
+      return stored.stepIndex;
+    }
+    return 0;
+  });
+
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(initialDraft?.id ?? null);
   const [confirmingChangeCategory, setConfirmingChangeCategory] = useState(false);
 
-  const projectInfoFields = useMemo(
-    () => [...baseProjectInfoFields, ...requestType.additionalFields],
-    [requestType.additionalFields]
-  );
-  const documentFields = requestType.documentFields;
+  // 1. Partition dynamic fields into Step 1 (Common) and Step 2 (Category-Specific)
+  const commonFields: FieldConfig[] = useMemo(() => {
+    if (dynamicFields && dynamicFields.length > 0) {
+      const comm = dynamicFields.filter((f) => f.source === "common");
+      if (comm.length > 0) return comm;
+    }
+    if ("fields" in categoryOrType && Array.isArray(categoryOrType.fields)) {
+      const comm = (categoryOrType.fields as CategoryFormField[]).filter((f) => f.source === "common");
+      if (comm.length > 0) return comm;
+    }
+    // Fallback for legacy request type structure
+    return [...baseProjectInfoFields, ...((categoryOrType as RequestType).additionalFields || [])];
+  }, [categoryOrType, dynamicFields]);
+
+  const categoryFields: FieldConfig[] = useMemo(() => {
+    if (dynamicFields && dynamicFields.length > 0) {
+      return dynamicFields.filter((f) => f.source === "category");
+    }
+    if ("fields" in categoryOrType && Array.isArray(categoryOrType.fields)) {
+      return (categoryOrType.fields as CategoryFormField[]).filter((f) => f.source === "category");
+    }
+    return (categoryOrType as RequestType).documentFields || [];
+  }, [categoryOrType, dynamicFields]);
+
   const allFields = useMemo(
-    () => [...projectInfoFields, ...documentFields],
-    [projectInfoFields, documentFields]
+    () => [...commonFields, ...categoryFields],
+    [commonFields, categoryFields]
   );
-  const schema = useMemo(() => buildRequestTypeSchema(requestType), [requestType]);
 
   const steps: WizardStep[] = useMemo(
     () => [
@@ -57,46 +91,70 @@ export function useRequestWizard(
         id: "project-info",
         title: "Project Information",
         description: "Tell us about the property and the proposed project.",
-        fields: projectInfoFields,
+        fields: commonFields,
       },
       {
-        id: "documents",
-        title: "Documents & Photos",
-        description: "Upload the documents and photos required for this category.",
-        fields: documentFields,
+        id: "category-details",
+        title: "Category Details",
+        description: "Provide the category-specific information and required documents.",
+        fields: categoryFields,
       },
     ],
-    [projectInfoFields, documentFields]
+    [commonFields, categoryFields]
   );
+
+  const schema = useMemo(() => buildCategoryFormSchema(allFields), [allFields]);
 
   const initialFormValues = useMemo(() => {
     const defaults = defaultValuesForFields(allFields);
-    if (!initialDraft) return defaults;
+    if (initialDraft) {
+      const merged: Record<string, unknown> = {
+        ...defaults,
+        ...initialDraft.fieldValues,
+        hoaApproved: initialDraft.hoaApproved ?? false,
+      };
 
-    const merged: Record<string, unknown> = {
-      ...defaults,
-      ...initialDraft.fieldValues,
-      hoaApproved: initialDraft.hoaApproved ?? false,
-    };
-
-    if (initialDraft.uploads) {
-      for (const [key, files] of Object.entries(initialDraft.uploads)) {
-        merged[key] = (files || []).map((f) => ({
-          id: f.id,
-          name: f.name,
-          size: f.size,
-          url: f.url,
-        }));
+      if (initialDraft.uploads) {
+        for (const [key, files] of Object.entries(initialDraft.uploads)) {
+          merged[key] = (files || []).map((f) => ({
+            id: f.id,
+            name: f.name,
+            size: f.size,
+            url: f.url,
+          }));
+        }
       }
+      return merged;
     }
-    return merged;
-  }, [allFields, initialDraft]);
+
+    const stored = getWizardState();
+    if (stored && stored.requestTypeId === categoryOrType.id && stored.fieldValues) {
+      return {
+        ...defaults,
+        ...stored.fieldValues,
+      };
+    }
+
+    return defaults;
+  }, [allFields, initialDraft, categoryOrType.id]);
 
   const form = useForm<Record<string, unknown>>({
     mode: "onChange",
     resolver: zodResolver(schema) as unknown as Resolver<Record<string, unknown>>,
     defaultValues: initialFormValues,
   });
+
+  // Watch and auto-save form values into sessionStorage as the user types
+  useEffect(() => {
+    const subscription = form.watch((values) => {
+      saveWizardState({
+        requestTypeId: categoryOrType.id,
+        stepIndex,
+        fieldValues: values as Record<string, unknown>,
+      });
+    });
+    return () => subscription.unsubscribe();
+  }, [form, categoryOrType.id, stepIndex]);
 
   // Sync draft if loaded asynchronously
   useEffect(() => {
@@ -143,6 +201,19 @@ export function useRequestWizard(
     return () => clearTimeout(timer);
   }, [isReviewStep]);
 
+  function hasEnteredData() {
+    const values = form.getValues();
+    return allFields.some((field) => {
+      const value = values[field.id];
+      if (Array.isArray(value)) return value.length > 0;
+      return value !== undefined && value !== null && value !== "";
+    });
+  }
+
+  // Prevent accidental reload or link navigation when in-progress data exists
+  const isDirty = hasEnteredData() || stepIndex > 0;
+  const { dialog: guardDialog, allowLeave: guardAllowLeave } = useUnsavedChanges(isDirty);
+
   function extractPayload(targetStepIndex?: number): SaveDraftPayload {
     const residentId = user?.id || "res-1";
     const values = form.getValues();
@@ -167,7 +238,7 @@ export function useRequestWizard(
     return {
       id: currentDraftId || undefined,
       residentId,
-      requestTypeId: requestType.id,
+      requestTypeId: categoryOrType.id,
       fieldValues,
       uploads,
       stepIndex: targetStepIndex ?? stepIndex,
@@ -180,6 +251,8 @@ export function useRequestWizard(
     saveDraftMutate(payload, {
       onSuccess: (saved) => {
         setCurrentDraftId(saved.id);
+        clearWizardState();
+        guardAllowLeave();
         toast.success("Progress saved to drafts.");
         if (options.redirect) {
           router.push("/drafts");
@@ -194,10 +267,16 @@ export function useRequestWizard(
   async function handleNext() {
     if (isReviewStep) return;
     const fieldIds = currentStep.fields.map((f) => f.id);
-    const valid = await form.trigger(fieldIds);
+    const valid = fieldIds.length === 0 ? true : await form.trigger(fieldIds);
     if (valid) {
       const nextIndex = stepIndex + 1;
       setStepIndex(nextIndex);
+      saveWizardState({
+        requestTypeId: categoryOrType.id,
+        stepIndex: nextIndex,
+        fieldValues: form.getValues(),
+      });
+      window.scrollTo({ top: 0, behavior: "smooth" });
       // Auto-save progress quietly in the background
       const payload = extractPayload(nextIndex);
       saveDraftMutate(payload, {
@@ -208,29 +287,31 @@ export function useRequestWizard(
     }
   }
 
-  function hasEnteredData() {
-    const values = form.getValues();
-    return allFields.some((field) => {
-      const value = values[field.id];
-      if (Array.isArray(value)) return value.length > 0;
-      return !!value;
-    });
-  }
-
   function handleBack() {
     if (stepIndex === 0) {
       if (hasEnteredData()) {
         setConfirmingChangeCategory(true);
         return;
       }
+      clearWizardState();
+      guardAllowLeave();
       onChangeType();
       return;
     }
-    setStepIndex((i) => i - 1);
+    const prevIndex = stepIndex - 1;
+    setStepIndex(prevIndex);
+    saveWizardState({
+      requestTypeId: categoryOrType.id,
+      stepIndex: prevIndex,
+      fieldValues: form.getValues(),
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function confirmChangeCategory() {
     setConfirmingChangeCategory(false);
+    clearWizardState();
+    guardAllowLeave();
     onChangeType();
   }
 
@@ -264,17 +345,18 @@ export function useRequestWizard(
     createRequest(
       {
         residentId,
-        requestTypeId: requestType.id,
+        requestTypeId: categoryOrType.id,
         fieldValues,
         uploads,
         hoaApproved: values.hoaApproved === true,
       },
       {
         onSuccess: (record) => {
-          // If this submission was saved as a draft, remove it from drafts
           if (currentDraftId) {
             deleteDraftMutate(currentDraftId);
           }
+          clearWizardState();
+          guardAllowLeave();
           toast.success("Request submitted for ARB review.");
           router.push(`/requests/${record.id}`);
         },
@@ -291,6 +373,9 @@ export function useRequestWizard(
     isReviewStep,
     currentStep,
     stepperSteps,
+    commonFields,
+    categoryFields,
+    allFields,
     reviewReady,
     isPending,
     isSavingDraft,
@@ -301,6 +386,8 @@ export function useRequestWizard(
     confirmChangeCategory,
     saveDraftAndExit,
     cancelChangeCategory: () => setConfirmingChangeCategory(false),
+    guardDialog,
+    guardAllowLeave,
     onSubmit: form.handleSubmit(handleSubmit),
   };
 }

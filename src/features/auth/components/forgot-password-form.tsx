@@ -29,23 +29,23 @@ export default function ForgotPasswordForm() {
           <MailCheck className="size-5" />
         </div>
         <div className="space-y-1.5">
-          <h1 className="font-heading text-2xl font-medium text-foreground">Check your email</h1>
+          <h1 className="font-heading text-2xl font-medium text-foreground">Check Your Email</h1>
           <p className="text-sm text-muted-foreground">
             If an account exists for that email address, we've sent a link to reset your
             password.
           </p>
         </div>
         <Link href="/auth/login" className="text-sm font-medium text-primary hover:underline block pt-2">
-          Back to sign in
+          Back to Sign In
         </Link>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 overflow-y-auto custom-scrollbar px-6 py-4 sm:px-8 space-y-6">
+    <div className="flex-1 overflow-y-auto custom-scrollbar px-6 py-5 sm:px-8 sm:py-6 space-y-5">
       <div className="space-y-1.5">
-        <h1 className="font-heading text-2xl font-medium text-foreground">Forgot password?</h1>
+        <h1 className="font-heading text-2xl font-medium text-foreground">Forgot Password?</h1>
         <p className="text-sm text-muted-foreground">
           Enter your registered email and we'll send you a link to reset your password.
         </p>
@@ -54,7 +54,7 @@ export default function ForgotPasswordForm() {
       <form onSubmit={handleSubmit(onSubmit)} noValidate>
         <FieldGroup>
           <Field data-invalid={!!errors.email}>
-            <FieldLabel htmlFor="email">Email address</FieldLabel>
+            <FieldLabel htmlFor="email">Email Address</FieldLabel>
             <FieldContent>
               <Input
                 id="email"
@@ -72,14 +72,14 @@ export default function ForgotPasswordForm() {
 
           <Button type="submit" className="w-full" disabled={isPending}>
             {isPending && <Spinner className="size-4" />}
-            Send reset link
+            Send Reset Link
           </Button>
         </FieldGroup>
       </form>
 
       <p className="text-center text-sm text-muted-foreground">
         <Link href="/auth/login" className="font-medium text-primary hover:underline">
-          Back to sign in
+          Back to Sign In
         </Link>
       </p>
     </div>

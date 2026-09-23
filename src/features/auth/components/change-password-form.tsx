@@ -43,7 +43,7 @@ export function ChangePasswordForm() {
               render={({ field }) => (
                 <Field data-invalid={!!errors.currentPassword}>
                   <FieldLabel htmlFor="currentPassword">
-                    Current password
+                    Current Password
                     <span className="text-red-500 font-bold ml-0.5 text-sm leading-none" aria-hidden="true">*</span>
                   </FieldLabel>
                   <FieldContent>
@@ -74,7 +74,7 @@ export function ChangePasswordForm() {
                 render={({ field }) => (
                   <Field data-invalid={!!errors.newPassword}>
                     <FieldLabel htmlFor="newPassword">
-                      New password
+                      New Password
                       <span className="text-red-500 font-bold ml-0.5 text-sm leading-none" aria-hidden="true">*</span>
                     </FieldLabel>
                     <FieldContent>
@@ -105,7 +105,7 @@ export function ChangePasswordForm() {
                 render={({ field }) => (
                   <Field data-invalid={!!errors.confirmNewPassword}>
                     <FieldLabel htmlFor="confirmNewPassword">
-                      Confirm new password
+                      Confirm New Password
                       <span className="text-red-500 font-bold ml-0.5 text-sm leading-none" aria-hidden="true">*</span>
                     </FieldLabel>
                     <FieldContent>

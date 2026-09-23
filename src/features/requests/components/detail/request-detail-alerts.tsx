@@ -96,7 +96,7 @@ export function RequestDetailAlerts({
       {request.status === "rejected" && request.rejectionReason && (
         <Alert variant="destructive">
           <AlertTriangle className="size-4" aria-hidden="true" />
-          <AlertTitle>Request rejected</AlertTitle>
+          <AlertTitle>Request Rejected</AlertTitle>
           <AlertDescription>{request.rejectionReason}</AlertDescription>
         </Alert>
       )}
@@ -104,7 +104,7 @@ export function RequestDetailAlerts({
       {request.status === "approved" && (
         <Alert className="border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/40">
           <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
-          <AlertTitle className="text-emerald-900 dark:text-emerald-200">Request approved</AlertTitle>
+          <AlertTitle className="text-emerald-900 dark:text-emerald-200">Request Approved</AlertTitle>
           <AlertDescription className="text-emerald-800 dark:text-emerald-300">
             Final processing (deposit, if applicable, and the approval letter) is in progress. You will be notified once this request is marked completed.
           </AlertDescription>
@@ -114,7 +114,7 @@ export function RequestDetailAlerts({
       {request.status === "completed" && request.approvalLetterAvailable && (
         <Alert className="border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/40">
           <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
-          <AlertTitle className="text-emerald-900 dark:text-emerald-200">Request completed</AlertTitle>
+          <AlertTitle className="text-emerald-900 dark:text-emerald-200">Request Completed</AlertTitle>
           <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <span className="text-emerald-800 dark:text-emerald-300">Your final approval letter is ready to download.</span>
             <Button
@@ -141,7 +141,7 @@ export function RequestDetailAlerts({
       {request.status === "withdrawn" && (
         <Alert>
           <UserX className="size-4 text-muted-foreground" aria-hidden="true" />
-          <AlertTitle>Request withdrawn</AlertTitle>
+          <AlertTitle>Request Withdrawn</AlertTitle>
           <AlertDescription>
             This request was withdrawn on {formatDate(request.withdrawnAt ?? request.updatedAt)}. Further review and approval processing has stopped.
           </AlertDescription>

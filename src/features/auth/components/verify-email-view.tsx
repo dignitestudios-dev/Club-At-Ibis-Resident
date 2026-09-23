@@ -74,7 +74,7 @@ export default function VerifyEmailView({ token }: { token: string }) {
             <MailCheck className="size-6" />
           </div>
           <div className="space-y-1.5">
-            <h1 className="font-heading text-2xl font-medium text-foreground">Check your email</h1>
+            <h1 className="font-heading text-2xl font-medium text-foreground">Check Your Email</h1>
             <p className="text-sm text-muted-foreground">
               If a pending resident account exists for that email, we&apos;ve sent a fresh verification link.
             </p>
@@ -84,7 +84,7 @@ export default function VerifyEmailView({ token }: { token: string }) {
             className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline dark:text-amber-300"
           >
             <ArrowLeft className="size-4" />
-            Back to sign in
+            Back to Sign In
           </Link>
         </div>
       );
@@ -101,7 +101,7 @@ export default function VerifyEmailView({ token }: { token: string }) {
             <Clock className="size-6" />
           </div>
           <div className="space-y-1">
-            <h1 className="font-heading text-2xl font-medium text-foreground">Link expired or invalid</h1>
+            <h1 className="font-heading text-2xl font-medium text-foreground">Link Expired or Invalid</h1>
             <p className="text-sm text-muted-foreground">{errorMessage}</p>
           </div>
         </div>
@@ -121,7 +121,7 @@ export default function VerifyEmailView({ token }: { token: string }) {
           <FieldGroup>
             <Field data-invalid={!!errors.email}>
               <FieldLabel htmlFor="resend-email">
-                Registered email address<RequiredMark />
+                Registered Email Address<RequiredMark />
               </FieldLabel>
               <FieldContent>
                 <Input
@@ -137,14 +137,14 @@ export default function VerifyEmailView({ token }: { token: string }) {
             </Field>
             <Button type="submit" className="w-full" disabled={isResending}>
               {isResending ? <Spinner className="size-4" /> : <RotateCw className="size-4 mr-1.5" />}
-              Resend verification link
+              Resend Verification Link
             </Button>
           </FieldGroup>
         </form>
 
         <p className="text-center text-sm text-muted-foreground">
           <Link href="/auth/login" className="font-medium text-primary hover:underline dark:text-amber-300">
-            Back to sign in
+            Back to Sign In
           </Link>
         </p>
       </div>
@@ -166,14 +166,14 @@ export default function VerifyEmailView({ token }: { token: string }) {
         <CheckCircle2 className="size-6" />
       </div>
       <div className="space-y-2">
-        <h1 className="font-heading text-2xl font-medium text-foreground">Email verified!</h1>
+        <h1 className="font-heading text-2xl font-medium text-foreground">Email Verified!</h1>
         <p className="text-sm text-muted-foreground">
           Your resident account has been verified successfully. You can now sign in to access your portal.
         </p>
       </div>
       <div className="pt-2">
         <Button onClick={() => router.push("/auth/login")} className="w-full">
-          Sign in to your account
+          Sign In to Your Account
         </Button>
       </div>
     </div>

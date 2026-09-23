@@ -8,7 +8,14 @@ const axiosInstance = axios.create({
 
 axiosInstance.interceptors.request.use((config) => {
   if (typeof window !== "undefined") {
-    const token = localStorage.getItem("auth-token");
+    let token = localStorage.getItem("auth-token");
+    if (!token && typeof document !== "undefined") {
+      const match = document.cookie.match(/(?:^|;\s*)auth-token=([^;]+)/);
+      if (match && match[1]) {
+        token = match[1];
+        localStorage.setItem("auth-token", token);
+      }
+    }
     if (token) config.headers.Authorization = `Bearer ${token}`;
   }
   return config;

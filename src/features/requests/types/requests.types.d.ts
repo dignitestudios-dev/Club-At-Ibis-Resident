@@ -20,9 +20,11 @@ interface FieldConfig {
   required: boolean;
   placeholder?: string;
   helpText?: string;
-  options?: FieldOption[];
-  accept?: string;
+  options?: (FieldOption | string)[];
+  accept?: string | string[];
   multiple?: boolean;
+  order?: number;
+  source?: "common" | "category";
 }
 
 interface RequestType {

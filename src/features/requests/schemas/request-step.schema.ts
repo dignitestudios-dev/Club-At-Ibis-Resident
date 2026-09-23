@@ -14,28 +14,39 @@ export function buildStepSchema(fields: FieldConfig[]) {
         });
         schema = field.required
           ? base.min(0, `${field.label} is required.`)
-          : base.optional().nullable();
+          : z.union([base, z.literal(""), z.null(), z.undefined()]).optional();
         break;
       }
       case "checkbox": {
         const base = z.array(z.string());
         schema = field.required
           ? base.min(1, `Select at least one option for ${field.label}.`)
-          : base.optional();
+          : base.optional().default([]);
         break;
       }
       case "file": {
         const base = z.array(z.any());
         schema = field.required
           ? base.min(1, `${field.label} is required.`)
-          : base.optional();
+          : base.optional().default([]);
+        break;
+      }
+      case "date": {
+        schema = field.required
+          ? z.string().trim().min(1, `${field.label} is required.`)
+          : z.string().optional().nullable();
+        break;
+      }
+      case "textarea": {
+        schema = field.required
+          ? z.string().trim().min(1, `${field.label} is required.`).max(2000, `${field.label} cannot exceed 2000 characters.`)
+          : z.string().max(2000, `${field.label} cannot exceed 2000 characters.`).optional().nullable();
         break;
       }
       default: {
-        const base = z.string();
         schema = field.required
-          ? base.min(1, `${field.label} is required.`)
-          : base.optional();
+          ? z.string().trim().min(1, `${field.label} is required.`).max(255, `${field.label} cannot exceed 255 characters.`)
+          : z.string().max(255, `${field.label} cannot exceed 255 characters.`).optional().nullable();
       }
     }
 
@@ -45,22 +56,34 @@ export function buildStepSchema(fields: FieldConfig[]) {
   return z.object(shape);
 }
 
-export function getAllFieldsForRequestType(requestType: RequestType): FieldConfig[] {
-  return [...baseProjectInfoFields, ...requestType.additionalFields, ...requestType.documentFields];
-}
-
-export function buildRequestTypeSchema(requestType: RequestType) {
-  const allFields = getAllFieldsForRequestType(requestType);
-  const dataShape = buildStepSchema(allFields).shape;
+export function buildCategoryFormSchema(fields: FieldConfig[]) {
+  const dataShape = buildStepSchema(fields).shape;
   return z.object({
     ...dataShape,
     hoaApproved: z
       .boolean()
-      .refine((v) => v === true, { message: "You must confirm HOA approval before submitting." }),
+      .refine((v) => v === true, {
+        message: "You must confirm HOA approval before submitting.",
+      }),
   });
 }
 
-export function defaultValuesForFields(fields: FieldConfig[]): Record<string, unknown> {
+export function getAllFieldsForRequestType(requestType: RequestType): FieldConfig[] {
+  return [
+    ...baseProjectInfoFields,
+    ...(requestType.additionalFields ?? []),
+    ...(requestType.documentFields ?? []),
+  ];
+}
+
+export function buildRequestTypeSchema(requestType: RequestType) {
+  const allFields = getAllFieldsForRequestType(requestType);
+  return buildCategoryFormSchema(allFields);
+}
+
+export function defaultValuesForFields(
+  fields: FieldConfig[]
+): Record<string, unknown> {
   const defaults: Record<string, unknown> = {};
   for (const field of fields) {
     if (field.type === "checkbox" || field.type === "file") {

@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import RequestWizard from "@/features/requests/components/request-wizard";
 import { Skeleton } from "@/components/ui/skeleton";
+
+export const metadata: Metadata = {
+  title: "New Request · Club At Ibis Resident Portal",
+};
 
 export default function NewRequestPage() {
   return (
