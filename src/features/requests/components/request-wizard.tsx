@@ -42,6 +42,7 @@ import { RequestTypeCard } from "@/features/requests/components/request-type-car
 import { RequestReview } from "@/features/requests/components/request-review";
 import { RequestHoaCard } from "@/features/requests/components/wizard/request-hoa-card";
 import { useRequestWizard } from "@/features/requests/hooks/use-request-wizard";
+import { useQueryClient } from "@tanstack/react-query";
 import { useDraftDetailQuery } from "@/features/drafts/api/drafts.queries";
 import { useDeleteDraftMutation } from "@/features/drafts/api/drafts.mutations";
 import {
@@ -66,11 +67,16 @@ import { cn } from "@/utils/cn";
 export default function RequestWizard({ draftIdProp }: { draftIdProp?: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
   const toast = useToast();
   const draftId = draftIdProp || searchParams.get("draftId");
   const { data: draft, isLoading: isLoadingDraft } = useDraftDetailQuery(draftId ?? undefined);
 
+  const [createdDraft, setCreatedDraft] = useState<any>(null);
   const [initializingCategory, setInitializingCategory] = useState<ActiveCategory | null>(null);
+
+  const effectiveDraft = draft || createdDraft;
+  const effectiveDraftId = draftId || createdDraft?.id;
 
   const {
     data: categoriesResult,
@@ -87,12 +93,13 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
 
   // Sync category ID if resuming from draft
   useEffect(() => {
-    if (draft?.requestTypeId && !requestTypeId) {
-      setRequestTypeId(draft.requestTypeId);
+    const catId = effectiveDraft?.categoryId || effectiveDraft?.requestTypeId;
+    if (catId && !requestTypeId) {
+      setRequestTypeId(catId);
     }
-  }, [draft, requestTypeId]);
+  }, [effectiveDraft, requestTypeId]);
 
-  const activeTypeId = requestTypeId || draft?.requestTypeId || null;
+  const activeTypeId = requestTypeId || effectiveDraft?.categoryId || effectiveDraft?.requestTypeId || null;
 
   // Fetch live category form definition once a category is selected
   const {
@@ -135,12 +142,16 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
         },
         key
       );
-      toast.success("Draft initialized", `Reference: ${newDraft.reference || newDraft.code}`);
+      queryClient.setQueryData(["drafts", "detail", newDraft.id], newDraft);
+      queryClient.invalidateQueries({ queryKey: ["drafts"] });
+      setCreatedDraft(newDraft as any);
       setRequestTypeId(cat.id);
+      toast.success("Draft initialized", `Reference: ${newDraft.reference || newDraft.code}`);
       router.replace(`/requests/new?draftId=${newDraft.id}`);
     } catch (err: any) {
       const message = err?.message || "Failed to initialize draft request. Please try again.";
       toast.error("Initialization Failed", message);
+    } finally {
       setInitializingCategory(null);
     }
   }
@@ -446,10 +457,12 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
       key={selectedCategory.id}
       category={selectedCategory}
       dynamicFields={dynamicFields}
-      initialDraft={draft}
+      initialDraft={effectiveDraft}
       onChangeType={() => {
         clearWizardState();
         setRequestTypeId(null);
+        setCreatedDraft(null);
+        router.replace("/requests/new");
       }}
     />
   );
