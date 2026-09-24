@@ -21,6 +21,7 @@ const STATUS_TOP_ACCENT: Record<RequestStatus, string> = {
   rejected: "bg-rose-500",
   completed: "bg-emerald-600",
   withdrawn: "bg-slate-400 dark:bg-slate-600",
+  cancelled: "bg-slate-400 dark:bg-slate-600",
 };
 
 export const RequestListItem = memo(function RequestListItem({

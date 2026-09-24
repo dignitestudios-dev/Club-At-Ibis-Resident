@@ -75,9 +75,5 @@ export async function saveDraft(payload: SaveDraftPayload): Promise<RequestDraft
 }
 
 export async function deleteDraft(id: string): Promise<void> {
-  try {
-    await axiosInstance.delete(`/requests/${id}`);
-  } catch {
-    // If backend doesn't support DELETE /requests/:id, gracefully complete
-  }
+  await axiosInstance.delete(`/requests/${id}`);
 }

@@ -13,7 +13,7 @@ import { useDrafts } from "@/features/drafts/hooks/use-drafts";
 
 export default function DraftsListPage() {
   const [search, setSearch] = useState("");
-  const { drafts, isLoading, isDeleting, deleteDraft } = useDrafts({ search });
+  const { drafts, isLoading, deletingId, deleteDraft } = useDrafts({ search });
 
   const hasSearch = search.trim().length > 0;
 
@@ -95,7 +95,7 @@ export default function DraftsListPage() {
               key={draft.id}
               draft={draft}
               onDelete={deleteDraft}
-              isDeleting={isDeleting}
+              isDeleting={deletingId === draft.id}
             />
           ))}
         </div>

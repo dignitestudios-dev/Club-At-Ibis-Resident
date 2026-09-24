@@ -15,6 +15,7 @@ import {
   AlertTriangle,
   Lock,
   FileCheck2,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -31,6 +32,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { StatusBadge } from "@/features/requests/components/status-badge";
@@ -41,6 +43,7 @@ import { RequestReview } from "@/features/requests/components/request-review";
 import { RequestHoaCard } from "@/features/requests/components/wizard/request-hoa-card";
 import { useRequestWizard } from "@/features/requests/hooks/use-request-wizard";
 import { useDraftDetailQuery } from "@/features/drafts/api/drafts.queries";
+import { useDeleteDraftMutation } from "@/features/drafts/api/drafts.mutations";
 import {
   useActiveCategoriesQuery,
   useActiveCategoryFormQuery,
@@ -478,6 +481,7 @@ function CategoryFormWizard({
     lastSavedAt,
     isStaleForm,
     reference,
+    currentDraftId,
     handleMigrateForm,
     handleSaveDraft,
     handleNext,
@@ -489,6 +493,25 @@ function CategoryFormWizard({
     guardDialog,
     onSubmit,
   } = useRequestWizard(category, onChangeType, initialDraft, dynamicFields);
+
+  const router = useRouter();
+  const toast = useToast();
+  const [confirmingDiscard, setConfirmingDiscard] = useState(false);
+  const { mutate: deleteDraftMutate, isPending: isDeletingDraft } = useDeleteDraftMutation();
+
+  const handleDiscard = () => {
+    if (!currentDraftId) return;
+    deleteDraftMutate(currentDraftId, {
+      onSuccess: () => {
+        clearWizardState();
+        toast.success("Draft discarded", "The draft has been permanently deleted.");
+        router.push("/requests?tab=drafts");
+      },
+      onError: (err: any) => {
+        toast.error("Failed to discard draft", err?.response?.data?.message || err?.message || "An unexpected error occurred.");
+      },
+    });
+  };
 
   const hoaError = form.formState.errors.hoaApproved;
 
@@ -532,6 +555,21 @@ function CategoryFormWizard({
                 Saved
               </span>
             ) : null}
+
+            {currentDraftId && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setConfirmingDiscard(true)}
+                disabled={isPending || isSavingDraft || isDeletingDraft}
+                className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                title="Discard this draft permanently"
+              >
+                <Trash2 className="size-3.5" />
+                Discard
+              </Button>
+            )}
           </div>
         )}
       </div>
@@ -708,6 +746,17 @@ function CategoryFormWizard({
       </AlertDialog>
 
       {guardDialog}
+
+      <ConfirmDialog
+        open={confirmingDiscard}
+        onOpenChange={setConfirmingDiscard}
+        title="Discard Draft Permanently?"
+        description="Are you sure you want to discard this draft? This request and all uploaded documents will be permanently deleted and cannot be recovered."
+        confirmLabel="Discard Permanently"
+        destructive={true}
+        loading={isDeletingDraft}
+        onConfirm={handleDiscard}
+      />
     </div>
   );
 }

@@ -15,6 +15,7 @@ import { RequestsTabsHeader, type RequestsTabType } from "@/features/requests/co
 import { RequestsFilterToolbar } from "@/features/requests/components/list/requests-filter-toolbar";
 import { useRequestsList } from "@/features/requests/hooks/use-requests-list";
 import { useDeleteDraftMutation } from "@/features/drafts/api/drafts.mutations";
+import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/utils/cn";
 
 const VIEW_MODE_STORAGE_KEY = "ib_requests_view_mode";
@@ -24,15 +25,14 @@ const ACTIVE_STATUS_OPTIONS: { label: string; value: RequestStatus | "all" }[] =
   { label: "Submitted", value: "submitted" },
   { label: "Under Review", value: "under_review" },
   { label: "Changes Required", value: "changes_required" },
-  { label: "Resubmitted", value: "resubmitted" },
   { label: "Approved", value: "approved" },
 ];
 
 const HISTORY_STATUS_OPTIONS: { label: string; value: RequestStatus | "all" }[] = [
   { label: "All History Records", value: "all" },
   { label: "Completed & Closed", value: "completed" },
-  { label: "Not Approved", value: "rejected" },
-  { label: "Withdrawn", value: "withdrawn" },
+  { label: "Rejected", value: "rejected" },
+  { label: "Cancelled", value: "cancelled" },
 ];
 
 export default function RequestsListPage() {
@@ -104,10 +104,24 @@ export default function RequestsListPage() {
     resetFilters,
   } = useRequestsList(activeTab);
 
+  const toast = useToast();
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const { mutate: deleteDraftMutate, isPending: isDeleting } = useDeleteDraftMutation();
 
-  const handleDeleteDraft = (id: string) => {
-    deleteDraftMutate(id);
+  const handleDeleteDraft = (id: string, onSettled?: () => void) => {
+    setDeletingId(id);
+    deleteDraftMutate(id, {
+      onSuccess: () => {
+        setDeletingId(null);
+        toast.success("Draft discarded", "The draft has been permanently deleted.");
+        onSettled?.();
+      },
+      onError: (error: any) => {
+        setDeletingId(null);
+        toast.error("Failed to discard draft", error?.response?.data?.message || error?.message || "An unexpected error occurred.");
+        onSettled?.();
+      },
+    });
   };
 
   const hasActiveFilters = search.trim() !== "" || status !== "all";
@@ -429,7 +443,7 @@ export default function RequestsListPage() {
                   draft={draft}
                   viewMode={viewMode}
                   onDelete={handleDeleteDraft}
-                  isDeleting={isDeleting}
+                  isDeleting={deletingId === draft.id}
                   className="animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-both"
                   style={{ animationDelay: `${Math.min(idx * 50, 350)}ms` }}
                 />

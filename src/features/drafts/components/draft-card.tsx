@@ -16,7 +16,7 @@ export const DraftCard = memo(function DraftCard({
   style,
 }: {
   draft: RequestDraft;
-  onDelete: (id: string) => void;
+  onDelete: (id: string, onSettled?: () => void) => void;
   isDeleting?: boolean;
   viewMode?: "grid" | "list";
   className?: string;
@@ -108,13 +108,16 @@ export const DraftCard = memo(function DraftCard({
 
         <ConfirmDialog
           open={confirmingDelete}
-          onOpenChange={setConfirmingDelete}
-          title="Discard Draft?"
-          description="Are you sure you want to discard this draft? All saved progress for this request will be permanently removed."
-          confirmLabel="Discard Draft"
+          onOpenChange={(open) => {
+            if (!isDeleting) setConfirmingDelete(open);
+          }}
+          title="Discard Draft Permanently?"
+          description="Are you sure you want to discard this draft? This request and all uploaded documents will be permanently deleted and cannot be recovered."
+          confirmLabel={isDeleting ? "Discarding..." : "Discard Permanently"}
+          destructive={true}
+          loading={isDeleting}
           onConfirm={() => {
-            onDelete(draft.id);
-            setConfirmingDelete(false);
+            onDelete(draft.id, () => setConfirmingDelete(false));
           }}
         />
       </div>
@@ -207,13 +210,16 @@ export const DraftCard = memo(function DraftCard({
 
       <ConfirmDialog
         open={confirmingDelete}
-        onOpenChange={setConfirmingDelete}
-        title="Discard Draft?"
-        description="Are you sure you want to discard this draft? All saved progress for this request will be permanently removed."
-        confirmLabel="Discard Draft"
+        onOpenChange={(open) => {
+          if (!isDeleting) setConfirmingDelete(open);
+        }}
+        title="Discard Draft Permanently?"
+        description="Are you sure you want to discard this draft? This request and all uploaded documents will be permanently deleted and cannot be recovered."
+        confirmLabel={isDeleting ? "Discarding..." : "Discard Permanently"}
+        destructive={true}
+        loading={isDeleting}
         onConfirm={() => {
-          onDelete(draft.id);
-          setConfirmingDelete(false);
+          onDelete(draft.id, () => setConfirmingDelete(false));
         }}
       />
     </div>

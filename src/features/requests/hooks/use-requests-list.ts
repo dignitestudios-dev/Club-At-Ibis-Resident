@@ -77,14 +77,13 @@ export function useRequestsList(activeTab: RequestsTabType = "requests") {
         r.status === "submitted" ||
         r.status === "under_review" ||
         r.status === "changes_required" ||
-        r.status === "resubmitted" ||
         r.status === "approved"
     ).length;
   }, [allRecords]);
 
   const historyTotalCount = useMemo(() => {
     return allRecords.filter(
-      (r) => r.status === "completed" || r.status === "rejected" || r.status === "withdrawn"
+      (r) => r.status === "completed" || r.status === "rejected" || r.status === "cancelled" || (r as any).status === "withdrawn"
     ).length;
   }, [allRecords]);
 
@@ -96,7 +95,7 @@ export function useRequestsList(activeTab: RequestsTabType = "requests") {
   const activeStatusQuery =
     status !== "all"
       ? status
-      : "submitted,under_review,changes_required,resubmitted,approved";
+      : "submitted,under_review,changes_required,approved";
 
   const isRequestsTab = activeTab === "requests";
   const { data: activeData, isLoading: isLoadingActive } = useResidentRequestsQuery(
@@ -109,7 +108,7 @@ export function useRequestsList(activeTab: RequestsTabType = "requests") {
 
   // 3. History tab query - ONLY runs when activeTab === "history"
   const historyStatusQuery =
-    status !== "all" ? status : "completed,rejected,withdrawn";
+    status !== "all" ? status : "completed,rejected,cancelled";
 
   const isHistoryTab = activeTab === "history";
   const { data: historyData, isLoading: isLoadingHistory } = useResidentRequestsQuery(

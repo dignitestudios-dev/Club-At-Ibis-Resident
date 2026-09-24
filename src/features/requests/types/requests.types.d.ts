@@ -45,7 +45,8 @@ type RequestStatus =
   | "approved"
   | "rejected"
   | "completed"
-  | "withdrawn";
+  | "withdrawn"
+  | "cancelled";
 
 type FieldValue = string | number | boolean | string[] | null;
 
