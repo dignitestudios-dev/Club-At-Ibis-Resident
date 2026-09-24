@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback, useTransition } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Bell, CheckCheck, Layers } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -14,6 +15,34 @@ import { cn } from "@/utils/cn";
 type FilterType = "all" | "unread";
 
 export default function NotificationList() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const [, startTransition] = useTransition();
+  const urlFilter = (searchParams.get("filter") as FilterType) || "all";
+  const [filter, setFilterState] = useState<FilterType>(urlFilter);
+
+  useEffect(() => {
+    const nextFilter = (searchParams.get("filter") as FilterType) || "all";
+    setFilterState(nextFilter);
+  }, [searchParams]);
+
+  const setFilter = useCallback(
+    (nextFilter: FilterType) => {
+      setFilterState(nextFilter);
+      const params = new URLSearchParams(searchParams.toString());
+      if (nextFilter === "all") {
+        params.delete("filter");
+      } else {
+        params.set("filter", nextFilter);
+      }
+      const query = params.toString();
+      startTransition(() => {
+        router.replace(query ? `/notifications?${query}` : "/notifications", { scroll: false });
+      });
+    },
+    [searchParams, router]
+  );
+
   const {
     notifications,
     isLoading,
@@ -23,7 +52,6 @@ export default function NotificationList() {
     isMarkingAllRead,
   } = useNotifications();
   const toast = useToast();
-  const [filter, setFilter] = useState<FilterType>("all");
 
   const filtered = notifications.filter((n) => {
     if (filter === "unread") return !n.read;

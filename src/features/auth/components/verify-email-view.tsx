@@ -129,6 +129,8 @@ export default function VerifyEmailView({ token }: { token: string }) {
                   type="email"
                   autoComplete="email"
                   placeholder="you@example.com"
+                  maxLength={320}
+                  disabled={isResending}
                   aria-invalid={!!errors.email}
                   {...register("email")}
                 />

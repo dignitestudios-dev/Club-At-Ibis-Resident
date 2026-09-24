@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback, useTransition } from "react";
 import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
 import { PlusCircle, FileEdit, RotateCcw } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -12,7 +13,33 @@ import { DraftCard } from "@/features/drafts/components/draft-card";
 import { useDrafts } from "@/features/drafts/hooks/use-drafts";
 
 export default function DraftsListPage() {
-  const [search, setSearch] = useState("");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const [, startTransition] = useTransition();
+  const urlSearch = searchParams.get("search") || "";
+  const [search, setSearchState] = useState(urlSearch);
+
+  useEffect(() => {
+    setSearchState(searchParams.get("search") || "");
+  }, [searchParams]);
+
+  const setSearch = useCallback(
+    (nextSearch: string) => {
+      setSearchState(nextSearch);
+      const params = new URLSearchParams(searchParams.toString());
+      if (nextSearch.trim()) {
+        params.set("search", nextSearch.trim());
+      } else {
+        params.delete("search");
+      }
+      const query = params.toString();
+      startTransition(() => {
+        router.replace(query ? `/drafts?${query}` : "/drafts", { scroll: false });
+      });
+    },
+    [searchParams, router]
+  );
+
   const { drafts, isLoading, deletingId, deleteDraft } = useDrafts({ search });
 
   const hasSearch = search.trim().length > 0;

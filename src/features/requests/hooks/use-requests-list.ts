@@ -13,13 +13,15 @@ export function useRequestsList(activeTab: RequestsTabType = "requests") {
   const router = useRouter();
   const [, startTransition] = useTransition();
 
-  const [search, setSearch] = useState("");
+  const urlSearch = searchParams.get("search") || "";
+  const [search, setSearchState] = useState(urlSearch);
 
   const urlStatus = (searchParams.get("status") as RequestStatus | "all") || "all";
   const [status, setStatusState] = useState<RequestStatus | "all">(urlStatus);
 
   useEffect(() => {
     setStatusState((searchParams.get("status") as RequestStatus | "all") || "all");
+    setSearchState(searchParams.get("search") || "");
   }, [searchParams]);
 
   const updateQuery = useCallback(
@@ -40,6 +42,14 @@ export function useRequestsList(activeTab: RequestsTabType = "requests") {
     [searchParams, router]
   );
 
+  const setSearch = useCallback(
+    (nextSearch: string) => {
+      setSearchState(nextSearch);
+      updateQuery({ search: nextSearch.trim() || null });
+    },
+    [updateQuery]
+  );
+
   const setStatus = useCallback(
     (nextStatus: RequestStatus | "all") => {
       setStatusState(nextStatus);
@@ -49,10 +59,11 @@ export function useRequestsList(activeTab: RequestsTabType = "requests") {
   );
 
   const resetFilters = useCallback(() => {
-    setSearch("");
+    setSearchState("");
     setStatusState("all");
     const params = new URLSearchParams(searchParams.toString());
     params.delete("status");
+    params.delete("search");
     params.delete("type");
     params.delete("period");
     const query = params.toString();

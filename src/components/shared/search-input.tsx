@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { useDebounce } from "@/hooks/use-debounce";
 import { cn } from "@/utils/cn";
 
 export interface SearchInputProps {
@@ -15,7 +16,7 @@ export interface SearchInputProps {
 }
 
 /**
- * Reusable SearchInput component with built-in 1-second (1000ms) debounce.
+ * Reusable SearchInput component with shared useDebounce hook.
  * Updates local input immediately for responsive typing, and debounces
  * notifying the parent onChange handler to prevent redundant filter recalculations and API requests.
  */
@@ -28,24 +29,26 @@ export function SearchInput({
   debounceMs = 400,
 }: SearchInputProps) {
   const [internalValue, setInternalValue] = useState(value);
+  const debouncedValue = useDebounce(internalValue, debounceMs);
   const latestOnChange = useRef(onChange);
   latestOnChange.current = onChange;
+  const isFirstMount = useRef(true);
 
   // Synchronize internal text if external value changes (e.g., reset filters)
   useEffect(() => {
     setInternalValue(value);
   }, [value]);
 
-  // Debounce calling the parent's onChange by 1 second (1000ms)
+  // Debounce calling the parent's onChange via shared useDebounce
   useEffect(() => {
-    if (internalValue === value) return;
-
-    const timer = setTimeout(() => {
-      latestOnChange.current(internalValue);
-    }, debounceMs);
-
-    return () => clearTimeout(timer);
-  }, [internalValue, value, debounceMs]);
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      return;
+    }
+    if (debouncedValue !== value) {
+      latestOnChange.current(debouncedValue);
+    }
+  }, [debouncedValue, value]);
 
   const handleClear = () => {
     setInternalValue("");
@@ -63,6 +66,7 @@ export function SearchInput({
         onChange={(e) => setInternalValue(e.target.value)}
         placeholder={placeholder}
         aria-label={ariaLabel ?? placeholder}
+        maxLength={100}
         className="bg-card pr-9 pl-9 border-border"
       />
       {internalValue && internalValue.trim().length > 0 && (

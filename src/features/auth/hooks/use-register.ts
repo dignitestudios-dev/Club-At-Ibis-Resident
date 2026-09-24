@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
@@ -9,6 +9,7 @@ import { useRegisterMutation, useResendEmailVerificationMutation } from "@/featu
 
 export function useRegister() {
   const toast = useToast();
+  const isSubmittingRef = useRef(false);
   const { mutate: register, isPending } = useRegisterMutation();
   const { mutate: resendVerification, isPending: isResendingVerification } = useResendEmailVerificationMutation();
   const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
@@ -27,13 +28,20 @@ export function useRegister() {
   });
 
   function onSubmit(data: RegisterPayload) {
+    if (isSubmittingRef.current || isPending) return;
+    isSubmittingRef.current = true;
     register(data, {
       onSuccess: () => {
+        isSubmittingRef.current = false;
         setRegisteredEmail(data.email);
         toast.success("Registration received", "Please check your email to verify your account.");
       },
       onError: (error: Error) => {
+        isSubmittingRef.current = false;
         toast.error(error.message || "Unable to create account.");
+      },
+      onSettled: () => {
+        isSubmittingRef.current = false;
       },
     });
   }

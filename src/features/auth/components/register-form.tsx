@@ -178,6 +178,7 @@ export default function RegisterForm() {
                       id="password"
                       autoComplete="new-password"
                       placeholder="Enter password"
+                      maxLength={128}
                       aria-invalid={!!errors.password}
                       showStrength
                       disabled={isPending}
@@ -206,6 +207,7 @@ export default function RegisterForm() {
                       id="confirmPassword"
                       autoComplete="new-password"
                       placeholder="Confirm password"
+                      maxLength={128}
                       aria-invalid={!!errors.confirmPassword}
                       disabled={isPending}
                       value={field.value ?? ""}

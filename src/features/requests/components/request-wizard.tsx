@@ -51,11 +51,7 @@ import {
 } from "@/features/categories/api/categories.queries";
 import { createDraftRequest } from "@/features/requests/api/requests.service";
 import { useToast } from "@/hooks/use-toast";
-import {
-  saveWizardState,
-  getWizardState,
-  clearWizardState,
-} from "@/features/requests/utils/request-storage";
+import { clearWizardState } from "@/features/requests/utils/request-storage";
 import type {
   ActiveCategory,
   CategoryFormField,
@@ -85,11 +81,14 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
     refetch: refetchCategories,
   } = useActiveCategoriesQuery();
 
-  const [requestTypeId, setRequestTypeId] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
-    const stored = getWizardState();
-    return stored?.requestTypeId || null;
-  });
+  const [requestTypeId, setRequestTypeId] = useState<string | null>(null);
+
+  // Clear any legacy storage on mount if starting fresh
+  useEffect(() => {
+    if (!draftId) {
+      clearWizardState();
+    }
+  }, [draftId]);
 
   // Sync category ID if resuming from draft
   useEffect(() => {

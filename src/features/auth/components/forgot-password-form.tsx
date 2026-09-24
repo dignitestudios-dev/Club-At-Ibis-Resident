@@ -54,7 +54,10 @@ export default function ForgotPasswordForm() {
       <form onSubmit={handleSubmit(onSubmit)} noValidate>
         <FieldGroup>
           <Field data-invalid={!!errors.email}>
-            <FieldLabel htmlFor="email">Email Address</FieldLabel>
+            <FieldLabel htmlFor="email">
+              Email Address
+              <span className="text-red-500 font-bold ml-0.5 text-sm leading-none" aria-hidden="true">*</span>
+            </FieldLabel>
             <FieldContent>
               <Input
                 id="email"

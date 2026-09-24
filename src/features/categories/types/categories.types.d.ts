@@ -2,10 +2,13 @@ export type CategoryFieldType =
   | "text"
   | "textarea"
   | "number"
+  | "email"
+  | "phone"
+  | "date"
+  | "time"
   | "select"
   | "radio"
   | "checkbox"
-  | "date"
   | "file";
 
 export interface CategoryFieldOption {

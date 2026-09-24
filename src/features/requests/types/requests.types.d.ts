@@ -2,8 +2,11 @@ type FieldType =
   | "text"
   | "textarea"
   | "number"
-  | "select"
+  | "email"
+  | "phone"
   | "date"
+  | "time"
+  | "select"
   | "checkbox"
   | "radio"
   | "file";

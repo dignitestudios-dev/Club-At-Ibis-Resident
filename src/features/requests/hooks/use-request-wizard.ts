@@ -7,11 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
-import {
-  saveWizardState,
-  getWizardState,
-  clearWizardState,
-} from "@/features/requests/utils/request-storage";
+import { clearWizardState } from "@/features/requests/utils/request-storage";
 import {
   createDraftRequest,
   autosaveDraft,
@@ -72,10 +68,6 @@ export function useRequestWizard(
       if ("currentStep" in initialDraft && typeof initialDraft.currentStep === "number") {
         return Math.max(0, initialDraft.currentStep - 1);
       }
-    }
-    const stored = getWizardState();
-    if (stored && stored.requestTypeId === categoryOrType.id && typeof stored.stepIndex === "number") {
-      return stored.stepIndex;
     }
     return 0;
   });
@@ -156,16 +148,8 @@ export function useRequestWizard(
       return merged;
     }
 
-    const stored = getWizardState();
-    if (stored && stored.requestTypeId === categoryOrType.id && stored.fieldValues) {
-      return {
-        ...defaults,
-        ...stored.fieldValues,
-      };
-    }
-
     return defaults;
-  }, [allFields, initialDraft, categoryOrType.id]);
+  }, [allFields, initialDraft]);
 
   const form = useForm<Record<string, unknown>>({
     mode: "onChange",
@@ -368,13 +352,8 @@ function extractCurrentRevision(err: any): number | null {
 
   // Debounced autosave on field changes
   useEffect(() => {
-    const subscription = form.watch((values) => {
+    const subscription = form.watch(() => {
       setHasUnsavedChanges(true);
-      saveWizardState({
-        requestTypeId: categoryOrType.id,
-        stepIndex,
-        fieldValues: values as Record<string, unknown>,
-      });
 
       if (currentDraftIdRef.current) {
         if (autosaveTimerRef.current) {
@@ -392,7 +371,7 @@ function extractCurrentRevision(err: any): number | null {
         clearTimeout(autosaveTimerRef.current);
       }
     };
-  }, [form, categoryOrType.id, stepIndex, triggerAutosave]);
+  }, [form, triggerAutosave]);
 
   const isReviewStep = stepIndex === steps.length;
   const currentStep = steps[stepIndex];
@@ -463,11 +442,6 @@ function extractCurrentRevision(err: any): number | null {
       lastSavedSignatureRef.current = JSON.stringify(payload);
       setLastSavedAt(new Date());
       setHasUnsavedChanges(false);
-      saveWizardState({
-        requestTypeId: categoryOrType.id,
-        stepIndex,
-        fieldValues: form.getValues(),
-      });
       toast.success("Draft saved successfully.");
       if (options.redirect) {
         clearWizardState();
@@ -488,11 +462,6 @@ function extractCurrentRevision(err: any): number | null {
     if (valid) {
       const nextIndex = stepIndex + 1;
       setStepIndex(nextIndex);
-      saveWizardState({
-        requestTypeId: categoryOrType.id,
-        stepIndex: nextIndex,
-        fieldValues: form.getValues(),
-      });
       window.scrollTo({ top: 0, behavior: "smooth" });
       triggerAutosave(nextIndex);
     }
@@ -511,11 +480,6 @@ function extractCurrentRevision(err: any): number | null {
     }
     const prevIndex = stepIndex - 1;
     setStepIndex(prevIndex);
-    saveWizardState({
-      requestTypeId: categoryOrType.id,
-      stepIndex: prevIndex,
-      fieldValues: form.getValues(),
-    });
     window.scrollTo({ top: 0, behavior: "smooth" });
     triggerAutosave(prevIndex);
   }
@@ -566,14 +530,19 @@ function extractCurrentRevision(err: any): number | null {
     handleSaveDraft({ redirect: true });
   }
 
+  const isSubmittingRef = useRef(false);
+
   function handleSubmit(values: Record<string, unknown>) {
-    if (!isReviewStep) return;
+    if (!isReviewStep || isSubmittingRef.current || isPending) return;
+    isSubmittingRef.current = true;
     const draftId = currentDraftIdRef.current;
     if (!draftId) {
+      isSubmittingRef.current = false;
       toast.error("Draft is initializing, please try again in a moment.");
       return;
     }
     if (values.hoaApproved !== true) {
+      isSubmittingRef.current = false;
       form.setError("hoaApproved", { message: "HOA confirmation is required before submission." });
       return;
     }
@@ -592,6 +561,7 @@ function extractCurrentRevision(err: any): number | null {
         },
         {
           onSuccess: (record) => {
+            isSubmittingRef.current = false;
             clearWizardState();
             guardAllowLeave();
             toast.success(
@@ -609,6 +579,7 @@ function extractCurrentRevision(err: any): number | null {
               performSubmit(remoteRev);
               return;
             }
+            isSubmittingRef.current = false;
             const message = err?.message || "Something went wrong submitting your request.";
             toast.error("Submission failed", message);
           },

@@ -43,7 +43,7 @@ export function RequestReviseForm({
                 field={field}
                 control={form.control}
                 errors={form.formState.errors}
-                disabled={!isFlagged}
+                disabled={!isFlagged || isPending}
               />
               {isFlagged && flagsByField.get(field.id) && (
                 <div role="note" className="mt-2 rounded-lg border border-amber-200/90 bg-amber-50/90 p-3 text-xs shadow-2xs">
