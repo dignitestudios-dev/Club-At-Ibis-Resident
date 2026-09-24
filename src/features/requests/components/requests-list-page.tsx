@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { PlusCircle, FileText, FileEdit, History } from "lucide-react";
@@ -8,14 +8,13 @@ import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SearchInput } from "@/components/shared/search-input";
 import { RequestListItem } from "@/features/requests/components/request-list-item";
 import { DraftCard } from "@/features/drafts/components/draft-card";
 import { RequestsTabsHeader, type RequestsTabType } from "@/features/requests/components/list/requests-tabs-header";
 import { RequestsFilterToolbar } from "@/features/requests/components/list/requests-filter-toolbar";
-import { useRequestsList, type DatePeriod } from "@/features/requests/hooks/use-requests-list";
-import { useDrafts } from "@/features/drafts/hooks/use-drafts";
-import { useActiveCategoriesQuery } from "@/features/categories/api/categories.queries";
-import { requestTypes } from "@/lib/mock/request-types";
+import { useRequestsList } from "@/features/requests/hooks/use-requests-list";
+import { useDeleteDraftMutation } from "@/features/drafts/api/drafts.mutations";
 import { cn } from "@/utils/cn";
 
 const VIEW_MODE_STORAGE_KEY = "ib_requests_view_mode";
@@ -34,14 +33,6 @@ const HISTORY_STATUS_OPTIONS: { label: string; value: RequestStatus | "all" }[] 
   { label: "Completed & Closed", value: "completed" },
   { label: "Not Approved", value: "rejected" },
   { label: "Withdrawn", value: "withdrawn" },
-];
-
-
-const PERIOD_OPTIONS: { label: string; value: DatePeriod }[] = [
-  { label: "All Time", value: "all" },
-  { label: "Last 30 Days", value: "30d" },
-  { label: "Last 90 Days", value: "90d" },
-  { label: "This Year (2026)", value: "year" },
 ];
 
 export default function RequestsListPage() {
@@ -100,40 +91,26 @@ export default function RequestsListPage() {
 
   const {
     activeRequests,
-    allActiveRequests,
+    activeTotalCount,
     historyRequests,
-    allHistoryRequests,
+    historyTotalCount,
+    draftRequests,
+    draftsTotalCount,
     isLoading: isLoadingRequests,
     search,
     setSearch,
     status,
     setStatus,
-    requestTypeId,
-    setRequestTypeId,
-    period,
-    setPeriod,
     resetFilters,
-  } = useRequestsList();
+  } = useRequestsList(activeTab);
 
-  const { drafts, isLoading: isLoadingDrafts, isDeleting, deleteDraft } = useDrafts();
-  const { data: activeCategoriesData } = useActiveCategoriesQuery();
+  const { mutate: deleteDraftMutate, isPending: isDeleting } = useDeleteDraftMutation();
 
-  const categoryOptions = useMemo(() => {
-    const backendCategories = activeCategoriesData?.categories ?? [];
-    if (backendCategories.length > 0) {
-      return [
-        { label: "All Categories", value: "all" },
-        ...backendCategories.map((c) => ({ label: c.name, value: c.id })),
-      ];
-    }
-    return [
-      { label: "All Categories", value: "all" },
-      ...requestTypes.map((t) => ({ label: t.name, value: t.id })),
-    ];
-  }, [activeCategoriesData?.categories]);
+  const handleDeleteDraft = (id: string) => {
+    deleteDraftMutate(id);
+  };
 
-  const hasActiveFilters =
-    search.trim() !== "" || status !== "all" || requestTypeId !== "all" || period !== "all";
+  const hasActiveFilters = search.trim() !== "" || status !== "all";
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -156,10 +133,14 @@ export default function RequestsListPage() {
 
       <RequestsTabsHeader
         activeTab={activeTab}
-        onTabChange={handleTabChange}
-        activeCount={allActiveRequests.length}
-        historyCount={allHistoryRequests.length}
-        draftsCount={drafts.length}
+        onTabChange={(tab) => {
+          setSearch("");
+          setStatus("all");
+          handleTabChange(tab);
+        }}
+        activeCount={activeTotalCount}
+        historyCount={historyTotalCount}
+        draftsCount={draftsTotalCount}
         viewMode={viewMode}
         onViewModeChange={handleViewModeChange}
       />
@@ -179,17 +160,11 @@ export default function RequestsListPage() {
             onStatusChange={setStatus}
             statusOptions={ACTIVE_STATUS_OPTIONS}
             statusPlaceholder="Filter by status"
-            requestTypeId={requestTypeId}
-            onRequestTypeChange={setRequestTypeId}
-            categoryOptions={categoryOptions}
-            period={period}
-            onPeriodChange={setPeriod}
-            periodOptions={PERIOD_OPTIONS}
             hasActiveFilters={hasActiveFilters}
             filteredCount={activeRequests.length}
-            totalCount={allActiveRequests.length}
+            totalCount={activeTotalCount}
             onResetFilters={resetFilters}
-            searchPlaceholder="Search by code, type, details..."
+            searchPlaceholder="Search by reference, category, title..."
           />
 
           {isLoadingRequests && (
@@ -223,17 +198,27 @@ export default function RequestsListPage() {
             <div className="animate-in fade-in duration-300">
               <EmptyState
                 icon={FileText}
-                title="No active requests found"
-                description="Try adjusting your search criteria or filters, or start a new architectural submission."
+                title={hasActiveFilters ? "No matching requests found" : "No active requests found"}
+                description={
+                  hasActiveFilters
+                    ? "Try adjusting your search criteria or filters, or clear all filters."
+                    : "You currently have no active requests in review. Start a new architectural submission."
+                }
                 action={
-                  <Button
-                    nativeButton={false}
-                    render={<Link href="/requests/new" />}
-                    aria-label="Start a new request"
-                  >
-                    <PlusCircle className="size-4" aria-hidden="true" />
-                    Start New Request
-                  </Button>
+                  hasActiveFilters ? (
+                    <Button variant="outline" onClick={resetFilters}>
+                      Clear Filters
+                    </Button>
+                  ) : (
+                    <Button
+                      nativeButton={false}
+                      render={<Link href="/requests/new" />}
+                      aria-label="Start a new request"
+                    >
+                      <PlusCircle className="size-4" aria-hidden="true" />
+                      Start New Request
+                    </Button>
+                  )
                 }
               />
             </div>
@@ -278,17 +263,11 @@ export default function RequestsListPage() {
             onStatusChange={setStatus}
             statusOptions={HISTORY_STATUS_OPTIONS}
             statusPlaceholder="All History Outcomes"
-            requestTypeId={requestTypeId}
-            onRequestTypeChange={setRequestTypeId}
-            categoryOptions={categoryOptions}
-            period={period}
-            onPeriodChange={setPeriod}
-            periodOptions={PERIOD_OPTIONS}
             hasActiveFilters={hasActiveFilters}
             filteredCount={historyRequests.length}
-            totalCount={allHistoryRequests.length}
+            totalCount={historyTotalCount}
             onResetFilters={resetFilters}
-            searchPlaceholder="Search history records..."
+            searchPlaceholder="Search history by reference, category..."
           />
 
           {isLoadingRequests && (
@@ -320,8 +299,19 @@ export default function RequestsListPage() {
             <div className="animate-in fade-in duration-300">
               <EmptyState
                 icon={History}
-                title="No historical records found"
-                description="Requests that have completed final inspection, concluded with a decision, or been archived will appear here in your permanent record."
+                title={hasActiveFilters ? "No matching history records" : "No historical records found"}
+                description={
+                  hasActiveFilters
+                    ? "Try adjusting your search criteria or clearing filters."
+                    : "Requests that have completed final inspection, concluded with a decision, or been archived will appear here in your permanent record."
+                }
+                action={
+                  hasActiveFilters ? (
+                    <Button variant="outline" onClick={resetFilters}>
+                      Clear Filters
+                    </Button>
+                  ) : undefined
+                }
               />
             </div>
           )}
@@ -358,7 +348,17 @@ export default function RequestsListPage() {
           aria-labelledby="tab-drafts"
           className="space-y-4 animate-in fade-in duration-300"
         >
-          {isLoadingDrafts && (
+          <div className="w-full sm:max-w-md">
+            <SearchInput
+              value={search}
+              onChange={setSearch}
+              placeholder="Search drafts by reference, category, title..."
+              ariaLabel="Search drafts"
+              debounceMs={400}
+            />
+          </div>
+
+          {isLoadingRequests && (
             <div
               className={cn(
                 viewMode === "grid"
@@ -383,27 +383,37 @@ export default function RequestsListPage() {
             </div>
           )}
 
-          {!isLoadingDrafts && drafts.length === 0 && (
+          {!isLoadingRequests && draftRequests.length === 0 && (
             <div className="animate-in fade-in duration-300">
               <EmptyState
                 icon={FileEdit}
-                title="No saved drafts"
-                description="When you start a request and step away, your in-progress work is automatically saved here."
+                title={search.trim() ? "No matching drafts found" : "No saved drafts"}
+                description={
+                  search.trim()
+                    ? `No drafts matched your search query "${search}". Try searching by a different reference or term.`
+                    : "When you start a request and step away, your in-progress work is automatically saved here."
+                }
                 action={
-                  <Button
-                    nativeButton={false}
-                    render={<Link href="/requests/new" />}
-                    aria-label="Start a new request draft"
-                  >
-                    <PlusCircle className="size-4" aria-hidden="true" />
-                    Start a Request
-                  </Button>
+                  search.trim() ? (
+                    <Button variant="outline" onClick={() => setSearch("")}>
+                      Clear Search
+                    </Button>
+                  ) : (
+                    <Button
+                      nativeButton={false}
+                      render={<Link href="/requests/new" />}
+                      aria-label="Start a new request draft"
+                    >
+                      <PlusCircle className="size-4" aria-hidden="true" />
+                      Start a Request
+                    </Button>
+                  )
                 }
               />
             </div>
           )}
 
-          {!isLoadingDrafts && drafts.length > 0 && (
+          {!isLoadingRequests && draftRequests.length > 0 && (
             <div
               className={cn(
                 viewMode === "grid"
@@ -413,12 +423,12 @@ export default function RequestsListPage() {
               role="list"
               aria-label="Saved drafts"
             >
-              {drafts.map((draft, idx) => (
+              {draftRequests.map((draft, idx) => (
                 <DraftCard
                   key={draft.id}
                   draft={draft}
                   viewMode={viewMode}
-                  onDelete={deleteDraft}
+                  onDelete={handleDeleteDraft}
                   isDeleting={isDeleting}
                   className="animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-both"
                   style={{ animationDelay: `${Math.min(idx * 50, 350)}ms` }}

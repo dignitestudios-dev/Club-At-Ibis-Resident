@@ -11,13 +11,19 @@ import {
 
 export function useRequestRevise(
   request: RequestRecord,
-  requestType: RequestType,
-  onDone?: () => void
+  requestType?: RequestType | null,
+  onDone?: () => void,
+  customFields?: FieldConfig[]
 ) {
   const toast = useToast();
   const { mutate: resubmit, isPending } = useResubmitRequestMutation();
 
-  const allFields = getAllFieldsForRequestType(requestType);
+  const allFields =
+    customFields && customFields.length > 0
+      ? customFields
+      : requestType
+      ? getAllFieldsForRequestType(requestType)
+      : (request.formSnapshot || request.form?.fields || []);
   const flagsByField = new Map((request.flags ?? []).map((f) => [f.fieldId, f.reason]));
   const flaggedFields = allFields.filter((field) => flagsByField.has(field.id));
 

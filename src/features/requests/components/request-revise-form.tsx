@@ -10,14 +10,16 @@ import { useRequestRevise } from "@/features/requests/hooks/use-request-revise";
 export function RequestReviseForm({
   request,
   requestType,
+  customFields,
   onDone,
 }: {
   request: RequestRecord;
-  requestType: RequestType;
+  requestType?: RequestType | null;
+  customFields?: FieldConfig[];
   onDone?: () => void;
 }) {
   const { form, isPending, allFields, flaggedFields, flagsByField, onSubmit } =
-    useRequestRevise(request, requestType, onDone);
+    useRequestRevise(request, requestType, onDone, customFields);
   const flaggedIds = new Set(flaggedFields.map((f) => f.id));
 
   return (

@@ -99,17 +99,45 @@ interface FieldFlag {
 
 type RefundStatus = "awaiting" | "refunded" | "no_refund";
 
+interface ApiPagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+interface SubmissionReadiness {
+  ready: boolean;
+  issues: string[];
+}
+
 interface RequestRecord {
   id: string;
   code: string;
+  reference?: string;
+  title?: string;
   requestTypeId: string;
+  categoryId?: string;
+  categoryName?: string;
   residentId: string;
+  propertyAddress?: string;
+  lotNo?: string;
   status: RequestStatus;
+  draftRevision?: number;
+  currentStep?: number;
+  commonFormVersion?: number;
+  categoryFormVersion?: number;
+  formSnapshot?: FieldConfig[];
+  form?: {
+    fields: FieldConfig[];
+  };
   fieldValues: Record<string, FieldValue>;
   uploads: Record<string, UploadedFile[]>;
   activity: ActivityEntry[];
+  history?: any[];
   comments: CommentEntry[];
   flags?: FieldFlag[];
+  submissionReadiness?: SubmissionReadiness;
   hoaApproved: boolean;
   hoaConfirmedAt?: string;
   depositRequired?: boolean;
@@ -128,6 +156,32 @@ interface RequestRecord {
   completedAt?: string;
 }
 
+interface CreateDraftPayload {
+  categoryId: string;
+  title?: string;
+  commonFormVersion: number;
+  categoryFormVersion: number;
+}
+
+interface AutosaveDraftPayload {
+  expectedDraftRevision: number;
+  fieldValues?: Record<string, FieldValue>;
+  uploads?: Record<string, UploadedFile[]>;
+  currentStep?: number;
+  title?: string;
+  hoaApproved?: boolean;
+}
+
+interface SubmitRequestPayload {
+  expectedDraftRevision: number;
+  hoaApproved?: boolean;
+  hoaConfirmed?: boolean;
+}
+
+interface MigrateDraftPayload {
+  expectedDraftRevision: number;
+}
+
 interface CreateRequestPayload {
   residentId: string;
   requestTypeId: string;
@@ -140,4 +194,9 @@ interface ResubmitRequestPayload {
   id: string;
   fieldValues: Record<string, FieldValue>;
   uploads: Record<string, UploadedFile[]>;
+}
+
+interface ResidentRequestsResult {
+  requests: RequestRecord[];
+  pagination?: ApiPagination;
 }

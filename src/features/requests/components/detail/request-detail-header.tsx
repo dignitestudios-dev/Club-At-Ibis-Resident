@@ -32,7 +32,7 @@ export function RequestDetailHeader({
         <div className="space-y-1.5">
           <div className="flex flex-wrap items-center gap-2.5">
             <h1 className="font-heading text-2xl font-medium text-foreground">
-              {requestType?.name ?? "Architectural Request"}
+              {request.categoryName || requestType?.name || "Architectural Request"}
             </h1>
             <StatusBadge status={request.status} className="text-sm" />
           </div>

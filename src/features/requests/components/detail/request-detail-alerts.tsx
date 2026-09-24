@@ -83,12 +83,24 @@ export function RequestDetailAlerts({
         </div>
       )}
 
+      {(request.status === "submitted" || request.status === "under_review") && (
+        <Alert className="border-sky-200 dark:border-sky-800/60 bg-sky-50/80 dark:bg-sky-950/40">
+          <Info className="size-4 text-sky-700 dark:text-sky-400" aria-hidden="true" />
+          <AlertTitle className="text-sky-900 dark:text-sky-200">
+            {request.status === "submitted" ? "Request Submitted" : "Under ARB Review"}
+          </AlertTitle>
+          <AlertDescription className="text-sky-800 dark:text-sky-300">
+            This request is currently under review by the Architectural Review Board. Submissions are locked and cannot be edited while in review unless changes are specifically requested by a reviewer.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {request.status === "resubmitted" && (
         <Alert className="border-purple-200 dark:border-purple-800/60 bg-purple-50/80 dark:bg-purple-950/40">
           <Info className="size-4 text-purple-700 dark:text-purple-400" aria-hidden="true" />
-          <AlertTitle className="text-purple-900 dark:text-purple-200">Resubmitted</AlertTitle>
+          <AlertTitle className="text-purple-900 dark:text-purple-200">Resubmission Under Review</AlertTitle>
           <AlertDescription className="text-purple-800 dark:text-purple-300">
-            Your revised request has been resubmitted and is awaiting reviewer follow-up.
+            Your revised submission has been received and is currently under ARB follow-up review. Submissions cannot be edited while in review unless additional changes are requested.
           </AlertDescription>
         </Alert>
       )}

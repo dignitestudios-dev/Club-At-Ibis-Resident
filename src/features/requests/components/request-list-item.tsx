@@ -35,7 +35,10 @@ export const RequestListItem = memo(function RequestListItem({
   style?: React.CSSProperties;
 }) {
   const requestType = getRequestTypeById(request.requestTypeId);
-  const address = request.fieldValues?.propertyAddress as string | undefined;
+  const categoryTitle = request.categoryName || requestType?.name || "Architectural Request";
+  const address = (request.fieldValues?.propertyAddress as string | undefined) || request.propertyAddress;
+  const lotNo = (request.fieldValues?.lotNo as string | undefined) || request.lotNo;
+  const fullAddress = address ? (lotNo ? `${address} (Lot #${lotNo})` : address) : undefined;
   const description = request.fieldValues?.projectDescription as string | undefined;
   const hasFeedback = request.comments && request.comments.length > 0;
   const topAccent = STATUS_TOP_ACCENT[request.status] ?? "bg-slate-300";
@@ -44,7 +47,7 @@ export const RequestListItem = memo(function RequestListItem({
     return (
       <Link
         href={`/requests/${request.id}`}
-        aria-label={`View request ${request.code}: ${requestType?.name ?? "Architectural Request"}`}
+        aria-label={`View request ${request.code}: ${categoryTitle}`}
         style={style}
         className={cn(
           "group relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 overflow-hidden rounded-xl border border-border/80 bg-card p-4 sm:p-4.5 pl-4.5 sm:pl-5 shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50/70 dark:hover:bg-slate-800/40 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-md",
@@ -63,7 +66,7 @@ export const RequestListItem = memo(function RequestListItem({
         <div className="min-w-0 flex-1 space-y-1.5">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="font-heading text-base sm:text-lg font-medium text-foreground group-hover:text-primary transition-colors truncate">
-              {requestType?.name ?? "Architectural Request"}
+              {categoryTitle}
             </h3>
             <span className="rounded-md bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 px-2 py-0.5 text-xs font-mono font-semibold text-slate-700 dark:text-slate-200">
               {request.code}
@@ -76,10 +79,10 @@ export const RequestListItem = memo(function RequestListItem({
             )}
           </div>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-            {address && (
+            {fullAddress && (
               <span className="inline-flex items-center gap-1 text-slate-600 dark:text-slate-300 font-medium truncate max-w-xs">
                 <MapPin className="size-3 text-brand-gold shrink-0" aria-hidden="true" />
-                {address}
+                {fullAddress}
               </span>
             )}
             <span className="inline-flex items-center gap-1">
@@ -107,7 +110,7 @@ export const RequestListItem = memo(function RequestListItem({
   return (
     <Link
       href={`/requests/${request.id}`}
-      aria-label={`View request ${request.code}: ${requestType?.name ?? "Architectural Request"}`}
+      aria-label={`View request ${request.code}: ${categoryTitle}`}
       style={style}
       className={cn(
         "group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/80 bg-card p-5 shadow-2xs transition-all duration-300",
@@ -145,7 +148,7 @@ export const RequestListItem = memo(function RequestListItem({
         {/* Title & Description */}
         <div className="space-y-1.5">
           <h3 className="font-heading text-lg sm:text-xl font-medium text-foreground group-hover:text-primary transition-colors line-clamp-1">
-            {requestType?.name ?? "Architectural Request"}
+            {categoryTitle}
           </h3>
           {description ? (
             <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 font-normal leading-relaxed min-h-[2.25rem]">
@@ -161,10 +164,10 @@ export const RequestListItem = memo(function RequestListItem({
 
       {/* Footer: Property Address, Date & Action */}
       <div className="pt-3 mt-4 border-t border-border/60 space-y-2.5">
-        {address && (
+        {fullAddress && (
           <div className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300 font-medium truncate">
             <MapPin className="size-3.5 text-brand-gold shrink-0" aria-hidden="true" />
-            <span className="truncate">{address}</span>
+            <span className="truncate">{fullAddress}</span>
           </div>
         )}
 

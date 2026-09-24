@@ -1,9 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Controller } from "react-hook-form";
-import { ArrowLeft, ArrowRight, Bookmark, Send, AlertCircle, RefreshCw, Layers } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Send,
+  AlertCircle,
+  RefreshCw,
+  Layers,
+  CheckCircle2,
+  AlertTriangle,
+  Lock,
+  FileCheck2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
@@ -21,6 +33,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
+import { StatusBadge } from "@/features/requests/components/status-badge";
 import { Stepper } from "@/features/requests/components/stepper";
 import { DynamicField } from "@/features/requests/components/dynamic-field";
 import { RequestTypeCard } from "@/features/requests/components/request-type-card";
@@ -32,6 +45,8 @@ import {
   useActiveCategoriesQuery,
   useActiveCategoryFormQuery,
 } from "@/features/categories/api/categories.queries";
+import { createDraftRequest } from "@/features/requests/api/requests.service";
+import { useToast } from "@/hooks/use-toast";
 import {
   saveWizardState,
   getWizardState,
@@ -42,11 +57,17 @@ import type {
   CategoryFormField,
 } from "@/features/categories/types/categories.types";
 import { requestTypes } from "@/lib/mock/request-types";
+import { formatDate } from "@/utils/format";
+import { cn } from "@/utils/cn";
 
-export default function RequestWizard() {
+export default function RequestWizard({ draftIdProp }: { draftIdProp?: string }) {
+  const router = useRouter();
   const searchParams = useSearchParams();
-  const draftId = searchParams.get("draftId");
+  const toast = useToast();
+  const draftId = draftIdProp || searchParams.get("draftId");
   const { data: draft, isLoading: isLoadingDraft } = useDraftDetailQuery(draftId ?? undefined);
+
+  const [initializingCategory, setInitializingCategory] = useState<ActiveCategory | null>(null);
 
   const {
     data: categoriesResult,
@@ -99,12 +120,196 @@ export default function RequestWizard() {
         })()
       : null);
 
+  async function handleSelectCategory(cat: ActiveCategory) {
+    setInitializingCategory(cat);
+    try {
+      const key = `create-draft-${cat.id}-${Date.now()}`;
+      const newDraft = await createDraftRequest(
+        {
+          categoryId: cat.id,
+          commonFormVersion: 1,
+          categoryFormVersion: cat.currentVersion || 1,
+        },
+        key
+      );
+      toast.success("Draft initialized", `Reference: ${newDraft.reference || newDraft.code}`);
+      setRequestTypeId(cat.id);
+      router.replace(`/requests/new?draftId=${newDraft.id}`);
+    } catch (err: any) {
+      const message = err?.message || "Failed to initialize draft request. Please try again.";
+      toast.error("Initialization Failed", message);
+      setInitializingCategory(null);
+    }
+  }
+
+  if (initializingCategory) {
+    return (
+      <div className="space-y-6 animate-in fade-in duration-300">
+        <PageHeader
+          title="Initializing Request"
+          description={`Setting up your draft workspace for ${initializingCategory.name}...`}
+        />
+        <Card className="p-12 flex flex-col items-center justify-center text-center space-y-4 shadow-2xs">
+          <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+            <Spinner className="size-6 animate-spin" />
+          </div>
+          <div className="space-y-1.5 max-w-md">
+            <h3 className="font-heading text-lg font-medium text-foreground">
+              Initializing request for {initializingCategory.name}
+            </h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Generating your permanent ARB reference code and loading latest questions. You will be redirected immediately.
+            </p>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   if (draftId && isLoadingDraft) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-14 w-1/3 rounded-lg" />
         <Skeleton className="h-10 w-full rounded-lg" />
         <Skeleton className="h-72 w-full rounded-xl" />
+      </div>
+    );
+  }
+
+  // Handle non-existent draft ID in route
+  if (draftId && !isLoadingDraft && !draft) {
+    return (
+      <div className="space-y-6 animate-in fade-in duration-300">
+        <PageHeader
+          title="Draft Not Found"
+          description="The requested draft record could not be found."
+        />
+        <EmptyState
+          icon={AlertCircle}
+          title="Draft Not Found"
+          description="This draft may have already been submitted, deleted, or you may not have permission to view it."
+          action={
+            <div className="flex flex-wrap items-center justify-center gap-2.5">
+              <Button nativeButton={false} render={<Link href="/requests" />} variant="outline">
+                Back to All Requests
+              </Button>
+              <Button nativeButton={false} render={<Link href="/requests/new" />}>
+                Start New Request
+              </Button>
+            </div>
+          }
+        />
+      </div>
+    );
+  }
+
+  // Handle already-submitted / non-draft requests accessed via new/draft route
+  if (draft && draft.status && draft.status !== "draft") {
+    const isUnderReview = draft.status === "submitted" || draft.status === "under_review" || draft.status === "resubmitted";
+    const isChangesRequired = draft.status === "changes_required";
+    const isClosed = ["approved", "rejected", "completed", "withdrawn"].includes(draft.status);
+
+    return (
+      <div className="space-y-6 animate-in fade-in duration-300">
+        <PageHeader
+          title={
+            isUnderReview
+              ? "Request is Under Review"
+              : isChangesRequired
+              ? "Changes Requested"
+              : "Request Submission Finalized"
+          }
+          description="Submitted and processed requests cannot be edited from the submission wizard."
+        />
+
+        <Card className="p-6 sm:p-8 shadow-2xs border-slate-200/90 dark:border-slate-800 bg-white dark:bg-card space-y-6">
+          <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-5">
+            <div
+              className={cn(
+                "size-12 rounded-2xl flex items-center justify-center shrink-0 border shadow-2xs",
+                isUnderReview && "bg-sky-50 dark:bg-sky-950/60 border-sky-200 text-sky-700 dark:text-sky-300",
+                isChangesRequired && "bg-amber-50 dark:bg-amber-950/60 border-amber-200 text-amber-700 dark:text-amber-300",
+                isClosed && "bg-slate-100 dark:bg-slate-800 border-slate-200 text-slate-700 dark:text-slate-300"
+              )}
+              aria-hidden="true"
+            >
+              {isUnderReview ? (
+                <Lock className="size-6 text-sky-600 dark:text-sky-400" />
+              ) : isChangesRequired ? (
+                <AlertTriangle className="size-6 text-amber-600 dark:text-amber-400" />
+              ) : (
+                <FileCheck2 className="size-6 text-slate-600 dark:text-slate-400" />
+              )}
+            </div>
+
+            <div className="space-y-2 flex-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <h2 className="font-heading text-xl font-semibold text-foreground">
+                  {isUnderReview
+                    ? "This request is locked and currently under review"
+                    : isChangesRequired
+                    ? "The Review Board has requested changes"
+                    : "This request has already been finalized"}
+                </h2>
+                <StatusBadge status={draft.status} />
+              </div>
+
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {isUnderReview
+                  ? "Once a request is submitted or resubmitted, it is locked and cannot be edited. Your submission is currently in the hands of the Architectural Review Board (ARB). You will not be able to edit this request until the review board specifically requests changes or additional details."
+                  : isChangesRequired
+                  ? "The Review Board has reviewed your submission and flagged items that need modification. Please go to the Request Details page to view the reviewer's instructions and submit your revision."
+                  : "This architectural request has already reached a finalized decision status and can no longer be modified."}
+              </p>
+            </div>
+          </div>
+
+          {/* Request Metadata Box */}
+          <div className="rounded-xl border border-border/70 bg-slate-50/60 dark:bg-slate-900/40 p-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 text-xs">
+            <div>
+              <span className="text-muted-foreground block font-medium">Reference Code</span>
+              <span className="font-mono font-semibold text-foreground text-sm">
+                {draft.reference || draft.code || "—"}
+              </span>
+            </div>
+            <div>
+              <span className="text-muted-foreground block font-medium">Category</span>
+              <span className="font-semibold text-foreground text-sm truncate block">
+                {draft.categoryName || draft.title || "Architectural Request"}
+              </span>
+            </div>
+            <div>
+              <span className="text-muted-foreground block font-medium">Property Address</span>
+              <span className="font-medium text-foreground truncate block">
+                {draft.propertyAddress || (draft.lotNo ? `Lot #${draft.lotNo}` : "—")}
+              </span>
+            </div>
+            <div>
+              <span className="text-muted-foreground block font-medium">Last Updated</span>
+              <span className="font-medium text-foreground">
+                {formatDate(draft.updatedAt)}
+              </span>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-border/70">
+            <Button
+              nativeButton={false}
+              render={<Link href={`/requests/${draft.id}`} />}
+              className="font-semibold shadow-xs"
+            >
+              {isChangesRequired ? "Revise Submission" : "View Request Details"}
+            </Button>
+            <Button
+              variant="outline"
+              nativeButton={false}
+              render={<Link href="/requests" />}
+            >
+              Back to All Requests
+            </Button>
+          </div>
+        </Card>
       </div>
     );
   }
@@ -169,14 +374,7 @@ export default function RequestWizard() {
               <RequestTypeCard
                 key={cat.id}
                 category={cat}
-                onSelect={() => {
-                  saveWizardState({
-                    requestTypeId: cat.id,
-                    stepIndex: 0,
-                    fieldValues: {},
-                  });
-                  setRequestTypeId(cat.id);
-                }}
+                onSelect={() => handleSelectCategory(cat)}
               />
             ))}
           </div>
@@ -276,6 +474,11 @@ function CategoryFormWizard({
     reviewReady,
     isPending,
     isSavingDraft,
+    hasUnsavedChanges,
+    lastSavedAt,
+    isStaleForm,
+    reference,
+    handleMigrateForm,
     handleSaveDraft,
     handleNext,
     handleBack,
@@ -291,10 +494,68 @@ function CategoryFormWizard({
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      <PageHeader
-        title={category.name}
-        description={category.description || "Submit an architectural review request."}
-      />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <PageHeader
+          title={category.name}
+          description={category.description || "Submit an architectural review request."}
+        />
+        {reference && (
+          <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
+            <span className="rounded-lg bg-slate-100 dark:bg-slate-800 border border-border px-2.5 py-1 text-xs font-mono font-semibold text-foreground">
+              {reference}
+            </span>
+            {isSavingDraft ? (
+              <span className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                <Spinner className="size-3" />
+                Saving...
+              </span>
+            ) : hasUnsavedChanges ? (
+              <div className="flex items-center gap-2">
+                <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 font-medium">
+                  <AlertCircle className="size-3.5" />
+                  Unsaved changes
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleSaveDraft({ redirect: false })}
+                  disabled={isSavingDraft}
+                  className="h-7 px-2.5 text-xs gap-1 border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 hover:bg-amber-100/50 dark:hover:bg-amber-950/50"
+                >
+                  Save
+                </Button>
+              </div>
+            ) : lastSavedAt ? (
+              <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                <CheckCircle2 className="size-3.5" />
+                Saved
+              </span>
+            ) : null}
+          </div>
+        )}
+      </div>
+
+      {isStaleForm && (
+        <Alert className="border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200">
+          <AlertTriangle className="size-4 text-amber-600 dark:text-amber-400" />
+          <AlertTitle className="font-semibold">Category Form Updated</AlertTitle>
+          <AlertDescription className="mt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <span>
+              The administrator has updated the questions for this category. Upgrade your draft to load the latest questions without losing your answers.
+            </span>
+            <Button
+              size="sm"
+              onClick={handleMigrateForm}
+              disabled={isPending}
+              className="shrink-0"
+            >
+              {isPending ? <Spinner className="size-3.5 mr-1" /> : <RefreshCw className="size-3.5 mr-1" />}
+              Upgrade Form
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Stepper steps={stepperSteps} currentIndex={stepIndex} />
 
@@ -332,7 +593,7 @@ function CategoryFormWizard({
                         field={field}
                         control={form.control}
                         errors={form.formState.errors}
-                        disabled={isPending || isSavingDraft}
+                        disabled={isPending}
                       />
                     </div>
                   ))}
@@ -379,30 +640,37 @@ function CategoryFormWizard({
             </Button>
 
             <div className="flex items-center gap-2.5">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleSaveDraft({ redirect: true })}
-                disabled={isSavingDraft || isPending}
-              >
-                {isSavingDraft ? (
-                  <Spinner className="size-4" />
-                ) : (
-                  <Bookmark className="size-4 text-brand-navy dark:text-brand-gold mr-1" />
-                )}
-                Save as Draft
-              </Button>
-
               {!isReviewStep ? (
                 <Button type="button" onClick={handleNext}>
                   Next
                   <ArrowRight className="size-4 ml-1" />
                 </Button>
               ) : (
-                <Button type="submit" disabled={isPending || !reviewReady}>
-                  {isPending ? <Spinner className="size-4" /> : <Send className="size-4 mr-1" />}
-                  Submit Request
-                </Button>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
+                  {isSavingDraft && (
+                    <span className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-md px-2.5 py-1 flex items-center gap-1.5 animate-pulse">
+                      <Spinner className="size-3.5" />
+                      Saving draft in progress... Submit will be enabled once saved.
+                    </span>
+                  )}
+                  <Button
+                    type="submit"
+                    disabled={isPending || isSavingDraft || !reviewReady}
+                  >
+                    {isPending ? (
+                      <Spinner className="size-4 mr-1" />
+                    ) : isSavingDraft ? (
+                      <Spinner className="size-4 mr-1" />
+                    ) : (
+                      <Send className="size-4 mr-1" />
+                    )}
+                    {isSavingDraft
+                      ? "Saving Draft..."
+                      : isPending
+                      ? "Submitting..."
+                      : "Submit Request"}
+                  </Button>
+                </div>
               )}
             </div>
           </div>

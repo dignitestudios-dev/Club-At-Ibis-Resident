@@ -6,10 +6,13 @@ import { useResidentDraftsQuery } from "@/features/drafts/api/drafts.queries";
 import { useDeleteDraftMutation } from "@/features/drafts/api/drafts.mutations";
 import { useToast } from "@/hooks/use-toast";
 
-export function useDrafts() {
-  const user = useCurrentUser();
+export function useDrafts(params?: { search?: string; page?: number; limit?: number }) {
   const toast = useToast();
-  const { data: drafts = [], isLoading } = useResidentDraftsQuery(user?.id);
+  const { data: drafts = [], isLoading } = useResidentDraftsQuery({
+    search: params?.search?.trim() || undefined,
+    page: params?.page,
+    limit: params?.limit,
+  });
   const { mutate: deleteDraftMutate, isPending: isDeleting } = useDeleteDraftMutation();
 
   const deleteDraft = useCallback(

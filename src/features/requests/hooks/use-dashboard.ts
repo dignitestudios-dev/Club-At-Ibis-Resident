@@ -8,7 +8,7 @@ import { useResidentDraftsQuery } from "@/features/drafts/api/drafts.queries";
 export function useDashboard() {
   const user = useCurrentUser();
   const { data: requests, isLoading: isLoadingRequests } = useRequestsQuery(user?.id);
-  const { data: drafts = [], isLoading: isLoadingDrafts } = useResidentDraftsQuery(user?.id);
+  const { data: drafts = [], isLoading: isLoadingDrafts } = useResidentDraftsQuery();
 
   const stats = useMemo(() => {
     return {
