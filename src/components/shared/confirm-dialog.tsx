@@ -34,7 +34,7 @@ export function ConfirmDialog({
   loading?: boolean;
 }) {
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
+    <AlertDialog open={open} onOpenChange={(val) => !loading && onOpenChange(val)}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
@@ -45,9 +45,12 @@ export function ConfirmDialog({
           <AlertDialogAction
             variant={destructive ? "destructive" : "default"}
             disabled={loading}
-            onClick={onConfirm}
+            onClick={(e) => {
+              e.preventDefault();
+              onConfirm();
+            }}
           >
-            {loading && <Spinner className="size-4" />}
+            {loading && <Spinner className="size-4 mr-1.5" />}
             {confirmLabel}
           </AlertDialogAction>
         </AlertDialogFooter>

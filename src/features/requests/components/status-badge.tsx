@@ -53,6 +53,11 @@ const STATUS_CONFIG: Record<
     className: "bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700",
     dotClass: "bg-slate-400 dark:bg-slate-400",
   },
+  cancelled: {
+    label: "Cancelled",
+    className: "bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700",
+    dotClass: "bg-slate-400 dark:bg-slate-400",
+  },
 };
 
 export const StatusBadge = memo(function StatusBadge({

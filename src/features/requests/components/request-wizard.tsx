@@ -1,9 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useState, useRef } from "react";
+import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Controller } from "react-hook-form";
-import { ArrowLeft, ArrowRight, Bookmark, Send, AlertCircle, RefreshCw, Layers } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Send,
+  AlertCircle,
+  RefreshCw,
+  Layers,
+  CheckCircle2,
+  AlertTriangle,
+  Info,
+  X,
+  Lock,
+  FileCheck2,
+  Trash2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
@@ -19,34 +34,53 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
+import { StatusBadge } from "@/features/requests/components/status-badge";
 import { Stepper } from "@/features/requests/components/stepper";
 import { DynamicField } from "@/features/requests/components/dynamic-field";
 import { RequestTypeCard } from "@/features/requests/components/request-type-card";
 import { RequestReview } from "@/features/requests/components/request-review";
 import { RequestHoaCard } from "@/features/requests/components/wizard/request-hoa-card";
-import { useRequestWizard } from "@/features/requests/hooks/use-request-wizard";
+import {
+  useRequestWizard,
+  isCategoryArchivedError,
+  isCategoryNotFoundError,
+  isCategoryUnavailableError,
+} from "@/features/requests/hooks/use-request-wizard";
+import { useQueryClient } from "@tanstack/react-query";
 import { useDraftDetailQuery } from "@/features/drafts/api/drafts.queries";
+import { useDeleteDraftMutation } from "@/features/drafts/api/drafts.mutations";
 import {
   useActiveCategoriesQuery,
   useActiveCategoryFormQuery,
 } from "@/features/categories/api/categories.queries";
-import {
-  saveWizardState,
-  getWizardState,
-  clearWizardState,
-} from "@/features/requests/utils/request-storage";
+import { createDraftRequest } from "@/features/requests/api/requests.service";
+import { useToast } from "@/hooks/use-toast";
+import { clearWizardState } from "@/features/requests/utils/request-storage";
 import type {
   ActiveCategory,
   CategoryFormField,
 } from "@/features/categories/types/categories.types";
 import { requestTypes } from "@/lib/mock/request-types";
+import { formatDate } from "@/utils/format";
+import { cn } from "@/utils/cn";
 
-export default function RequestWizard() {
+export default function RequestWizard({ draftIdProp }: { draftIdProp?: string }) {
+  const router = useRouter();
   const searchParams = useSearchParams();
-  const draftId = searchParams.get("draftId");
-  const { data: draft, isLoading: isLoadingDraft } = useDraftDetailQuery(draftId ?? undefined);
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  const draftId = draftIdProp || searchParams.get("draftId");
+  const [isChoosingCategory, setIsChoosingCategory] = useState(false);
+  const [createdDraft, setCreatedDraft] = useState<any>(null);
+  const [initializingCategory, setInitializingCategory] = useState<ActiveCategory | null>(null);
+
+  const effectiveDraftId = isChoosingCategory ? undefined : (draftId ?? undefined);
+  const { data: draft, isLoading: isLoadingDraft } = useDraftDetailQuery(effectiveDraftId);
+
+  const effectiveDraft = isChoosingCategory ? null : (draft || createdDraft);
 
   const {
     data: categoriesResult,
@@ -55,20 +89,18 @@ export default function RequestWizard() {
     refetch: refetchCategories,
   } = useActiveCategoriesQuery();
 
-  const [requestTypeId, setRequestTypeId] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
-    const stored = getWizardState();
-    return stored?.requestTypeId || null;
-  });
-
-  // Sync category ID if resuming from draft
+  // Clear legacy storage and state when starting fresh or navigating to /requests/new
   useEffect(() => {
-    if (draft?.requestTypeId && !requestTypeId) {
-      setRequestTypeId(draft.requestTypeId);
+    if (!draftId) {
+      clearWizardState();
+      setCreatedDraft(null);
+      setIsChoosingCategory(false);
     }
-  }, [draft, requestTypeId]);
+  }, [draftId]);
 
-  const activeTypeId = requestTypeId || draft?.requestTypeId || null;
+  const activeTypeId = isChoosingCategory
+    ? null
+    : (effectiveDraft?.categoryId || effectiveDraft?.requestTypeId || null);
 
   // Fetch live category form definition once a category is selected
   const {
@@ -79,6 +111,59 @@ export default function RequestWizard() {
   } = useActiveCategoryFormQuery(activeTypeId);
 
   const categories = categoriesResult?.categories ?? [];
+
+  const isRedirectingRef = useRef(false);
+
+  // Auto-redirect if active category form returns not found or archived
+  useEffect(() => {
+    if (categoryFormError && isCategoryUnavailableError(categoryFormError)) {
+      if (isRedirectingRef.current) return;
+      isRedirectingRef.current = true;
+
+      clearWizardState();
+      // Remove this failing form query so it stops refetching
+      if (activeTypeId) {
+        queryClient.removeQueries({ queryKey: ["categories", "form", activeTypeId] });
+      }
+      queryClient.invalidateQueries({ queryKey: ["categories", "active"] });
+      queryClient.refetchQueries({ queryKey: ["categories", "active"] });
+      queryClient.invalidateQueries({ queryKey: ["drafts"] });
+
+      const isArchived = isCategoryArchivedError(categoryFormError);
+      const isNotFound = isCategoryNotFoundError(categoryFormError);
+
+      const title = isArchived
+        ? "Category Archived"
+        : isNotFound
+        ? "Category Not Found"
+        : "Category Unavailable";
+
+      const message =
+        (categoryFormError as any)?.responseData?.message ||
+        categoryFormError.message ||
+        (isArchived
+          ? "Archived categories cannot be submitted"
+          : "Active category not found");
+
+      // CATEGORY_ARCHIVED -> /requests/new
+      // CATEGORY_NOT_FOUND -> /requests
+      const destination = isArchived ? "/requests/new" : "/requests";
+
+      toast.error(
+        title,
+        `${message}. Redirecting...`
+      );
+
+      const timer = setTimeout(() => {
+        if (typeof window !== "undefined") {
+          window.location.href = destination;
+        } else {
+          router.replace(destination);
+        }
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [categoryFormError, activeTypeId, queryClient, router, toast]);
 
   // Fallback category metadata if found in categories list or static request types
   const selectedCategory: ActiveCategory | null =
@@ -99,7 +184,95 @@ export default function RequestWizard() {
         })()
       : null);
 
-  if (draftId && isLoadingDraft) {
+  async function handleSelectCategory(cat: ActiveCategory) {
+    setIsChoosingCategory(false);
+    setInitializingCategory(cat);
+    try {
+      const key = `create-draft-${cat.id}-${Date.now()}`;
+      const newDraft = await createDraftRequest(
+        {
+          categoryId: cat.id,
+          commonFormVersion: 1,
+          categoryFormVersion: cat.currentVersion || 1,
+        },
+        key
+      );
+      queryClient.setQueryData(["drafts", "detail", newDraft.id], newDraft);
+      queryClient.invalidateQueries({ queryKey: ["drafts"] });
+      setCreatedDraft(newDraft as any);
+      toast.success("Draft initialized", `Reference: ${newDraft.reference || newDraft.code}`);
+      router.replace(`/requests/new?draftId=${newDraft.id}`);
+    } catch (err: any) {
+      if (isCategoryUnavailableError(err)) {
+        clearWizardState();
+        queryClient.removeQueries({ queryKey: ["categories", "form", cat.id] });
+        queryClient.invalidateQueries({ queryKey: ["categories", "active"] });
+        queryClient.refetchQueries({ queryKey: ["categories", "active"] });
+        queryClient.invalidateQueries({ queryKey: ["drafts"] });
+
+        const isArchived = isCategoryArchivedError(err);
+        const isNotFound = isCategoryNotFoundError(err);
+        const title = isArchived ? "Category Archived" : isNotFound ? "Category Not Found" : "Category Unavailable";
+        const message =
+          err?.responseData?.message ||
+          err?.message ||
+          (isArchived
+            ? "Archived categories cannot be submitted"
+            : "Active category not found");
+        const destination = isArchived ? "/requests/new" : "/requests";
+
+        toast.error(
+          title,
+          `${message}. Redirecting...`
+        );
+        setTimeout(() => {
+          if (typeof window !== "undefined") {
+            window.location.href = destination;
+          } else {
+            router.replace(destination);
+          }
+        }, 3000);
+        return;
+      }
+      const message = err?.message || "Failed to initialize draft request. Please try again.";
+      toast.error("Initialization Failed", message);
+    } finally {
+      setInitializingCategory(null);
+    }
+  }
+
+  const handleResetToCategorySelection = () => {
+    clearWizardState();
+    setIsChoosingCategory(true);
+    setCreatedDraft(null);
+    router.replace("/requests/new");
+  };
+
+  if (initializingCategory) {
+    return (
+      <div className="space-y-6 animate-in fade-in duration-300">
+        <PageHeader
+          title="Initializing Request"
+          description={`Setting up your draft workspace for ${initializingCategory.name}...`}
+        />
+        <Card className="p-12 flex flex-col items-center justify-center text-center space-y-4 shadow-2xs">
+          <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+            <Spinner className="size-6 animate-spin" />
+          </div>
+          <div className="space-y-1.5 max-w-md">
+            <h3 className="font-heading text-lg font-medium text-foreground">
+              Initializing request for {initializingCategory.name}
+            </h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Generating your permanent ARB reference code and loading latest questions. You will be redirected immediately.
+            </p>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!isChoosingCategory && draftId && isLoadingDraft) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-14 w-1/3 rounded-lg" />
@@ -109,10 +282,148 @@ export default function RequestWizard() {
     );
   }
 
+  // Handle non-existent draft ID in route
+  if (!isChoosingCategory && draftId && !isLoadingDraft && !draft) {
+    return (
+      <div className="space-y-6 animate-in fade-in duration-300">
+        <PageHeader
+          title="Draft Not Found"
+          description="The requested draft record could not be found."
+        />
+        <EmptyState
+          icon={AlertCircle}
+          title="Draft Not Found"
+          description="This draft may have already been submitted, deleted, or you may not have permission to view it."
+          action={
+            <div className="flex flex-wrap items-center justify-center gap-2.5">
+              <Button nativeButton={false} render={<Link href="/requests" />} variant="outline">
+                Back to All Requests
+              </Button>
+              <Button onClick={handleResetToCategorySelection}>
+                Start New Request
+              </Button>
+            </div>
+          }
+        />
+      </div>
+    );
+  }
+
+  // Handle already-submitted / non-draft requests accessed via new/draft route
+  if (!isChoosingCategory && draft && draft.status && draft.status !== "draft") {
+    const isUnderReview = draft.status === "submitted" || draft.status === "under_review" || draft.status === "resubmitted";
+    const isChangesRequired = draft.status === "changes_required";
+    const isClosed = ["approved", "rejected", "completed", "withdrawn"].includes(draft.status);
+
+    return (
+      <div className="space-y-6 animate-in fade-in duration-300">
+        <PageHeader
+          title={
+            isUnderReview
+              ? "Request is Under Review"
+              : isChangesRequired
+              ? "Changes Requested"
+              : "Request Submission Finalized"
+          }
+          description="Submitted and processed requests cannot be edited from the submission wizard."
+        />
+
+        <Card className="p-6 sm:p-8 shadow-2xs border-slate-200/90 dark:border-slate-800 bg-white dark:bg-card space-y-6">
+          <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-5">
+            <div
+              className={cn(
+                "size-12 rounded-2xl flex items-center justify-center shrink-0 border shadow-2xs",
+                isUnderReview && "bg-sky-50 dark:bg-sky-950/60 border-sky-200 text-sky-700 dark:text-sky-300",
+                isChangesRequired && "bg-amber-50 dark:bg-amber-950/60 border-amber-200 text-amber-700 dark:text-amber-300",
+                isClosed && "bg-slate-100 dark:bg-slate-800 border-slate-200 text-slate-700 dark:text-slate-300"
+              )}
+              aria-hidden="true"
+            >
+              {isUnderReview ? (
+                <Lock className="size-6 text-sky-600 dark:text-sky-400" />
+              ) : isChangesRequired ? (
+                <AlertTriangle className="size-6 text-amber-600 dark:text-amber-400" />
+              ) : (
+                <FileCheck2 className="size-6 text-slate-600 dark:text-slate-400" />
+              )}
+            </div>
+
+            <div className="space-y-2 flex-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <h2 className="font-heading text-xl font-semibold text-foreground">
+                  {isUnderReview
+                    ? "This request is locked and currently under review"
+                    : isChangesRequired
+                    ? "The Review Board has requested changes"
+                    : "This request has already been finalized"}
+                </h2>
+                <StatusBadge status={draft.status} />
+              </div>
+
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {isUnderReview
+                  ? "Once a request is submitted or resubmitted, it is locked and cannot be edited. Your submission is currently in the hands of the Architectural Review Board (ARB). You will not be able to edit this request until the review board specifically requests changes or additional details."
+                  : isChangesRequired
+                  ? "The Review Board has reviewed your submission and flagged items that need modification. Please go to the Request Details page to view the reviewer's instructions and submit your revision."
+                  : "This architectural request has already reached a finalized decision status and can no longer be modified."}
+              </p>
+            </div>
+          </div>
+
+          {/* Request Metadata Box */}
+          <div className="rounded-xl border border-border/70 bg-slate-50/60 dark:bg-slate-900/40 p-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 text-xs">
+            <div>
+              <span className="text-muted-foreground block font-medium">Reference Code</span>
+              <span className="font-mono font-semibold text-foreground text-sm">
+                {draft.reference || draft.code || "—"}
+              </span>
+            </div>
+            <div>
+              <span className="text-muted-foreground block font-medium">Category</span>
+              <span className="font-semibold text-foreground text-sm truncate block">
+                {draft.categoryName || draft.title || "Architectural Request"}
+              </span>
+            </div>
+            <div>
+              <span className="text-muted-foreground block font-medium">Property Address</span>
+              <span className="font-medium text-foreground truncate block">
+                {draft.propertyAddress || (draft.lotNo ? `Lot #${draft.lotNo}` : "—")}
+              </span>
+            </div>
+            <div>
+              <span className="text-muted-foreground block font-medium">Last Updated</span>
+              <span className="font-medium text-foreground">
+                {formatDate(draft.updatedAt)}
+              </span>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-border/70">
+            <Button
+              nativeButton={false}
+              render={<Link href={`/requests/${draft.id}`} />}
+              className="font-semibold shadow-xs"
+            >
+              {isChangesRequired ? "Revise Submission" : "View Request Details"}
+            </Button>
+            <Button
+              variant="outline"
+              nativeButton={false}
+              render={<Link href="/requests" />}
+            >
+              Back to All Requests
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   // 1. Category Selection View
   if (!activeTypeId) {
     return (
-      <div className="space-y-6">
+      <div className="mx-auto max-w-3xl space-y-6 animate-in fade-in">
         <PageHeader
           title="New Request"
           description="Choose the type of architectural request you'd like to submit."
@@ -169,14 +480,7 @@ export default function RequestWizard() {
               <RequestTypeCard
                 key={cat.id}
                 category={cat}
-                onSelect={() => {
-                  saveWizardState({
-                    requestTypeId: cat.id,
-                    stepIndex: 0,
-                    fieldValues: {},
-                  });
-                  setRequestTypeId(cat.id);
-                }}
+                onSelect={() => handleSelectCategory(cat)}
               />
             ))}
           </div>
@@ -188,7 +492,7 @@ export default function RequestWizard() {
   // 2. Loading Form Definition
   if (isLoadingCategoryForm) {
     return (
-      <div className="space-y-6">
+      <div className="mx-auto max-w-3xl space-y-6 animate-in fade-in">
         <div className="space-y-2">
           <Skeleton className="h-8 w-48 rounded" />
           <Skeleton className="h-4 w-96 rounded" />
@@ -201,36 +505,63 @@ export default function RequestWizard() {
 
   // 3. Category Form Loading Error
   if (categoryFormError || !selectedCategory) {
+    const isArchived = isCategoryArchivedError(categoryFormError) || (selectedCategory as any)?.status === "archived";
+    const isNotFound = isCategoryNotFoundError(categoryFormError);
+    const isArchivedOrNotFound = isArchived || isNotFound;
+
+    const title = isArchived
+      ? "Category Archived"
+      : isNotFound
+      ? "Category Not Found"
+      : "Unable to load request form";
+
+    const defaultMsg = isArchived
+      ? "Archived categories cannot be submitted."
+      : isNotFound
+      ? "Active category not found."
+      : "We encountered an issue loading the form questions for this category.";
+
+    const errorMessage =
+      (categoryFormError as any)?.responseData?.message ||
+      categoryFormError?.message ||
+      defaultMsg;
+
+    const destination = isArchived ? "/requests/new" : "/requests";
+    const destinationLabel = isArchived ? "New Request" : "My Requests";
+
     return (
-      <div className="space-y-6">
+      <div className="mx-auto max-w-3xl space-y-6 animate-in fade-in">
         <PageHeader
           title="New Request"
           description="Submit an architectural review request."
         />
         <Alert variant="destructive" className="border-destructive/30 bg-destructive/5">
           <AlertCircle className="size-4" />
-          <AlertTitle>Unable to load request form</AlertTitle>
+          <AlertTitle>{title}</AlertTitle>
           <AlertDescription className="mt-2 space-y-3">
-            <p>We encountered an issue loading the form questions for this category.</p>
+            <p>
+              {isArchivedOrNotFound
+                ? `${errorMessage} You will be redirected to ${destinationLabel} shortly.`
+                : errorMessage}
+            </p>
             <div className="flex items-center gap-2.5">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => {
-                  clearWizardState();
-                  setRequestTypeId(null);
-                }}
+                onClick={handleResetToCategorySelection}
               >
                 <ArrowLeft className="size-3.5 mr-1.5" />
-                Choose Another Category
+                Go to {destinationLabel}
               </Button>
-              <Button
-                size="sm"
-                onClick={() => refetchCategoryForm()}
-              >
-                <RefreshCw className="size-3.5 mr-1.5" />
-                Retry
-              </Button>
+              {!isArchivedOrNotFound && (
+                <Button
+                  size="sm"
+                  onClick={() => refetchCategoryForm()}
+                >
+                  <RefreshCw className="size-3.5 mr-1.5" />
+                  Retry
+                </Button>
+              )}
             </div>
           </AlertDescription>
         </Alert>
@@ -238,17 +569,29 @@ export default function RequestWizard() {
     );
   }
 
-  const dynamicFields: CategoryFormField[] = categoryFormData?.fields ?? [];
+  const dynamicFields: CategoryFormField[] =
+    effectiveDraft?.form?.fields && effectiveDraft.form.fields.length > 0
+      ? (effectiveDraft.form.fields as CategoryFormField[])
+      : categoryFormData?.fields ?? [];
 
   return (
     <CategoryFormWizard
-      key={selectedCategory.id}
+      key={`${selectedCategory.id}-${effectiveDraft?.categoryFormVersion ?? 1}-${effectiveDraft?.commonFormVersion ?? 1}-${dynamicFields.length}`}
       category={selectedCategory}
       dynamicFields={dynamicFields}
-      initialDraft={draft}
+      initialDraft={effectiveDraft}
       onChangeType={() => {
         clearWizardState();
         setRequestTypeId(null);
+        setCreatedDraft(null);
+        queryClient.invalidateQueries({ queryKey: ["categories"] });
+        queryClient.refetchQueries({ queryKey: ["categories"] });
+        queryClient.invalidateQueries({ queryKey: ["drafts"] });
+        if (typeof window !== "undefined") {
+          window.location.href = "/requests/new";
+        } else {
+          router.replace("/requests/new");
+        }
       }}
     />
   );
@@ -268,6 +611,7 @@ function CategoryFormWizard({
   const {
     form,
     stepIndex,
+    setStepIndex,
     isReviewStep,
     currentStep,
     stepperSteps,
@@ -275,7 +619,17 @@ function CategoryFormWizard({
     categoryFields,
     reviewReady,
     isPending,
+    isSubmitting,
+    submissionErrors,
     isSavingDraft,
+    hasUnsavedChanges,
+    lastSavedAt,
+    isStaleForm,
+    hasMigratedNotice,
+    dismissMigratedNotice,
+    reference,
+    currentDraftId,
+    handleMigrateForm,
     handleSaveDraft,
     handleNext,
     handleBack,
@@ -287,19 +641,161 @@ function CategoryFormWizard({
     onSubmit,
   } = useRequestWizard(category, onChangeType, initialDraft, dynamicFields);
 
+  const router = useRouter();
+  const toast = useToast();
+  const [confirmingDiscard, setConfirmingDiscard] = useState(false);
+  const { mutate: deleteDraftMutate, isPending: isDeletingDraft } = useDeleteDraftMutation();
+
+  const staleAlertRef = useRef<HTMLDivElement | null>(null);
+  const upgradeBtnRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    if (isStaleForm) {
+      if (staleAlertRef.current) {
+        staleAlertRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      const timer = setTimeout(() => {
+        upgradeBtnRef.current?.focus();
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isStaleForm]);
+
+  const handleDiscard = () => {
+    if (!currentDraftId) return;
+    deleteDraftMutate(currentDraftId, {
+      onSuccess: () => {
+        clearWizardState();
+        toast.success("Draft discarded", "The draft has been permanently deleted.");
+        router.push("/requests?tab=drafts");
+      },
+      onError: (err: any) => {
+        toast.error("Failed to discard draft", err?.response?.data?.message || err?.message || "An unexpected error occurred.");
+      },
+    });
+  };
+
   const hoaError = form.formState.errors.hoaApproved;
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
-      <PageHeader
-        title={category.name}
-        description={category.description || "Submit an architectural review request."}
-      />
+    <div className="mx-auto max-w-3xl space-y-6 animate-in fade-in duration-300">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <PageHeader
+          title={category.name}
+          description={category.description || "Submit an architectural review request."}
+        />
+        {reference && (
+          <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
+            <span className="rounded-lg bg-slate-100 dark:bg-slate-800 border border-border px-2.5 py-1 text-xs font-mono font-semibold text-foreground">
+              {reference}
+            </span>
+            {isSavingDraft ? (
+              <span className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                <Spinner className="size-3" />
+                Saving...
+              </span>
+            ) : hasUnsavedChanges && !isStaleForm ? (
+              <div className="flex items-center gap-2">
+                <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 font-medium">
+                  <AlertCircle className="size-3.5" />
+                  Unsaved changes
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleSaveDraft({ redirect: false })}
+                  disabled={isSavingDraft || isStaleForm}
+                  className="h-7 px-2.5 text-xs gap-1 border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 hover:bg-amber-100/50 dark:hover:bg-amber-950/50"
+                >
+                  Save
+                </Button>
+              </div>
+            ) : lastSavedAt ? (
+              <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                <CheckCircle2 className="size-3.5" />
+                Saved
+              </span>
+            ) : null}
+
+            {currentDraftId && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setConfirmingDiscard(true)}
+                disabled={isPending || isSavingDraft || isDeletingDraft || isStaleForm}
+                className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                title="Discard this draft permanently"
+              >
+                <Trash2 className="size-3.5" />
+                Discard
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {isStaleForm && (
+        <div ref={staleAlertRef} tabIndex={-1} className="outline-hidden animate-in fade-in slide-in-from-top-2 duration-300">
+          <Alert className="border-amber-400/90 bg-amber-50/95 dark:border-amber-700/80 dark:bg-amber-950/50 text-amber-950 dark:text-amber-100 shadow-sm ring-2 ring-amber-400/30 dark:ring-amber-500/20">
+            <AlertTriangle className="size-5 text-amber-600 dark:text-amber-400 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <AlertTitle className="font-semibold text-base text-amber-950 dark:text-amber-100">
+                Category Form Updated
+              </AlertTitle>
+              <AlertDescription className="mt-1.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm text-amber-900/90 dark:text-amber-200/90">
+                <span>
+                  The administrator updated the questions for this category. You must upgrade your draft to the latest form version before proceeding.
+                </span>
+                <Button
+                  ref={upgradeBtnRef}
+                  size="sm"
+                  onClick={handleMigrateForm}
+                  disabled={isPending}
+                  className="shrink-0 font-medium shadow-xs"
+                >
+                  {isPending ? (
+                    <Spinner className="size-3.5 mr-1.5" />
+                  ) : (
+                    <RefreshCw className="size-3.5 mr-1.5" />
+                  )}
+                  Upgrade Form
+                </Button>
+              </AlertDescription>
+            </div>
+          </Alert>
+        </div>
+      )}
+
+      {hasMigratedNotice && !isStaleForm && (
+        <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+          <Alert className="relative border-sky-300/90 bg-sky-50/95 dark:border-sky-800/80 dark:bg-sky-950/50 text-sky-950 dark:text-sky-100 shadow-xs ring-1 ring-sky-300/40 dark:ring-sky-700/30">
+            <Info className="size-5 text-sky-600 dark:text-sky-400 shrink-0 mt-0.5" />
+            <div className="flex-1 pr-6">
+              <AlertTitle className="font-semibold text-base text-sky-950 dark:text-sky-100">
+                Form Upgraded to Latest Version
+              </AlertTitle>
+              <AlertDescription className="mt-1 text-sm text-sky-900/90 dark:text-sky-200/90 leading-relaxed">
+                The administrator updated the questions and fields for this category. Please review the updated form below, update your answers and uploaded documents accordingly, and proceed with your submission.
+              </AlertDescription>
+            </div>
+            <button
+              type="button"
+              onClick={dismissMigratedNotice}
+              className="absolute top-3 right-3 p-1 rounded-md text-sky-700/70 hover:text-sky-950 hover:bg-sky-200/50 dark:text-sky-300/70 dark:hover:text-sky-100 dark:hover:bg-sky-900/50 transition-colors cursor-pointer"
+              aria-label="Dismiss upgrade notice"
+            >
+              <X className="size-4" />
+            </button>
+          </Alert>
+        </div>
+      )}
 
       <Stepper steps={stepperSteps} currentIndex={stepIndex} />
 
-      <Card className="p-5 sm:p-6">
-        <form onSubmit={onSubmit}>
+      <form onSubmit={onSubmit}>
+        <Card className="p-5 sm:p-6">
           {!isReviewStep && currentStep && (
             <div className="space-y-5">
               <div>
@@ -316,23 +812,14 @@ function CategoryFormWizard({
                   No additional information required for this step. Click &ldquo;Next&rdquo; to proceed.
                 </div>
               ) : (
-                <div className="grid gap-5 sm:grid-cols-2">
+                <div className="space-y-5">
                   {currentStep.fields.map((field) => (
-                    <div
-                      key={field.id}
-                      className={
-                        field.type === "textarea" ||
-                        field.type === "file" ||
-                        field.type === "checkbox"
-                          ? "sm:col-span-2"
-                          : undefined
-                      }
-                    >
+                    <div key={field.id}>
                       <DynamicField
                         field={field}
                         control={form.control}
                         errors={form.formState.errors}
-                        disabled={isPending || isSavingDraft}
+                        disabled={isPending || isStaleForm}
                       />
                     </div>
                   ))}
@@ -342,7 +829,7 @@ function CategoryFormWizard({
           )}
 
           {isReviewStep && (
-            <div className="space-y-5">
+            <div className="space-y-5 min-w-0">
               <div>
                 <h2 className="font-heading text-xl font-medium text-foreground">
                   Review &amp; Submit
@@ -352,10 +839,37 @@ function CategoryFormWizard({
                 </p>
               </div>
 
+              {submissionErrors.length > 0 && !isStaleForm && (
+                <Alert variant="destructive" className="border-destructive/40 bg-destructive/5 dark:bg-destructive/10">
+                  <AlertCircle className="size-4" />
+                  <AlertTitle className="font-semibold">Unable to submit request</AlertTitle>
+                  <AlertDescription className="mt-2 space-y-2">
+                    <p className="text-xs text-muted-foreground">
+                      Please review and fix the following items before submitting:
+                    </p>
+                    <ul className="list-disc list-inside space-y-1 text-xs break-words [overflow-wrap:anywhere]">
+                      {submissionErrors.map((err, i) => (
+                        <li key={i}>{err}</li>
+                      ))}
+                    </ul>
+                  </AlertDescription>
+                </Alert>
+              )}
+
               <RequestReview
                 commonFields={commonFields}
                 categoryFields={categoryFields}
                 values={form.getValues()}
+                errors={form.formState.errors}
+                disabled={isStaleForm}
+                onNavigateToStep={
+                  isStaleForm
+                    ? undefined
+                    : (idx) => {
+                        setStepIndex(idx);
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }
+                }
               />
 
               <Controller
@@ -365,49 +879,61 @@ function CategoryFormWizard({
                   <RequestHoaCard
                     checked={rhf.value === true}
                     onCheckedChange={(checked) => rhf.onChange(checked)}
-                    error={hoaError?.message as string | undefined}
+                    error={!isStaleForm ? (hoaError?.message as string | undefined) : undefined}
+                    disabled={isPending || isStaleForm}
                   />
                 )}
               />
             </div>
           )}
+        </Card>
 
-          <div className="mt-7 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-5">
-            <Button type="button" variant="outline" onClick={handleBack}>
-              <ArrowLeft className="size-4 mr-1" />
-              Back
-            </Button>
-
-            <div className="flex items-center gap-2.5">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleSaveDraft({ redirect: true })}
-                disabled={isSavingDraft || isPending}
-              >
-                {isSavingDraft ? (
-                  <Spinner className="size-4" />
-                ) : (
-                  <Bookmark className="size-4 text-brand-navy dark:text-brand-gold mr-1" />
-                )}
-                Save as Draft
+        <div className="sticky bottom-0 z-30 -mx-4 sm:-mx-6 lg:-mx-8 mt-6">
+          <div className="border-t border-border/80 bg-[#F8FAFC] dark:bg-[#0D1522] px-4 sm:px-6 lg:px-8 py-4 ">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <Button type="button" variant="outline" onClick={handleBack}>
+                <ArrowLeft className="size-4 mr-1" />
+                Back
               </Button>
 
-              {!isReviewStep ? (
-                <Button type="button" onClick={handleNext}>
-                  Next
-                  <ArrowRight className="size-4 ml-1" />
-                </Button>
-              ) : (
-                <Button type="submit" disabled={isPending || !reviewReady}>
-                  {isPending ? <Spinner className="size-4" /> : <Send className="size-4 mr-1" />}
-                  Submit Request
-                </Button>
-              )}
+              <div className="flex items-center gap-2.5">
+                {!isReviewStep ? (
+                  <Button type="button" onClick={handleNext}>
+                    Next
+                    <ArrowRight className="size-4 ml-1" />
+                  </Button>
+                ) : (
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
+                    {isSavingDraft && (
+                      <span className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-md px-2.5 py-1 flex items-center gap-1.5 animate-pulse">
+                        <Spinner className="size-3.5" />
+                        Saving draft in progress... Submit will be enabled once saved.
+                      </span>
+                    )}
+                    <Button
+                      type="submit"
+                      disabled={isPending || isSavingDraft || !reviewReady}
+                    >
+                      {isPending ? (
+                        <Spinner className="size-4 mr-1" />
+                      ) : isSavingDraft ? (
+                        <Spinner className="size-4 mr-1" />
+                      ) : (
+                        <Send className="size-4 mr-1" />
+                      )}
+                      {isSavingDraft
+                        ? "Saving Draft..."
+                        : isPending
+                        ? "Submitting..."
+                        : "Submit Request"}
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </form>
-      </Card>
+        </div>
+      </form>
 
       <AlertDialog
         open={confirmingChangeCategory}
@@ -440,6 +966,17 @@ function CategoryFormWizard({
       </AlertDialog>
 
       {guardDialog}
+
+      <ConfirmDialog
+        open={confirmingDiscard}
+        onOpenChange={setConfirmingDiscard}
+        title="Discard Draft Permanently?"
+        description="Are you sure you want to discard this draft? This request and all uploaded documents will be permanently deleted and cannot be recovered."
+        confirmLabel="Discard Permanently"
+        destructive={true}
+        loading={isDeletingDraft}
+        onConfirm={handleDiscard}
+      />
     </div>
   );
 }

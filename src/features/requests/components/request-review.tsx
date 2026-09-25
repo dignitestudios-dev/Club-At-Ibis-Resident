@@ -1,13 +1,17 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { FileText, Eye } from "lucide-react";
+import { FileText, Eye, AlertCircle, Pencil } from "lucide-react";
+import { type FieldErrors } from "react-hook-form";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/utils/cn";
 import { baseProjectInfoFields } from "@/lib/mock/request-types";
 import {
   FilePreviewDialog,
   type PreviewableFile,
 } from "@/components/shared/file-preview-dialog";
 import { formatFileSize } from "@/utils/format";
+import { formatUsPhone } from "@/features/requests/schemas/request-step.schema";
 
 export function formatFieldValue(
   field: FieldConfig,
@@ -23,6 +27,10 @@ export function formatFieldValue(
   }
 
   if (value === undefined || value === null || value === "") return "—";
+
+  if (field.type === "phone") {
+    return formatUsPhone(String(value)) || String(value);
+  }
 
   const getOptionLabel = (optVal: string) => {
     if (!field.options) return optVal;
@@ -52,6 +60,9 @@ export function RequestReview({
   categoryFields,
   values,
   uploads,
+  errors,
+  disabled,
+  onNavigateToStep,
   onPreviewFile,
 }: {
   requestType?: RequestType | null;
@@ -60,6 +71,9 @@ export function RequestReview({
   categoryFields?: FieldConfig[];
   values: Record<string, unknown>;
   uploads?: Record<string, UploadedFile[]>;
+  errors?: FieldErrors;
+  disabled?: boolean;
+  onNavigateToStep?: (stepIndex: number) => void;
   onPreviewFile?: (file: PreviewableFile) => void;
 }) {
   const [internalPreviewFile, setInternalPreviewFile] =
@@ -77,12 +91,14 @@ export function RequestReview({
       if (comm.length > 0) {
         result.push({
           title: "Project Information",
+          stepIndex: 0,
           fields: comm,
         });
       }
       if (cat.length > 0) {
         result.push({
           title: "Category Details",
+          stepIndex: comm.length > 0 ? 1 : 0,
           fields: cat,
         });
       }
@@ -93,10 +109,12 @@ export function RequestReview({
       return [
         {
           title: "Project Information",
+          stepIndex: 0,
           fields: [...baseProjectInfoFields, ...(requestType.additionalFields || [])],
         },
         {
           title: "Documents & Photos",
+          stepIndex: 1,
           fields: requestType.documentFields || [],
         },
       ];
@@ -114,12 +132,30 @@ export function RequestReview({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 min-w-0">
       {groups.map((group) => (
-        <div key={group.title} className="space-y-2.5">
-          <p className="text-sm font-semibold text-foreground">{group.title}</p>
-          <dl className="grid gap-3 rounded-xl border border-border bg-white dark:bg-card p-4 shadow-2xs sm:grid-cols-2">
+        <div key={group.title} className="space-y-2.5 min-w-0">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-semibold text-foreground break-words [overflow-wrap:anywhere]">{group.title}</p>
+            {onNavigateToStep && !disabled && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => onNavigateToStep(group.stepIndex)}
+                className="h-7 px-2 text-xs text-primary hover:text-primary/80 shrink-0"
+              >
+                <Pencil className="size-3 mr-1" />
+                Edit
+              </Button>
+            )}
+          </div>
+          <dl className="grid gap-3.5 rounded-xl border border-border bg-white dark:bg-card p-4 shadow-2xs min-w-0">
             {group.fields.map((field) => {
+              const fieldError = errors?.[field.id];
+              const isInvalid = !disabled && !!fieldError;
+              const errorMsg = fieldError?.message ? String(fieldError.message) : null;
+
               if (field.type === "file") {
                 const files =
                   uploads?.[field.id] ??
@@ -127,11 +163,28 @@ export function RequestReview({
                     ? (values[field.id] as DropzoneFile[])
                     : []);
                 return (
-                  <div key={field.id} className="space-y-1 sm:col-span-2">
-                    <dt className="text-xs font-medium text-muted-foreground">
-                      {field.label}
-                    </dt>
-                    <dd className="text-sm text-foreground">
+                  <div
+                    key={field.id}
+                    className={cn(
+                      "space-y-1 rounded-lg transition-all min-w-0 overflow-hidden",
+                      isInvalid && "border border-destructive/40 bg-destructive/5 dark:bg-destructive/10 p-2.5"
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <dt className="text-xs font-medium text-muted-foreground break-words [overflow-wrap:anywhere]">
+                        {field.label}
+                      </dt>
+                      {isInvalid && onNavigateToStep && !disabled && (
+                        <button
+                          type="button"
+                          onClick={() => onNavigateToStep(group.stepIndex)}
+                          className="text-[11px] font-semibold text-destructive underline hover:opacity-80 shrink-0"
+                        >
+                          Fix upload
+                        </button>
+                      )}
+                    </div>
+                    <dd className="text-sm text-foreground min-w-0">
                       {files.length === 0 ? (
                         <span className="text-muted-foreground">—</span>
                       ) : (
@@ -142,20 +195,20 @@ export function RequestReview({
                               type="button"
                               onClick={() => handleFileClick(file)}
                               aria-label={`Preview ${file.name}`}
-                              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-slate-50 dark:bg-slate-800/80 px-2.5 py-1.5 text-xs font-medium text-foreground transition-all duration-200 hover:border-primary/50 hover:bg-white dark:hover:bg-slate-800 hover:text-primary hover:shadow-2xs cursor-pointer"
+                              className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-border bg-slate-50 dark:bg-slate-800/80 px-2.5 py-1.5 text-xs font-medium text-foreground transition-all duration-200 hover:border-primary/50 hover:bg-white dark:hover:bg-slate-800 hover:text-primary hover:shadow-2xs cursor-pointer"
                             >
                               <FileText
-                                className="size-3.5 text-primary"
+                                className="size-3.5 text-primary shrink-0"
                                 aria-hidden="true"
                               />
                               <span className="max-w-44 truncate">
                                 {file.name}
                               </span>
-                              <span className="text-[11px] text-muted-foreground">
+                              <span className="text-[11px] text-muted-foreground shrink-0">
                                 ({formatFileSize(file.size)})
                               </span>
                               <Eye
-                                className="size-3 text-muted-foreground"
+                                className="size-3 text-muted-foreground shrink-0"
                                 aria-hidden="true"
                               />
                             </button>
@@ -163,22 +216,51 @@ export function RequestReview({
                         </div>
                       )}
                     </dd>
+                    {isInvalid && errorMsg && (
+                      <p className="mt-1 flex items-center gap-1.5 text-xs font-medium text-destructive break-words [overflow-wrap:anywhere]">
+                        <AlertCircle className="size-3.5 shrink-0" />
+                        <span>{errorMsg}</span>
+                      </p>
+                    )}
                   </div>
                 );
               }
 
               return (
-                <div key={field.id} className="space-y-0.5">
-                  <dt className="text-xs font-medium text-muted-foreground">
-                    {field.label}
-                  </dt>
-                  <dd className="text-sm font-medium text-foreground">
+                <div
+                  key={field.id}
+                  className={cn(
+                    "space-y-0.5 rounded-lg transition-all min-w-0 overflow-hidden",
+                    isInvalid && "border border-destructive/40 bg-destructive/5 dark:bg-destructive/10 p-2.5"
+                  )}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <dt className="text-xs font-medium text-muted-foreground break-words [overflow-wrap:anywhere]">
+                      {field.label}
+                    </dt>
+                    {isInvalid && onNavigateToStep && !disabled && (
+                      <button
+                        type="button"
+                        onClick={() => onNavigateToStep(group.stepIndex)}
+                        className="text-[11px] font-semibold text-destructive underline hover:opacity-80 shrink-0"
+                      >
+                        Fix field
+                      </button>
+                    )}
+                  </div>
+                  <dd className="text-sm font-medium text-foreground break-words [overflow-wrap:anywhere] [word-break:break-word] whitespace-pre-wrap min-w-0">
                     {formatFieldValue(
                       field,
                       values[field.id],
                       uploads?.[field.id]
                     )}
                   </dd>
+                  {isInvalid && errorMsg && (
+                    <p className="mt-1 flex items-center gap-1.5 text-xs font-medium text-destructive break-words [overflow-wrap:anywhere]">
+                      <AlertCircle className="size-3.5 shrink-0" />
+                      <span>{errorMsg}</span>
+                    </p>
+                  )}
                 </div>
               );
             })}

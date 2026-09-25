@@ -1,21 +1,23 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { PlusCircle, FileText, FileEdit, History } from "lucide-react";
+import { PlusCircle, FileText, FileEdit, History, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { SearchInput } from "@/components/shared/search-input";
 import { RequestListItem } from "@/features/requests/components/request-list-item";
 import { DraftCard } from "@/features/drafts/components/draft-card";
 import { RequestsTabsHeader, type RequestsTabType } from "@/features/requests/components/list/requests-tabs-header";
 import { RequestsFilterToolbar } from "@/features/requests/components/list/requests-filter-toolbar";
-import { useRequestsList, type DatePeriod } from "@/features/requests/hooks/use-requests-list";
-import { useDrafts } from "@/features/drafts/hooks/use-drafts";
-import { useActiveCategoriesQuery } from "@/features/categories/api/categories.queries";
-import { requestTypes } from "@/lib/mock/request-types";
+import { useRequestsList } from "@/features/requests/hooks/use-requests-list";
+import { useDeleteDraftMutation } from "@/features/drafts/api/drafts.mutations";
+import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/utils/cn";
 
 const VIEW_MODE_STORAGE_KEY = "ib_requests_view_mode";
@@ -25,23 +27,14 @@ const ACTIVE_STATUS_OPTIONS: { label: string; value: RequestStatus | "all" }[] =
   { label: "Submitted", value: "submitted" },
   { label: "Under Review", value: "under_review" },
   { label: "Changes Required", value: "changes_required" },
-  { label: "Resubmitted", value: "resubmitted" },
   { label: "Approved", value: "approved" },
 ];
 
 const HISTORY_STATUS_OPTIONS: { label: string; value: RequestStatus | "all" }[] = [
   { label: "All History Records", value: "all" },
   { label: "Completed & Closed", value: "completed" },
-  { label: "Not Approved", value: "rejected" },
-  { label: "Withdrawn", value: "withdrawn" },
-];
-
-
-const PERIOD_OPTIONS: { label: string; value: DatePeriod }[] = [
-  { label: "All Time", value: "all" },
-  { label: "Last 30 Days", value: "30d" },
-  { label: "Last 90 Days", value: "90d" },
-  { label: "This Year (2026)", value: "year" },
+  { label: "Rejected", value: "rejected" },
+  { label: "Cancelled", value: "cancelled" },
 ];
 
 export default function RequestsListPage() {
@@ -100,40 +93,78 @@ export default function RequestsListPage() {
 
   const {
     activeRequests,
-    allActiveRequests,
+    activeTotalCount,
     historyRequests,
-    allHistoryRequests,
+    historyTotalCount,
+    draftRequests,
+    draftsTotalCount,
     isLoading: isLoadingRequests,
     search,
     setSearch,
     status,
     setStatus,
-    requestTypeId,
-    setRequestTypeId,
-    period,
-    setPeriod,
     resetFilters,
-  } = useRequestsList();
+  } = useRequestsList(activeTab);
 
-  const { drafts, isLoading: isLoadingDrafts, isDeleting, deleteDraft } = useDrafts();
-  const { data: activeCategoriesData } = useActiveCategoriesQuery();
+  const toast = useToast();
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [selectedDraftIds, setSelectedDraftIds] = useState<string[]>([]);
+  const [confirmingBatchDelete, setConfirmingBatchDelete] = useState(false);
+  const { mutate: deleteDraftMutate, isPending: isDeleting } = useDeleteDraftMutation();
 
-  const categoryOptions = useMemo(() => {
-    const backendCategories = activeCategoriesData?.categories ?? [];
-    if (backendCategories.length > 0) {
-      return [
-        { label: "All Categories", value: "all" },
-        ...backendCategories.map((c) => ({ label: c.name, value: c.id })),
-      ];
+  useEffect(() => {
+    setSelectedDraftIds((prev) => prev.filter((id) => draftRequests.some((d) => d.id === id)));
+  }, [draftRequests]);
+
+  const handleDeleteDraft = (id: string, onSettled?: () => void) => {
+    setDeletingId(id);
+    deleteDraftMutate(id, {
+      onSuccess: () => {
+        setDeletingId(null);
+        toast.success("Draft discarded", "The draft has been permanently deleted.");
+        onSettled?.();
+      },
+      onError: (error: any) => {
+        setDeletingId(null);
+        toast.error("Failed to discard draft", error?.response?.data?.message || error?.message || "An unexpected error occurred.");
+        onSettled?.();
+      },
+    });
+  };
+
+  const isAllDraftsSelected = draftRequests.length > 0 && selectedDraftIds.length === draftRequests.length;
+  const selectedDraftsCount = selectedDraftIds.length;
+
+  const handleToggleSelectDraft = (id: string, selected: boolean) => {
+    setSelectedDraftIds((prev) =>
+      selected ? [...prev, id] : prev.filter((item) => item !== id)
+    );
+  };
+
+  const handleToggleSelectAllDrafts = () => {
+    if (isAllDraftsSelected) {
+      setSelectedDraftIds([]);
+    } else {
+      setSelectedDraftIds(draftRequests.map((d) => d.id));
     }
-    return [
-      { label: "All Categories", value: "all" },
-      ...requestTypes.map((t) => ({ label: t.name, value: t.id })),
-    ];
-  }, [activeCategoriesData?.categories]);
+  };
 
-  const hasActiveFilters =
-    search.trim() !== "" || status !== "all" || requestTypeId !== "all" || period !== "all";
+  const handleBatchDeleteDrafts = () => {
+    if (!selectedDraftIds.length) return;
+    deleteDraftMutate(selectedDraftIds, {
+      onSuccess: () => {
+        const count = selectedDraftIds.length;
+        setSelectedDraftIds([]);
+        setConfirmingBatchDelete(false);
+        toast.success("Drafts discarded", `${count} draft${count > 1 ? "s have" : " has"} been permanently deleted.`);
+      },
+      onError: (error: any) => {
+        toast.error("Failed to discard drafts", error?.response?.data?.message || error?.message || "An unexpected error occurred.");
+      },
+    });
+  };
+
+  const hasActiveFilters = search.trim() !== "" || status !== "all";
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -156,10 +187,14 @@ export default function RequestsListPage() {
 
       <RequestsTabsHeader
         activeTab={activeTab}
-        onTabChange={handleTabChange}
-        activeCount={allActiveRequests.length}
-        historyCount={allHistoryRequests.length}
-        draftsCount={drafts.length}
+        onTabChange={(tab) => {
+          setSearch("");
+          setStatus("all");
+          handleTabChange(tab);
+        }}
+        activeCount={activeTotalCount}
+        historyCount={historyTotalCount}
+        draftsCount={draftsTotalCount}
         viewMode={viewMode}
         onViewModeChange={handleViewModeChange}
       />
@@ -179,17 +214,11 @@ export default function RequestsListPage() {
             onStatusChange={setStatus}
             statusOptions={ACTIVE_STATUS_OPTIONS}
             statusPlaceholder="Filter by status"
-            requestTypeId={requestTypeId}
-            onRequestTypeChange={setRequestTypeId}
-            categoryOptions={categoryOptions}
-            period={period}
-            onPeriodChange={setPeriod}
-            periodOptions={PERIOD_OPTIONS}
             hasActiveFilters={hasActiveFilters}
             filteredCount={activeRequests.length}
-            totalCount={allActiveRequests.length}
+            totalCount={activeTotalCount}
             onResetFilters={resetFilters}
-            searchPlaceholder="Search by code, type, details..."
+            searchPlaceholder="Search by reference, category, title..."
           />
 
           {isLoadingRequests && (
@@ -223,17 +252,27 @@ export default function RequestsListPage() {
             <div className="animate-in fade-in duration-300">
               <EmptyState
                 icon={FileText}
-                title="No active requests found"
-                description="Try adjusting your search criteria or filters, or start a new architectural submission."
+                title={hasActiveFilters ? "No matching requests found" : "No active requests found"}
+                description={
+                  hasActiveFilters
+                    ? "Try adjusting your search criteria or filters, or clear all filters."
+                    : "You currently have no active requests in review. Start a new architectural submission."
+                }
                 action={
-                  <Button
-                    nativeButton={false}
-                    render={<Link href="/requests/new" />}
-                    aria-label="Start a new request"
-                  >
-                    <PlusCircle className="size-4" aria-hidden="true" />
-                    Start New Request
-                  </Button>
+                  hasActiveFilters ? (
+                    <Button variant="outline" onClick={resetFilters}>
+                      Clear Filters
+                    </Button>
+                  ) : (
+                    <Button
+                      nativeButton={false}
+                      render={<Link href="/requests/new" />}
+                      aria-label="Start a new request"
+                    >
+                      <PlusCircle className="size-4" aria-hidden="true" />
+                      Start New Request
+                    </Button>
+                  )
                 }
               />
             </div>
@@ -278,17 +317,11 @@ export default function RequestsListPage() {
             onStatusChange={setStatus}
             statusOptions={HISTORY_STATUS_OPTIONS}
             statusPlaceholder="All History Outcomes"
-            requestTypeId={requestTypeId}
-            onRequestTypeChange={setRequestTypeId}
-            categoryOptions={categoryOptions}
-            period={period}
-            onPeriodChange={setPeriod}
-            periodOptions={PERIOD_OPTIONS}
             hasActiveFilters={hasActiveFilters}
             filteredCount={historyRequests.length}
-            totalCount={allHistoryRequests.length}
+            totalCount={historyTotalCount}
             onResetFilters={resetFilters}
-            searchPlaceholder="Search history records..."
+            searchPlaceholder="Search history by reference, category..."
           />
 
           {isLoadingRequests && (
@@ -320,8 +353,19 @@ export default function RequestsListPage() {
             <div className="animate-in fade-in duration-300">
               <EmptyState
                 icon={History}
-                title="No historical records found"
-                description="Requests that have completed final inspection, concluded with a decision, or been archived will appear here in your permanent record."
+                title={hasActiveFilters ? "No matching history records" : "No historical records found"}
+                description={
+                  hasActiveFilters
+                    ? "Try adjusting your search criteria or clearing filters."
+                    : "Requests that have completed final inspection, concluded with a decision, or been archived will appear here in your permanent record."
+                }
+                action={
+                  hasActiveFilters ? (
+                    <Button variant="outline" onClick={resetFilters}>
+                      Clear Filters
+                    </Button>
+                  ) : undefined
+                }
               />
             </div>
           )}
@@ -358,7 +402,66 @@ export default function RequestsListPage() {
           aria-labelledby="tab-drafts"
           className="space-y-4 animate-in fade-in duration-300"
         >
-          {isLoadingDrafts && (
+          <div className="w-full sm:max-w-md">
+            <SearchInput
+              value={search}
+              onChange={setSearch}
+              placeholder="Search drafts by reference, category, title..."
+              ariaLabel="Search drafts"
+              debounceMs={400}
+            />
+          </div>
+
+          {/* Batch selection and action toolbar */}
+          {!isLoadingRequests && draftRequests.length > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/80 bg-muted/40 px-4 py-2.5">
+              <div className="flex items-center gap-2.5">
+                <Checkbox
+                  id="select-all-drafts-tab"
+                  checked={isAllDraftsSelected}
+                  onCheckedChange={handleToggleSelectAllDrafts}
+                  aria-label={isAllDraftsSelected ? "Deselect all drafts" : "Select all drafts"}
+                  className="size-4.5 rounded-[5px]"
+                />
+                <label
+                  htmlFor="select-all-drafts-tab"
+                  className="text-xs font-medium text-foreground cursor-pointer select-none"
+                >
+                  {isAllDraftsSelected ? "Deselect All" : "Select All"} ({draftRequests.length})
+                </label>
+                {selectedDraftsCount > 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    · <strong className="text-foreground">{selectedDraftsCount}</strong> selected
+                  </span>
+                )}
+              </div>
+
+              {selectedDraftsCount > 0 && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedDraftIds([])}
+                    className="h-8 px-2.5 text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setConfirmingBatchDelete(true)}
+                    disabled={isDeleting}
+                    className="h-8 gap-1.5 px-3 text-xs shadow-2xs"
+                  >
+                    <Trash2 className="size-3.5" />
+                    <span>Discard Selected ({selectedDraftsCount})</span>
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {isLoadingRequests && (
             <div
               className={cn(
                 viewMode === "grid"
@@ -383,27 +486,37 @@ export default function RequestsListPage() {
             </div>
           )}
 
-          {!isLoadingDrafts && drafts.length === 0 && (
+          {!isLoadingRequests && draftRequests.length === 0 && (
             <div className="animate-in fade-in duration-300">
               <EmptyState
                 icon={FileEdit}
-                title="No saved drafts"
-                description="When you start a request and step away, your in-progress work is automatically saved here."
+                title={search.trim() ? "No matching drafts found" : "No saved drafts"}
+                description={
+                  search.trim()
+                    ? `No drafts matched your search query "${search}". Try searching by a different reference or term.`
+                    : "When you start a request and step away, your in-progress work is automatically saved here."
+                }
                 action={
-                  <Button
-                    nativeButton={false}
-                    render={<Link href="/requests/new" />}
-                    aria-label="Start a new request draft"
-                  >
-                    <PlusCircle className="size-4" aria-hidden="true" />
-                    Start a Request
-                  </Button>
+                  search.trim() ? (
+                    <Button variant="outline" onClick={() => setSearch("")}>
+                      Clear Search
+                    </Button>
+                  ) : (
+                    <Button
+                      nativeButton={false}
+                      render={<Link href="/requests/new" />}
+                      aria-label="Start a new request draft"
+                    >
+                      <PlusCircle className="size-4" aria-hidden="true" />
+                      Start a Request
+                    </Button>
+                  )
                 }
               />
             </div>
           )}
 
-          {!isLoadingDrafts && drafts.length > 0 && (
+          {!isLoadingRequests && draftRequests.length > 0 && (
             <div
               className={cn(
                 viewMode === "grid"
@@ -413,19 +526,34 @@ export default function RequestsListPage() {
               role="list"
               aria-label="Saved drafts"
             >
-              {drafts.map((draft, idx) => (
+              {draftRequests.map((draft, idx) => (
                 <DraftCard
                   key={draft.id}
                   draft={draft}
                   viewMode={viewMode}
-                  onDelete={deleteDraft}
-                  isDeleting={isDeleting}
+                  selected={selectedDraftIds.includes(draft.id)}
+                  onToggleSelect={handleToggleSelectDraft}
+                  onDelete={handleDeleteDraft}
+                  isDeleting={isDeleting && (deletingId === draft.id || selectedDraftIds.includes(draft.id))}
                   className="animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-both"
                   style={{ animationDelay: `${Math.min(idx * 50, 350)}ms` }}
                 />
               ))}
             </div>
           )}
+
+          <ConfirmDialog
+            open={confirmingBatchDelete}
+            onOpenChange={(open) => {
+              if (!isDeleting) setConfirmingBatchDelete(open);
+            }}
+            title={`Discard ${selectedDraftsCount} Draft${selectedDraftsCount > 1 ? "s" : ""} Permanently?`}
+            description={`Are you sure you want to discard ${selectedDraftsCount} selected draft${selectedDraftsCount > 1 ? "s" : ""}? All submittals and uploaded files will be permanently deleted and cannot be recovered.`}
+            confirmLabel={isDeleting ? "Discarding..." : `Discard ${selectedDraftsCount} Draft${selectedDraftsCount > 1 ? "s" : ""}`}
+            destructive={true}
+            loading={isDeleting}
+            onConfirm={handleBatchDeleteDrafts}
+          />
         </div>
       )}
     </div>

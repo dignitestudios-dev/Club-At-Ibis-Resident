@@ -16,15 +16,31 @@ import {
 } from "@/components/ui/field";
 import { Spinner } from "@/components/ui/spinner";
 import { useLogin } from "@/features/auth/hooks/use-login";
+import { clearPendingRegistration } from "@/features/auth/hooks/use-register";
 
 export default function LoginForm() {
-  const { form, onSubmit, isPending, unverifiedEmail, handleResendVerification, isResendingVerification } = useLogin();
+  const {
+    form,
+    onSubmit,
+    onInvalid,
+    isPending,
+    unverifiedEmail,
+    handleResendVerification,
+    isResendingVerification,
+    resendCountdown,
+    resendFormattedTime,
+  } = useLogin();
   const {
     control,
     handleSubmit,
     setValue,
     formState: { errors },
   } = form;
+
+  // Clear any pending registration state when visiting/viewing the login form
+  useEffect(() => {
+    clearPendingRegistration();
+  }, []);
 
   // Keep React Hook Form state synchronized with browser / password-manager autofill
   useEffect(() => {
@@ -76,15 +92,21 @@ export default function LoginForm() {
             size="sm"
             className="w-full text-xs h-7"
             onClick={handleResendVerification}
-            disabled={isResendingVerification}
+            disabled={isResendingVerification || resendCountdown > 0}
           >
-            {isResendingVerification ? <Spinner className="size-3" /> : <RotateCw className="size-3 mr-1" />}
-            Resend Verification Email
+            {isResendingVerification ? (
+              <Spinner className="size-3" />
+            ) : (
+              <RotateCw className="size-3 mr-1" />
+            )}
+            {resendCountdown > 0
+              ? `Resend Verification Email (${resendFormattedTime})`
+              : "Resend Verification Email"}
           </Button>
         </div>
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)} noValidate>
+      <form onSubmit={handleSubmit(onSubmit, onInvalid)} noValidate>
         <FieldGroup>
           <div className="auth-field-enter auth-stagger-2">
             <Controller
@@ -92,14 +114,17 @@ export default function LoginForm() {
               control={control}
               render={({ field }) => (
                 <Field data-invalid={!!errors.email}>
-                  <FieldLabel htmlFor="email">Email Address</FieldLabel>
+                  <FieldLabel htmlFor="email">
+                    Email Address
+                    <span className="text-red-500 font-bold ml-0.5 text-sm leading-none" aria-hidden="true">*</span>
+                  </FieldLabel>
                   <FieldContent>
                     <Input
                       id="email"
                       type="email"
                       autoComplete="email"
                       placeholder="you@example.com"
-                      maxLength={320}
+                      maxLength={100}
                       disabled={isPending}
                       aria-invalid={!!errors.email}
                       value={field.value ?? ""}
@@ -121,7 +146,10 @@ export default function LoginForm() {
               render={({ field }) => (
                 <Field data-invalid={!!errors.password}>
                   <div className="flex items-center justify-between">
-                    <FieldLabel htmlFor="password">Password</FieldLabel>
+                    <FieldLabel htmlFor="password">
+                      Password
+                      <span className="text-red-500 font-bold ml-0.5 text-sm leading-none" aria-hidden="true">*</span>
+                    </FieldLabel>
                     <Link
                       href="/auth/forgot-password"
                       className="text-xs font-medium text-primary hover:underline"

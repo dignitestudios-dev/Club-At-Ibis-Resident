@@ -1,22 +1,21 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+import { clearWizardState } from "@/features/requests/utils/request-storage";
 import {
-  saveWizardState,
-  getWizardState,
-  clearWizardState,
-} from "@/features/requests/utils/request-storage";
-import { useCreateRequestMutation } from "@/features/requests/api/requests.mutations";
+  autosaveDraft,
+} from "@/features/requests/api/requests.service";
 import {
-  useSaveDraftMutation,
-  useDeleteDraftMutation,
-} from "@/features/drafts/api/drafts.mutations";
+  useMigrateDraftFormMutation,
+  useSubmitRequestMutation,
+} from "@/features/requests/api/requests.mutations";
 import { baseProjectInfoFields } from "@/lib/mock/request-types";
 import {
   buildCategoryFormSchema,
@@ -31,29 +30,147 @@ export interface WizardStep {
   fields: FieldConfig[];
 }
 
+export interface ParsedBackendErrors {
+  fieldErrors: Record<string, string>;
+  generalErrors: string[];
+}
+
+export function parseBackendErrors(err: any): ParsedBackendErrors {
+  const fieldErrors: Record<string, string> = {};
+  const generalErrors: string[] = [];
+
+  const responseData = err?.responseData || err?.response?.data || err;
+  const details = responseData?.details;
+  const code = responseData?.code || err?.code;
+  const mainMessage = responseData?.message || err?.message || "An unexpected error occurred.";
+
+  if (Array.isArray(details)) {
+    for (const issue of details) {
+      if (typeof issue === "string") {
+        generalErrors.push(issue);
+      } else if (issue && typeof issue === "object") {
+        const issueMsg = issue.message || mainMessage;
+        let fieldId = issue.fieldId;
+
+        if (!fieldId && typeof issue.path === "string") {
+          const parts = issue.path.split(".");
+          const lastPart = parts[parts.length - 1];
+          if (lastPart === "hoaConfirmed") {
+            fieldId = "hoaApproved";
+          } else {
+            fieldId = lastPart;
+          }
+        }
+
+        if (fieldId) {
+          if (fieldId === "hoaConfirmed") fieldId = "hoaApproved";
+          fieldErrors[fieldId] = issueMsg;
+        } else {
+          generalErrors.push(issueMsg);
+        }
+      }
+    }
+  } else if (details && typeof details === "object") {
+    if (code === "FORM_VERSION_STALE") {
+      // Handled exclusively by the top Stale Form Upgrade banner
+    } else if (code === "STALE_DRAFT_REVISION") {
+      generalErrors.push("The draft was modified in another session. Synchronizing with latest version...");
+    } else {
+      generalErrors.push(mainMessage);
+    }
+  } else {
+    if (code === "HOA_CONFIRMATION_REQUIRED") {
+      fieldErrors["hoaApproved"] = "HOA approval confirmation is required before submission.";
+    } else if (code === "TITLE_REQUIRED") {
+      generalErrors.push("Request title is required.");
+    } else if (code === "CATEGORY_ARCHIVED") {
+      generalErrors.push("This category is archived and cannot be submitted.");
+    } else if (code === "DEFAULT_REVIEWER_NOT_CONFIGURED") {
+      generalErrors.push("No intake reviewer is currently configured. Please contact the administrator.");
+    } else if (mainMessage) {
+      generalErrors.push(mainMessage);
+    }
+  }
+
+  const uniqueGeneralErrors = Array.from(new Set(generalErrors.filter(Boolean)));
+
+  return {
+    fieldErrors,
+    generalErrors: uniqueGeneralErrors,
+  };
+}
+
+export function isStaleFormError(err: any): boolean {
+  const errCode = err?.responseData?.code || err?.response?.data?.code || err?.code;
+  const errMsg = err?.responseData?.message || err?.response?.data?.message || err?.message || "";
+  return (
+    errCode === "FORM_VERSION_STALE" ||
+    (typeof errMsg === "string" && (
+      errMsg.includes("FORM_VERSION_STALE") ||
+      errMsg.includes("form changed while this draft was being completed")
+    ))
+  );
+}
+
+function extractCurrentRevision(err: any): number | null {
+  const details = err?.responseData?.details || err?.response?.data?.details;
+  if (details && typeof details.currentDraftRevision === "number") {
+    return details.currentDraftRevision;
+  }
+  return null;
+}
+
 export function useRequestWizard(
   categoryOrType: ActiveCategory | RequestType,
   onChangeType: () => void,
-  initialDraft?: RequestDraft | null,
+  initialDraft?: RequestDraft | RequestRecord | null,
   dynamicFields?: CategoryFormField[]
 ) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const user = useCurrentUser();
   const toast = useToast();
-  const { mutate: createRequest, isPending } = useCreateRequestMutation();
-  const { mutate: saveDraftMutate, isPending: isSavingDraft } = useSaveDraftMutation();
-  const { mutate: deleteDraftMutate } = useDeleteDraftMutation();
+  const queryClient = useQueryClient();
+
+  const migrateDraftMutate = useMigrateDraftFormMutation();
+  const submitRequestMutate = useSubmitRequestMutation();
+
+  const [currentDraftId, setCurrentDraftId] = useState<string | null>(initialDraft?.id ?? null);
+  const [draftRevision, setDraftRevision] = useState<number>(() => {
+    if (initialDraft && "draftRevision" in initialDraft && typeof initialDraft.draftRevision === "number") {
+      return initialDraft.draftRevision;
+    }
+    return 0;
+  });
+  const [reference, setReference] = useState<string | null>(() => {
+    if (initialDraft && "reference" in initialDraft && initialDraft.reference) {
+      return initialDraft.reference;
+    }
+    if (initialDraft && "code" in initialDraft && initialDraft.code) {
+      return initialDraft.code;
+    }
+    return null;
+  });
 
   const [stepIndex, setStepIndex] = useState<number>(() => {
-    if (typeof initialDraft?.stepIndex === "number") return initialDraft.stepIndex;
-    const stored = getWizardState();
-    if (stored && stored.requestTypeId === categoryOrType.id && typeof stored.stepIndex === "number") {
-      return stored.stepIndex;
+    if (initialDraft) {
+      if ("stepIndex" in initialDraft && typeof initialDraft.stepIndex === "number") {
+        return initialDraft.stepIndex;
+      }
+      if ("currentStep" in initialDraft && typeof initialDraft.currentStep === "number") {
+        return Math.max(0, initialDraft.currentStep - 1);
+      }
     }
     return 0;
   });
 
-  const [currentDraftId, setCurrentDraftId] = useState<string | null>(initialDraft?.id ?? null);
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionErrors, setSubmissionErrors] = useState<string[]>([]);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isStaleForm, setIsStaleForm] = useState(false);
+  const [hasMigratedNotice, setHasMigratedNotice] = useState(false);
   const [confirmingChangeCategory, setConfirmingChangeCategory] = useState(false);
 
   // 1. Partition dynamic fields into Step 1 (Common) and Step 2 (Category-Specific)
@@ -66,7 +183,6 @@ export function useRequestWizard(
       const comm = (categoryOrType.fields as CategoryFormField[]).filter((f) => f.source === "common");
       if (comm.length > 0) return comm;
     }
-    // Fallback for legacy request type structure
     return [...baseProjectInfoFields, ...((categoryOrType as RequestType).additionalFields || [])];
   }, [categoryOrType, dynamicFields]);
 
@@ -127,16 +243,8 @@ export function useRequestWizard(
       return merged;
     }
 
-    const stored = getWizardState();
-    if (stored && stored.requestTypeId === categoryOrType.id && stored.fieldValues) {
-      return {
-        ...defaults,
-        ...stored.fieldValues,
-      };
-    }
-
     return defaults;
-  }, [allFields, initialDraft, categoryOrType.id]);
+  }, [allFields, initialDraft]);
 
   const form = useForm<Record<string, unknown>>({
     mode: "onChange",
@@ -144,22 +252,159 @@ export function useRequestWizard(
     defaultValues: initialFormValues,
   });
 
-  // Watch and auto-save form values into sessionStorage as the user types
-  useEffect(() => {
-    const subscription = form.watch((values) => {
-      saveWizardState({
-        requestTypeId: categoryOrType.id,
-        stepIndex,
-        fieldValues: values as Record<string, unknown>,
-      });
-    });
-    return () => subscription.unsubscribe();
-  }, [form, categoryOrType.id, stepIndex]);
+  // Prevent accidental reload or link navigation when in-progress unsaved data exists
+  const { dialog: guardDialog, allowLeave: guardAllowLeave } = useUnsavedChanges(
+    hasUnsavedChanges || isSavingDraft
+  );
 
-  // Sync draft if loaded asynchronously
+  const isRedirectingArchivedRef = useRef(false);
+
+  const handleArchivedRedirect = useCallback(
+    (err: any) => {
+      if (isRedirectingArchivedRef.current) return;
+      isRedirectingArchivedRef.current = true;
+
+      clearWizardState();
+      guardAllowLeave();
+      if (categoryOrType?.id) {
+        queryClient.removeQueries({ queryKey: ["categories", "form", categoryOrType.id] });
+      }
+      queryClient.invalidateQueries({ queryKey: ["categories", "active"] });
+      queryClient.refetchQueries({ queryKey: ["categories", "active"] });
+      queryClient.invalidateQueries({ queryKey: ["drafts"] });
+
+      const isArchived = isCategoryArchivedError(err);
+      const isNotFound = isCategoryNotFoundError(err);
+
+      const title = isArchived
+        ? "Category Archived"
+        : isNotFound
+        ? "Category Not Found"
+        : "Category Unavailable";
+
+      const message =
+        (typeof err === "string" ? err : null) ||
+        err?.responseData?.message ||
+        err?.response?.data?.message ||
+        err?.message ||
+        (isArchived
+          ? "Archived categories cannot be submitted"
+          : "Active category not found");
+
+      // CATEGORY_ARCHIVED -> redirect to /requests/new
+      // CATEGORY_NOT_FOUND -> redirect to /requests (My Requests)
+      const destination = isArchived ? "/requests/new" : "/requests";
+
+      toast.error(
+        title,
+        `${message}. Redirecting...`
+      );
+
+      setTimeout(() => {
+        if (typeof window !== "undefined") {
+          window.location.href = destination;
+        } else {
+          router.replace(destination);
+        }
+      }, 3000);
+    },
+    [categoryOrType?.id, guardAllowLeave, queryClient, router, toast]
+  );
+
+  // Extract structured values and uploads for autosave or submit
+  const extractPayload = useCallback(
+    (targetStepIndex?: number) => {
+      const values = form.getValues();
+      const fieldValues: Record<string, FieldValue> = {};
+      const uploads: Record<string, UploadedFile[]> = {};
+
+      for (const field of allFields) {
+        const value = values[field.id];
+        if (field.type === "file") {
+          uploads[field.id] = ((value as (DropzoneFile | UploadedFile)[]) ?? []).map((f) => ({
+            id: f.id,
+            name: f.name,
+            size: f.size,
+            uploadedAt: (f as UploadedFile).uploadedAt || new Date().toISOString(),
+            url: (f as UploadedFile).url,
+          }));
+        } else if (value !== undefined && value !== null) {
+          if (typeof value === "string") {
+            fieldValues[field.id] = value;
+          } else if (Array.isArray(value)) {
+            fieldValues[field.id] = value.map(String);
+          } else {
+            fieldValues[field.id] = String(value);
+          }
+        }
+      }
+
+      return {
+        fieldValues,
+        uploads,
+        currentStep: (targetStepIndex ?? stepIndex) + 1,
+        hoaApproved: values.hoaApproved === true,
+        hoaConfirmed: values.hoaApproved === true,
+      };
+    },
+    [allFields, form, stepIndex]
+  );
+
+  // Synchronous refs to prevent duplicate calls and loops
+  const currentDraftIdRef = useRef<string | null>(currentDraftId);
+  currentDraftIdRef.current = currentDraftId;
+
+  const draftRevisionRef = useRef(draftRevision);
+  draftRevisionRef.current = draftRevision;
+
+  const isSavingRef = useRef(false);
+  const lastSavedSignatureRef = useRef<string>("");
+
+  // Initialize draft once if entering fresh
+  useEffect(() => {
+    if (!currentDraftIdRef.current && categoryOrType.id && !initialDraft && !draftInitializingRef.current) {
+      draftInitializingRef.current = true;
+      const idempotencyKey = `draft-init-${categoryOrType.id}-${Date.now()}`;
+      createDraftRequest(
+        {
+          categoryId: categoryOrType.id,
+          commonFormVersion: 1,
+          categoryFormVersion: (categoryOrType as ActiveCategory).currentVersion ?? 1,
+        },
+        idempotencyKey
+      )
+        .then((record) => {
+          setCurrentDraftId(record.id);
+          currentDraftIdRef.current = record.id;
+          setDraftRevision(record.draftRevision ?? 0);
+          draftRevisionRef.current = record.draftRevision ?? 0;
+          setReference(record.reference || record.code || null);
+        })
+        .catch((err) => {
+          console.error("Failed to initialize draft request:", err);
+          if (isCategoryUnavailableError(err)) {
+            handleArchivedRedirect(err);
+            return;
+          }
+          draftInitializingRef.current = false;
+        });
+    }
+  }, [categoryOrType.id, initialDraft, handleArchivedRedirect]);
+
+  // Sync draft if loaded asynchronously from query
   useEffect(() => {
     if (initialDraft) {
       setCurrentDraftId(initialDraft.id);
+      currentDraftIdRef.current = initialDraft.id;
+      if ("draftRevision" in initialDraft && typeof initialDraft.draftRevision === "number") {
+        setDraftRevision(initialDraft.draftRevision);
+        draftRevisionRef.current = initialDraft.draftRevision;
+      }
+      if ("reference" in initialDraft && initialDraft.reference) {
+        setReference(initialDraft.reference);
+      } else if ("code" in initialDraft && initialDraft.code) {
+        setReference(initialDraft.code);
+      }
       const defaults = defaultValuesForFields(allFields);
       const merged: Record<string, unknown> = {
         ...defaults,
@@ -178,11 +423,140 @@ export function useRequestWizard(
         }
       }
       form.reset(merged);
-      if (typeof initialDraft.stepIndex === "number") {
-        setStepIndex(initialDraft.stepIndex);
+      const targetStep =
+        "stepIndex" in initialDraft && typeof initialDraft.stepIndex === "number"
+          ? initialDraft.stepIndex
+          : "currentStep" in initialDraft && typeof initialDraft.currentStep === "number"
+          ? Math.max(0, initialDraft.currentStep - 1)
+          : 0;
+      setStepIndex(targetStep);
+
+      const cleanVals: Record<string, FieldValue> = {};
+      for (const f of allFields) {
+        const v = merged[f.id];
+        if (f.type !== "file" && v !== undefined && v !== null) {
+          if (typeof v === "string") cleanVals[f.id] = v;
+          else if (Array.isArray(v)) cleanVals[f.id] = v.map(String);
+          else cleanVals[f.id] = String(v);
+        }
       }
+      lastSavedSignatureRef.current = JSON.stringify({
+        fieldValues: cleanVals,
+        uploads: initialDraft.uploads || {},
+        currentStep: targetStep + 1,
+        hoaApproved: merged.hoaApproved === true,
+        hoaConfirmed: merged.hoaApproved === true,
+      });
+      setHasUnsavedChanges(false);
     }
   }, [initialDraft, allFields, form]);
+
+  const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const triggerAutosave = useCallback(
+    async (targetStepIndex?: number) => {
+      const draftId = currentDraftIdRef.current;
+      if (!draftId || isSavingRef.current) return;
+
+      const payload = extractPayload(targetStepIndex);
+      const signature = JSON.stringify(payload);
+      if (signature === lastSavedSignatureRef.current) {
+        return; // Nothing changed, skip redundant network call
+      }
+
+      try {
+        isSavingRef.current = true;
+        setIsSavingDraft(true);
+        let saved: RequestRecord;
+        try {
+          saved = await autosaveDraft(draftId, {
+            expectedDraftRevision: draftRevisionRef.current,
+            currentStep: payload.currentStep,
+            fieldValues: payload.fieldValues,
+          });
+        } catch (err: any) {
+          if (isCategoryUnavailableError(err)) {
+            handleArchivedRedirect(err);
+            return;
+          }
+          if (isStaleFormError(err)) {
+            throw err;
+          }
+          const remoteRev = extractCurrentRevision(err);
+          if (remoteRev !== null) {
+            draftRevisionRef.current = remoteRev;
+            setDraftRevision(remoteRev);
+            // Auto-retry with the server's current draft revision
+            saved = await autosaveDraft(draftId, {
+              expectedDraftRevision: remoteRev,
+              currentStep: payload.currentStep,
+              fieldValues: payload.fieldValues,
+            });
+          } else {
+            throw err;
+          }
+        }
+
+        const nextRev = saved.draftRevision ?? draftRevisionRef.current + 1;
+        setDraftRevision(nextRev);
+        draftRevisionRef.current = nextRev;
+        lastSavedSignatureRef.current = signature;
+        setLastSavedAt(new Date());
+        setHasUnsavedChanges(false);
+        setIsStaleForm(false);
+      } catch (err: any) {
+        if (isCategoryUnavailableError(err)) {
+          handleArchivedRedirect(err);
+          return;
+        }
+        if (isStaleFormError(err)) {
+          setIsStaleForm(true);
+          toast.error(
+            "Category Form Updated",
+            "The category form was updated by an administrator. Please upgrade your draft to proceed."
+          );
+        } else {
+          const errCode = err?.responseData?.code || err?.response?.data?.code || err?.code;
+          const errMsg = err?.responseData?.message || err?.response?.data?.message || err?.message || "";
+          if (errCode === "STALE_DRAFT_REVISION" || errMsg.includes("STALE_DRAFT_REVISION")) {
+            const remoteRev = extractCurrentRevision(err);
+            if (remoteRev !== null) {
+              draftRevisionRef.current = remoteRev;
+              setDraftRevision(remoteRev);
+            }
+            toast.warning("Draft was synced with latest server version.");
+          }
+        }
+      } finally {
+        isSavingRef.current = false;
+        setIsSavingDraft(false);
+      }
+    },
+    [extractPayload, handleArchivedRedirect, toast]
+  );
+
+  // Debounced autosave on field changes
+  useEffect(() => {
+    const subscription = form.watch(() => {
+      setHasUnsavedChanges(true);
+
+      if (currentDraftIdRef.current) {
+        if (autosaveTimerRef.current) {
+          clearTimeout(autosaveTimerRef.current);
+        }
+        autosaveTimerRef.current = setTimeout(() => {
+          triggerAutosave();
+        }, 1500);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+      }
+    };
+  }, [form, triggerAutosave]);
 
   const isReviewStep = stepIndex === steps.length;
   const currentStep = steps[stepIndex];
@@ -210,58 +584,74 @@ export function useRequestWizard(
     });
   }
 
-  // Prevent accidental reload or link navigation when in-progress data exists
-  const isDirty = hasEnteredData() || stepIndex > 0;
-  const { dialog: guardDialog, allowLeave: guardAllowLeave } = useUnsavedChanges(isDirty);
-
-  function extractPayload(targetStepIndex?: number): SaveDraftPayload {
-    const residentId = user?.id || "res-1";
-    const values = form.getValues();
-    const fieldValues: Record<string, FieldValue> = {};
-    const uploads: Record<string, UploadedFile[]> = {};
-
-    for (const field of allFields) {
-      const value = values[field.id];
-      if (field.type === "file") {
-        uploads[field.id] = ((value as (DropzoneFile | UploadedFile)[]) ?? []).map((f) => ({
-          id: f.id,
-          name: f.name,
-          size: f.size,
-          uploadedAt: (f as UploadedFile).uploadedAt || new Date().toISOString(),
-          url: (f as UploadedFile).url,
-        }));
-      } else if (value !== undefined) {
-        fieldValues[field.id] = value as FieldValue;
-      }
+  async function handleSaveDraft(options: { redirect?: boolean } = { redirect: true }) {
+    const draftId = currentDraftIdRef.current;
+    if (!draftId) {
+      toast.error("Draft is initializing, please try again in a moment.");
+      return;
     }
 
-    return {
-      id: currentDraftId || undefined,
-      residentId,
-      requestTypeId: categoryOrType.id,
-      fieldValues,
-      uploads,
-      stepIndex: targetStepIndex ?? stepIndex,
-      hoaApproved: values.hoaApproved === true,
-    };
-  }
-
-  function handleSaveDraft(options: { redirect?: boolean } = { redirect: true }) {
     const payload = extractPayload();
-    saveDraftMutate(payload, {
-      onSuccess: (saved) => {
-        setCurrentDraftId(saved.id);
+    try {
+      setIsSavingDraft(true);
+      let saved: RequestRecord;
+      try {
+        saved = await autosaveDraft(draftId, {
+          expectedDraftRevision: draftRevisionRef.current,
+          currentStep: payload.currentStep,
+          fieldValues: payload.fieldValues,
+        });
+      } catch (err: any) {
+        if (isCategoryUnavailableError(err)) {
+          handleArchivedRedirect(err);
+          return;
+        }
+        if (isStaleFormError(err)) {
+          throw err;
+        }
+        const remoteRev = extractCurrentRevision(err);
+        if (remoteRev !== null) {
+          draftRevisionRef.current = remoteRev;
+          setDraftRevision(remoteRev);
+          saved = await autosaveDraft(draftId, {
+            expectedDraftRevision: remoteRev,
+            currentStep: payload.currentStep,
+            fieldValues: payload.fieldValues,
+          });
+        } else {
+          throw err;
+        }
+      }
+
+      const nextRev = saved.draftRevision ?? draftRevisionRef.current + 1;
+      setDraftRevision(nextRev);
+      draftRevisionRef.current = nextRev;
+      lastSavedSignatureRef.current = JSON.stringify(payload);
+      setLastSavedAt(new Date());
+      setHasUnsavedChanges(false);
+      toast.success("Draft saved successfully.");
+      if (options.redirect) {
         clearWizardState();
         guardAllowLeave();
-        toast.success("Progress saved to drafts.");
-        if (options.redirect) {
-          router.push("/drafts");
-        }
-      },
-      onError: () => {
+        router.push("/drafts");
+      }
+    } catch (err: any) {
+      if (isCategoryUnavailableError(err)) {
+        handleArchivedRedirect(err);
+        return;
+      }
+      if (isStaleFormError(err)) {
+        setIsStaleForm(true);
+        toast.error(
+          "Category Form Updated",
+          "The category form was updated by an administrator. Please upgrade your draft to proceed."
+        );
+      } else {
         toast.error("Failed to save draft.");
-      },
-    });
+      }
+    } finally {
+      setIsSavingDraft(false);
+    }
   }
 
   async function handleNext() {
@@ -271,19 +661,8 @@ export function useRequestWizard(
     if (valid) {
       const nextIndex = stepIndex + 1;
       setStepIndex(nextIndex);
-      saveWizardState({
-        requestTypeId: categoryOrType.id,
-        stepIndex: nextIndex,
-        fieldValues: form.getValues(),
-      });
       window.scrollTo({ top: 0, behavior: "smooth" });
-      // Auto-save progress quietly in the background
-      const payload = extractPayload(nextIndex);
-      saveDraftMutate(payload, {
-        onSuccess: (saved) => {
-          setCurrentDraftId(saved.id);
-        },
-      });
+      triggerAutosave(nextIndex);
     }
   }
 
@@ -300,12 +679,112 @@ export function useRequestWizard(
     }
     const prevIndex = stepIndex - 1;
     setStepIndex(prevIndex);
-    saveWizardState({
-      requestTypeId: categoryOrType.id,
-      stepIndex: prevIndex,
-      fieldValues: form.getValues(),
-    });
     window.scrollTo({ top: 0, behavior: "smooth" });
+    triggerAutosave(prevIndex);
+  }
+
+  function handleMigrateForm() {
+    const draftId = currentDraftIdRef.current;
+    if (!draftId) return;
+
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
+      autosaveTimerRef.current = null;
+    }
+
+    const performMigrate = (rev: number) => {
+      migrateDraftMutate.mutate(
+        {
+          id: draftId,
+          expectedDraftRevision: rev,
+        },
+        {
+          onSuccess: (migrated) => {
+            const nextRev = migrated.draftRevision ?? rev + 1;
+            setDraftRevision(nextRev);
+            draftRevisionRef.current = nextRev;
+            setIsStaleForm(false);
+            setSubmissionErrors([]);
+            setHasMigratedNotice(true);
+
+            queryClient.invalidateQueries({ queryKey: ["categories"] });
+            queryClient.invalidateQueries({ queryKey: ["drafts"] });
+            queryClient.invalidateQueries({ queryKey: ["requests"] });
+
+            const newFields: FieldConfig[] =
+              migrated.form?.fields && migrated.form.fields.length > 0
+                ? migrated.form.fields
+                : dynamicFields || [];
+
+            const defaults = defaultValuesForFields(newFields);
+            const merged: Record<string, unknown> = {
+              ...defaults,
+              ...(migrated.fieldValues || {}),
+              hoaApproved: migrated.hoaApproved ?? false,
+            };
+
+            if (migrated.uploads) {
+              for (const [key, files] of Object.entries(migrated.uploads)) {
+                merged[key] = (files || []).map((f) => ({
+                  id: f.id,
+                  name: f.name,
+                  size: f.size,
+                  url: f.url,
+                }));
+              }
+            }
+
+            form.reset(merged);
+
+            // Redirect user to the Category Details dynamic form (stepIndex = 1)
+            const targetStepIdx = newFields.length > 0 || categoryFields.length > 0 ? 1 : 0;
+            setStepIndex(targetStepIdx);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+
+            const cleanFieldValues: Record<string, FieldValue> = {};
+            for (const f of newFields) {
+              const val = merged[f.id];
+              if (f.type !== "file" && val !== undefined && val !== null) {
+                if (typeof val === "string") cleanFieldValues[f.id] = val;
+                else if (Array.isArray(val)) cleanFieldValues[f.id] = val.map(String);
+                else cleanFieldValues[f.id] = String(val);
+              }
+            }
+
+            const signaturePayload = {
+              fieldValues: cleanFieldValues,
+              uploads: migrated.uploads || {},
+              currentStep: targetStepIdx + 1,
+              hoaApproved: merged.hoaApproved === true,
+              hoaConfirmed: merged.hoaApproved === true,
+            };
+            lastSavedSignatureRef.current = JSON.stringify(signaturePayload);
+            setHasUnsavedChanges(false);
+
+            toast.info(
+              "Form upgraded to latest version",
+              "Please review the updated category fields below and update your responses accordingly before submitting."
+            );
+          },
+          onError: (err: any) => {
+            if (isCategoryUnavailableError(err)) {
+              handleArchivedRedirect(err);
+              return;
+            }
+            const remoteRev = extractCurrentRevision(err);
+            if (remoteRev !== null && remoteRev !== rev) {
+              draftRevisionRef.current = remoteRev;
+              setDraftRevision(remoteRev);
+              performMigrate(remoteRev);
+              return;
+            }
+            toast.error("Failed to upgrade form", err?.message || "Please try again.");
+          },
+        }
+      );
+    };
+
+    performMigrate(draftRevisionRef.current);
   }
 
   function confirmChangeCategory() {
@@ -320,56 +799,196 @@ export function useRequestWizard(
     handleSaveDraft({ redirect: true });
   }
 
-  function handleSubmit(values: Record<string, unknown>) {
-    const residentId = user?.id || "res-1";
-    if (!isReviewStep) return;
+  const isSubmittingRef = useRef(false);
 
-    const fieldValues: Record<string, FieldValue> = {};
-    const uploads: Record<string, UploadedFile[]> = {};
+  async function handleSubmit(values: Record<string, unknown>) {
+    if (!isReviewStep || isSubmittingRef.current || isPending) return;
 
-    for (const field of allFields) {
-      const value = values[field.id];
-      if (field.type === "file") {
-        uploads[field.id] = ((value as DropzoneFile[]) ?? []).map((f) => ({
-          id: f.id,
-          name: f.name,
-          size: f.size,
-          uploadedAt: new Date().toISOString(),
-          url: f.url,
-        }));
-      } else {
-        fieldValues[field.id] = value as FieldValue;
+    // 1. Client-side full form validation
+    const isValid = await form.trigger();
+    if (!isValid) {
+      const formErrors = form.formState.errors;
+      const errorFieldIds = Object.keys(formErrors);
+
+      const inCommon = commonFields.some((f) => errorFieldIds.includes(f.id));
+      const inCategory = categoryFields.some((f) => errorFieldIds.includes(f.id));
+
+      if (inCommon && stepIndex !== 0) {
+        setStepIndex(0);
+        toast.error("Validation error", "Please complete the required project information.");
+        return;
+      }
+      if (inCategory && stepIndex !== 1) {
+        setStepIndex(1);
+        toast.error("Validation error", "Please complete the required category details.");
+        return;
+      }
+      toast.error("Validation error", "Please resolve the highlighted errors before submitting.");
+      return;
+    }
+
+    if (values.hoaApproved !== true) {
+      form.setError("hoaApproved", { message: "HOA confirmation is required before submission." });
+      toast.error("Validation error", "You must confirm HOA approval before submitting.");
+      return;
+    }
+
+    const draftId = currentDraftIdRef.current;
+    if (!draftId) {
+      toast.error("Draft is initializing, please try again in a moment.");
+      return;
+    }
+
+    // 2. Clear any pending debounced autosave timer
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
+      autosaveTimerRef.current = null;
+    }
+
+    isSubmittingRef.current = true;
+    setIsSubmitting(true);
+    setSubmissionErrors([]);
+
+    // 3. Silently save draft in background before submitting
+    let currentRevision = draftRevisionRef.current;
+    const payload = extractPayload();
+    try {
+      const saved = await autosaveDraft(draftId, {
+        expectedDraftRevision: currentRevision,
+        currentStep: payload.currentStep,
+        fieldValues: payload.fieldValues,
+      });
+      currentRevision = saved.draftRevision ?? currentRevision + 1;
+      setDraftRevision(currentRevision);
+      draftRevisionRef.current = currentRevision;
+      lastSavedSignatureRef.current = JSON.stringify(payload);
+    } catch (err: any) {
+      if (isStaleFormError(err)) {
+        isSubmittingRef.current = false;
+        setIsSubmitting(false);
+        setIsStaleForm(true);
+        toast.error(
+          "Category Form Updated",
+          "The category form was updated by an administrator. Please upgrade your draft to proceed."
+        );
+        return;
+      }
+      const remoteRev = extractCurrentRevision(err);
+      if (remoteRev !== null) {
+        currentRevision = remoteRev;
+        draftRevisionRef.current = remoteRev;
+        setDraftRevision(remoteRev);
+        try {
+          const saved = await autosaveDraft(draftId, {
+            expectedDraftRevision: remoteRev,
+            currentStep: payload.currentStep,
+            fieldValues: payload.fieldValues,
+          });
+          currentRevision = saved.draftRevision ?? remoteRev + 1;
+          setDraftRevision(currentRevision);
+          draftRevisionRef.current = currentRevision;
+        } catch (innerErr: any) {
+          if (isStaleFormError(innerErr)) {
+            isSubmittingRef.current = false;
+            setIsSubmitting(false);
+            setIsStaleForm(true);
+            toast.error(
+              "Category Form Updated",
+              "The category form was updated by an administrator. Please upgrade your draft to proceed."
+            );
+            return;
+          }
+          // Proceed with submission attempt
+        }
       }
     }
 
-    createRequest(
-      {
-        residentId,
-        requestTypeId: categoryOrType.id,
-        fieldValues,
-        uploads,
-        hoaApproved: values.hoaApproved === true,
-      },
-      {
-        onSuccess: (record) => {
-          if (currentDraftId) {
-            deleteDraftMutate(currentDraftId);
-          }
-          clearWizardState();
-          guardAllowLeave();
-          toast.success("Request submitted for ARB review.");
-          router.push(`/requests/${record.id}`);
+    // 4. Submit draft
+    const performSubmit = (rev: number) => {
+      const idempotencyKey = `submit-${draftId}-${Date.now()}`;
+      submitRequestMutate.mutate(
+        {
+          id: draftId,
+          payload: {
+            expectedDraftRevision: rev,
+            hoaConfirmed: true,
+            hoaApproved: true,
+          },
+          idempotencyKey,
         },
-        onError: () => {
-          toast.error("Something went wrong submitting your request.");
-        },
-      }
-    );
+        {
+          onSuccess: (record) => {
+            isSubmittingRef.current = false;
+            setIsSubmitting(false);
+            clearWizardState();
+            guardAllowLeave();
+            toast.success(
+              "Request submitted for ARB review.",
+              `Your permanent reference number is ${record.reference || record.code}.`
+            );
+            router.push(`/requests/${record.id}`);
+          },
+          onError: (err: any) => {
+            if (isCategoryUnavailableError(err)) {
+              isSubmittingRef.current = false;
+              handleArchivedRedirect(err);
+              return;
+            }
+            const remoteRev = extractCurrentRevision(err);
+            if (remoteRev !== null && remoteRev !== rev) {
+              draftRevisionRef.current = remoteRev;
+              setDraftRevision(remoteRev);
+              // Auto-retry once with the remote revision
+              performSubmit(remoteRev);
+              return;
+            }
+            isSubmittingRef.current = false;
+            setIsSubmitting(false);
+
+            const { fieldErrors, generalErrors } = parseBackendErrors(err);
+
+            // Apply field errors to React Hook Form
+            for (const [fId, msg] of Object.entries(fieldErrors)) {
+              form.setError(fId as any, {
+                type: "server",
+                message: msg,
+              });
+            }
+
+            const isVersionStale = isStaleFormError(err);
+            if (isVersionStale) {
+              setIsStaleForm(true);
+            }
+
+            // Collect all messages for the review banner summary (excluding stale form version, which is shown once in the upgrade banner)
+            const allMessages: string[] = [
+              ...Object.values(fieldErrors),
+              ...generalErrors.filter(
+                (g) =>
+                  !g.toLowerCase().includes("version") &&
+                  !g.toLowerCase().includes("form changed")
+              ),
+            ];
+            setSubmissionErrors(allMessages);
+
+            const primaryMessage = isVersionStale
+              ? "The category form was updated by an administrator. Please upgrade your draft to proceed."
+              : generalErrors[0] || Object.values(fieldErrors)[0] || err?.message || "Submission failed.";
+            toast.error(isVersionStale ? "Category Form Updated" : "Submission failed", primaryMessage);
+          },
+        }
+      );
+    };
+
+    performSubmit(currentRevision);
   }
+
+  const isPending = submitRequestMutate.isPending || migrateDraftMutate.isPending || isSubmitting;
 
   return {
     form,
     stepIndex,
+    setStepIndex,
     isReviewStep,
     currentStep,
     stepperSteps,
@@ -378,7 +997,18 @@ export function useRequestWizard(
     allFields,
     reviewReady,
     isPending,
+    isSubmitting,
+    submissionErrors,
+    clearSubmissionErrors: () => setSubmissionErrors([]),
     isSavingDraft,
+    hasUnsavedChanges,
+    lastSavedAt,
+    isStaleForm,
+    hasMigratedNotice,
+    dismissMigratedNotice: () => setHasMigratedNotice(false),
+    reference,
+    currentDraftId,
+    handleMigrateForm,
     handleSaveDraft,
     handleNext,
     handleBack,

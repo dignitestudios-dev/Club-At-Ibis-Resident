@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { LogIn, UserPlus } from "lucide-react";
 import LoginForm from "@/features/auth/components/login-form";
 import RegisterForm from "@/features/auth/components/register-form";
+import { clearPendingRegistration } from "@/features/auth/hooks/use-register";
 import { cn } from "@/utils/cn";
 
 export interface AuthViewProps {
@@ -26,6 +27,7 @@ export function AuthView({ initialTab = "login" }: AuthViewProps) {
     if (tab === nextTab) return;
     scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
     if (nextTab === "login") {
+      clearPendingRegistration();
       router.push("/auth/login");
     } else {
       router.push("/auth/register");

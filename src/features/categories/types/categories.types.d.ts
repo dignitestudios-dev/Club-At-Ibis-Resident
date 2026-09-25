@@ -2,10 +2,13 @@ export type CategoryFieldType =
   | "text"
   | "textarea"
   | "number"
+  | "email"
+  | "phone"
+  | "date"
+  | "time"
   | "select"
   | "radio"
   | "checkbox"
-  | "date"
   | "file";
 
 export interface CategoryFieldOption {
@@ -25,6 +28,7 @@ export interface CategoryFormField {
   multiple?: boolean;
   order: number;
   source: "common" | "category";
+  maxLength?: number;
 }
 
 export interface ActiveCategory {
