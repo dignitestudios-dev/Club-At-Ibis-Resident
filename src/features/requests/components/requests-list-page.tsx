@@ -113,7 +113,10 @@ export default function RequestsListPage() {
   const { mutate: deleteDraftMutate, isPending: isDeleting } = useDeleteDraftMutation();
 
   useEffect(() => {
-    setSelectedDraftIds((prev) => prev.filter((id) => draftRequests.some((d) => d.id === id)));
+    setSelectedDraftIds((prev) => {
+      const next = prev.filter((id) => draftRequests.some((d) => d.id === id));
+      return next.length === prev.length ? prev : next;
+    });
   }, [draftRequests]);
 
   const handleDeleteDraft = (id: string, onSettled?: () => void) => {

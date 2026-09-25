@@ -8,6 +8,10 @@ import type { RequestsTabType } from "@/features/requests/components/list/reques
 
 export type DatePeriod = "all" | "30d" | "90d" | "year";
 
+// Stable references: a fresh `[]` each render re-triggers effects that depend on these lists.
+const EMPTY_REQUESTS: NonNullable<ReturnType<typeof useResidentRequestsQuery>["data"]>["requests"] = [];
+const EMPTY_DRAFTS: NonNullable<ReturnType<typeof useResidentDraftsQuery>["data"]> = [];
+
 export function useRequestsList(activeTab: RequestsTabType = "requests") {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -139,9 +143,9 @@ export function useRequestsList(activeTab: RequestsTabType = "requests") {
     { enabled: isDraftsTab }
   );
 
-  const activeRequests = isRequestsTab ? activeData?.requests ?? [] : [];
-  const historyRequests = isHistoryTab ? historyData?.requests ?? [] : [];
-  const draftRequests = isDraftsTab ? draftsData ?? [] : [];
+  const activeRequests = (isRequestsTab && activeData?.requests) || EMPTY_REQUESTS;
+  const historyRequests = (isHistoryTab && historyData?.requests) || EMPTY_REQUESTS;
+  const draftRequests = (isDraftsTab && draftsData) || EMPTY_DRAFTS;
 
   return {
     activeRequests,
