@@ -15,6 +15,12 @@ interface RequestDraft {
   stepIndex: number;
   draftRevision?: number;
   hoaApproved?: boolean;
+  commonFormVersion?: number;
+  categoryFormVersion?: number;
+  form?: {
+    fields: FieldConfig[];
+  };
+  formSnapshot?: FieldConfig[];
   submittedAt?: string;
   createdAt: string;
   updatedAt: string;

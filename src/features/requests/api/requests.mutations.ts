@@ -8,6 +8,7 @@ import {
   resubmitRequest,
   withdrawRequest,
 } from "./requests.service";
+import { toDraft } from "@/features/drafts/api/drafts.service";
 
 export function useCreateDraftMutation() {
   const queryClient = useQueryClient();
@@ -16,7 +17,7 @@ export function useCreateDraftMutation() {
       createDraftRequest(payload, idempotencyKey),
     onSuccess: (record) => {
       queryClient.setQueryData(["requests", "detail", record.id], record);
-      queryClient.setQueryData(["drafts", "detail", record.id], record);
+      queryClient.setQueryData(["drafts", "detail", record.id], toDraft(record));
       queryClient.invalidateQueries({ queryKey: ["requests"] });
       queryClient.invalidateQueries({ queryKey: ["drafts"] });
     },
@@ -30,7 +31,7 @@ export function useAutosaveDraftMutation() {
       autosaveDraft(id, payload),
     onSuccess: (record) => {
       queryClient.setQueryData(["requests", "detail", record.id], record);
-      queryClient.setQueryData(["drafts", "detail", record.id], record);
+      queryClient.setQueryData(["drafts", "detail", record.id], toDraft(record));
     },
   });
 }
@@ -42,9 +43,10 @@ export function useMigrateDraftFormMutation() {
       migrateDraftForm(id, expectedDraftRevision),
     onSuccess: (record) => {
       queryClient.setQueryData(["requests", "detail", record.id], record);
-      queryClient.setQueryData(["drafts", "detail", record.id], record);
+      queryClient.setQueryData(["drafts", "detail", record.id], toDraft(record));
       queryClient.invalidateQueries({ queryKey: ["requests"] });
       queryClient.invalidateQueries({ queryKey: ["drafts"] });
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
     },
   });
 }

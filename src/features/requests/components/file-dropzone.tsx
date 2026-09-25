@@ -25,9 +25,56 @@ export function FileDropzone({
   const [dragOver, setDragOver] = useState(false);
   const [previewFile, setPreviewFile] = useState<PreviewableFile | null>(null);
 
+  function formatAcceptDisplay(acceptStr?: string): string {
+    if (!acceptStr) return "Images (PNG, JPG, JPEG, WEBP), PDF, Word (.doc, .docx)";
+    const hasImages = acceptStr.includes("image") || acceptStr.includes(".png") || acceptStr.includes(".jpg") || acceptStr.includes(".webp");
+    const hasPdf = acceptStr.includes("pdf") || acceptStr.includes(".pdf");
+    const hasWord = acceptStr.includes("word") || acceptStr.includes(".doc");
+
+    const parts: string[] = [];
+    if (hasImages) parts.push("Images (PNG, JPG, JPEG, WEBP)");
+    if (hasPdf) parts.push("PDF (.pdf)");
+    if (hasWord) parts.push("Word (.doc, .docx)");
+
+    return parts.length > 0 ? parts.join(", ") : acceptStr.replaceAll(",", ", ");
+  }
+
+  function isFileAllowed(file: File): boolean {
+    const name = file.name.toLowerCase();
+    const allowedExtensions = [".png", ".jpg", ".jpeg", ".webp", ".pdf", ".doc", ".docx"];
+    const ext = name.substring(name.lastIndexOf("."));
+    if (!allowedExtensions.includes(ext)) return false;
+
+    if (!accept) return true;
+    const acceptLower = accept.toLowerCase();
+    if (acceptLower.includes(ext)) return true;
+    if (file.type && acceptLower.includes(file.type.toLowerCase())) return true;
+    if (file.type?.startsWith("image/") && acceptLower.includes("image/")) return true;
+    return false;
+  }
+
   function addFiles(fileList: FileList | null) {
     if (disabled || !fileList || fileList.length === 0) return;
-    const incoming: DropzoneFile[] = Array.from(fileList).map((file) => ({
+    const allFiles = Array.from(fileList);
+    const validFiles = allFiles.filter(isFileAllowed);
+
+    if (validFiles.length < allFiles.length) {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("app:toast", {
+            detail: {
+              variant: "error",
+              title: "Invalid file type",
+              description: "Only Images (PNG, JPG, JPEG, WEBP), PDF, and Word documents (.doc, .docx) are allowed.",
+            },
+          })
+        );
+      }
+    }
+
+    if (validFiles.length === 0) return;
+
+    const incoming: DropzoneFile[] = validFiles.map((file) => ({
       id: crypto.randomUUID(),
       name: file.name,
       size: file.size,
@@ -76,7 +123,7 @@ export function FileDropzone({
               <span className="text-primary hover:underline">Click to upload</span> or drag and drop
             </p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              {accept ? accept.replaceAll(",", ", ") : "PDF, PNG, JPG, or DOC files"}
+              {formatAcceptDisplay(accept)}
             </p>
           </div>
           <input

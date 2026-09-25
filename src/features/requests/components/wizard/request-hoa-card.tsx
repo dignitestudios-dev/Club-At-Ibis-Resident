@@ -8,21 +8,24 @@ interface RequestHoaCardProps {
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
   error?: string;
+  disabled?: boolean;
 }
 
 export function RequestHoaCard({
   checked,
   onCheckedChange,
   error,
+  disabled,
 }: RequestHoaCardProps) {
-  const hasError = !!error;
+  const hasError = !disabled && !!error;
 
   return (
     <div className="space-y-2 pt-1" role="group" aria-labelledby="hoa-approval-title">
       <label
         htmlFor="hoaApproved"
         className={cn(
-          "group relative flex items-start gap-3.5 sm:gap-4 rounded-2xl border p-4.5 sm:p-5 transition-all duration-200 cursor-pointer select-none",
+          "group relative flex items-start gap-3.5 sm:gap-4 rounded-2xl border p-4.5 sm:p-5 transition-all duration-200 select-none",
+          disabled ? "opacity-60 cursor-not-allowed bg-muted/30 border-border/70" : "cursor-pointer",
           checked
             ? "border-emerald-500/60 bg-emerald-50/40 dark:bg-emerald-950/20 shadow-2xs ring-1 ring-emerald-500/20"
             : hasError
@@ -83,7 +86,8 @@ export function RequestHoaCard({
           <Checkbox
             id="hoaApproved"
             checked={checked}
-            onCheckedChange={(c) => onCheckedChange(c === true)}
+            disabled={disabled}
+            onCheckedChange={(c) => !disabled && onCheckedChange(c === true)}
             aria-describedby={hasError ? "hoa-error-msg hoa-helper-text" : "hoa-helper-text"}
             aria-invalid={hasError}
             aria-required="true"
