@@ -31,84 +31,6 @@ export interface WizardStep {
   fields: FieldConfig[];
 }
 
-export interface ParsedBackendErrors {
-  fieldErrors: Record<string, string>;
-  generalErrors: string[];
-}
-
-export function parseBackendErrors(err: any): ParsedBackendErrors {
-  const fieldErrors: Record<string, string> = {};
-  const generalErrors: string[] = [];
-
-  const responseData = err?.responseData || err?.response?.data || err;
-  const details = responseData?.details;
-  const code = responseData?.code || err?.code;
-  const mainMessage = responseData?.message || err?.message || "An unexpected error occurred.";
-
-  if (Array.isArray(details)) {
-    for (const issue of details) {
-      if (typeof issue === "string") {
-        generalErrors.push(issue);
-      } else if (issue && typeof issue === "object") {
-        const issueMsg = issue.message || mainMessage;
-        let fieldId = issue.fieldId;
-
-        if (!fieldId && typeof issue.path === "string") {
-          const parts = issue.path.split(".");
-          const lastPart = parts[parts.length - 1];
-          if (lastPart === "hoaConfirmed") {
-            fieldId = "hoaApproved";
-          } else {
-            fieldId = lastPart;
-          }
-        }
-
-        if (fieldId) {
-          if (fieldId === "hoaConfirmed") fieldId = "hoaApproved";
-          fieldErrors[fieldId] = issueMsg;
-        } else {
-          generalErrors.push(issueMsg);
-        }
-      }
-    }
-  } else if (details && typeof details === "object") {
-    if (code === "FORM_VERSION_STALE") {
-      // Handled exclusively by the top Stale Form Upgrade banner
-    } else if (code === "STALE_DRAFT_REVISION") {
-      generalErrors.push("The draft was modified in another session. Synchronizing with latest version...");
-    } else {
-      generalErrors.push(mainMessage);
-    }
-  } else {
-    if (code === "HOA_CONFIRMATION_REQUIRED") {
-      fieldErrors["hoaApproved"] = "HOA approval confirmation is required before submission.";
-    } else if (code === "TITLE_REQUIRED") {
-      generalErrors.push("Request title is required.");
-    } else if (code === "CATEGORY_ARCHIVED") {
-      generalErrors.push("This category is archived and cannot be submitted.");
-    } else if (code === "DEFAULT_REVIEWER_NOT_CONFIGURED") {
-      generalErrors.push("No intake reviewer is currently configured. Please contact the administrator.");
-    } else if (mainMessage) {
-      generalErrors.push(mainMessage);
-    }
-  }
-
-  const uniqueGeneralErrors = Array.from(new Set(generalErrors.filter(Boolean)));
-
-  return {
-    fieldErrors,
-    generalErrors: uniqueGeneralErrors,
-  };
-}
-
-function extractCurrentRevision(err: any): number | null {
-  const details = err?.responseData?.details || err?.response?.data?.details;
-  if (details && typeof details.currentDraftRevision === "number") {
-    return details.currentDraftRevision;
-  }
-  return null;
-}
-
 export function useRequestWizard(
   categoryOrType: ActiveCategory | RequestType,
   onChangeType: () => void,
@@ -116,6 +38,7 @@ export function useRequestWizard(
   dynamicFields?: CategoryFormField[]
 ) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const user = useCurrentUser();
   const toast = useToast();
   const queryClient = useQueryClient();
@@ -239,6 +162,65 @@ export function useRequestWizard(
     defaultValues: initialFormValues,
   });
 
+  // Prevent accidental reload or link navigation when in-progress unsaved data exists
+  const { dialog: guardDialog, allowLeave: guardAllowLeave } = useUnsavedChanges(
+    hasUnsavedChanges || isSavingDraft
+  );
+
+  const isRedirectingArchivedRef = useRef(false);
+
+  const handleArchivedRedirect = useCallback(
+    (err: any) => {
+      if (isRedirectingArchivedRef.current) return;
+      isRedirectingArchivedRef.current = true;
+
+      clearWizardState();
+      guardAllowLeave();
+      if (categoryOrType?.id) {
+        queryClient.removeQueries({ queryKey: ["categories", "form", categoryOrType.id] });
+      }
+      queryClient.invalidateQueries({ queryKey: ["categories", "active"] });
+      queryClient.refetchQueries({ queryKey: ["categories", "active"] });
+      queryClient.invalidateQueries({ queryKey: ["drafts"] });
+
+      const isArchived = isCategoryArchivedError(err);
+      const isNotFound = isCategoryNotFoundError(err);
+
+      const title = isArchived
+        ? "Category Archived"
+        : isNotFound
+        ? "Category Not Found"
+        : "Category Unavailable";
+
+      const message =
+        (typeof err === "string" ? err : null) ||
+        err?.responseData?.message ||
+        err?.response?.data?.message ||
+        err?.message ||
+        (isArchived
+          ? "Archived categories cannot be submitted"
+          : "Active category not found");
+
+      // CATEGORY_ARCHIVED -> redirect to /requests/new
+      // CATEGORY_NOT_FOUND -> redirect to /requests (My Requests)
+      const destination = isArchived ? "/requests/new" : "/requests";
+
+      toast.error(
+        title,
+        `${message}. Redirecting...`
+      );
+
+      setTimeout(() => {
+        if (typeof window !== "undefined") {
+          window.location.href = destination;
+        } else {
+          router.replace(destination);
+        }
+      }, 3000);
+    },
+    [categoryOrType?.id, guardAllowLeave, queryClient, router, toast]
+  );
+
   // Extract structured values and uploads for autosave or submit
   const extractPayload = useCallback(
     (targetStepIndex?: number) => {
@@ -311,10 +293,14 @@ export function useRequestWizard(
         })
         .catch((err) => {
           console.error("Failed to initialize draft request:", err);
+          if (isCategoryUnavailableError(err)) {
+            handleArchivedRedirect(err);
+            return;
+          }
           draftInitializingRef.current = false;
         });
     }
-  }, [categoryOrType.id, initialDraft]);
+  }, [categoryOrType.id, initialDraft, handleArchivedRedirect]);
 
   // Sync draft if loaded asynchronously from query
   useEffect(() => {
@@ -400,6 +386,10 @@ export function useRequestWizard(
             fieldValues: payload.fieldValues,
           });
         } catch (err: any) {
+          if (isCategoryUnavailableError(err)) {
+            handleArchivedRedirect(err);
+            return;
+          }
           const remoteRev = extractCurrentRevision(err);
           if (remoteRev !== null) {
             draftRevisionRef.current = remoteRev;
@@ -423,6 +413,10 @@ export function useRequestWizard(
         setHasUnsavedChanges(false);
         setIsStaleForm(false);
       } catch (err: any) {
+        if (isCategoryUnavailableError(err)) {
+          handleArchivedRedirect(err);
+          return;
+        }
         const message = err?.message || "";
         if (message.includes("FORM_VERSION_STALE") || err?.statusCode === 409 || err?.response?.status === 409) {
           if (message.includes("FORM_VERSION_STALE")) {
@@ -441,7 +435,7 @@ export function useRequestWizard(
         setIsSavingDraft(false);
       }
     },
-    [extractPayload, toast]
+    [extractPayload, handleArchivedRedirect, toast]
   );
 
   // Debounced autosave on field changes
@@ -493,11 +487,6 @@ export function useRequestWizard(
     });
   }
 
-  // Prevent accidental reload or link navigation when in-progress unsaved data exists
-  const { dialog: guardDialog, allowLeave: guardAllowLeave } = useUnsavedChanges(
-    hasUnsavedChanges || isSavingDraft
-  );
-
   async function handleSaveDraft(options: { redirect?: boolean } = { redirect: true }) {
     const draftId = currentDraftIdRef.current;
     if (!draftId) {
@@ -516,6 +505,10 @@ export function useRequestWizard(
           fieldValues: payload.fieldValues,
         });
       } catch (err: any) {
+        if (isCategoryUnavailableError(err)) {
+          handleArchivedRedirect(err);
+          return;
+        }
         const remoteRev = extractCurrentRevision(err);
         if (remoteRev !== null) {
           draftRevisionRef.current = remoteRev;
@@ -542,7 +535,11 @@ export function useRequestWizard(
         guardAllowLeave();
         router.push("/drafts");
       }
-    } catch {
+    } catch (err: any) {
+      if (isCategoryUnavailableError(err)) {
+        handleArchivedRedirect(err);
+        return;
+      }
       toast.error("Failed to save draft.");
     } finally {
       setIsSavingDraft(false);
@@ -664,6 +661,10 @@ export function useRequestWizard(
             );
           },
           onError: (err: any) => {
+            if (isCategoryUnavailableError(err)) {
+              handleArchivedRedirect(err);
+              return;
+            }
             const remoteRev = extractCurrentRevision(err);
             if (remoteRev !== null && remoteRev !== rev) {
               draftRevisionRef.current = remoteRev;
@@ -802,6 +803,11 @@ export function useRequestWizard(
             router.push(`/requests/${record.id}`);
           },
           onError: (err: any) => {
+            if (isCategoryUnavailableError(err)) {
+              isSubmittingRef.current = false;
+              handleArchivedRedirect(err);
+              return;
+            }
             const remoteRev = extractCurrentRevision(err);
             if (remoteRev !== null && remoteRev !== rev) {
               draftRevisionRef.current = remoteRev;
