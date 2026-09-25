@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
@@ -11,13 +12,20 @@ import {
 
 export function useRequestRevise(
   request: RequestRecord,
-  requestType: RequestType,
-  onDone?: () => void
+  requestType?: RequestType | null,
+  onDone?: () => void,
+  customFields?: FieldConfig[]
 ) {
   const toast = useToast();
+  const isSubmittingRef = useRef(false);
   const { mutate: resubmit, isPending } = useResubmitRequestMutation();
 
-  const allFields = getAllFieldsForRequestType(requestType);
+  const allFields =
+    customFields && customFields.length > 0
+      ? customFields
+      : requestType
+      ? getAllFieldsForRequestType(requestType)
+      : (request.formSnapshot || request.form?.fields || []);
   const flagsByField = new Map((request.flags ?? []).map((f) => [f.fieldId, f.reason]));
   const flaggedFields = allFields.filter((field) => flagsByField.has(field.id));
 
@@ -46,6 +54,8 @@ export function useRequestRevise(
   });
 
   function handleSubmit(values: Record<string, unknown>) {
+    if (isSubmittingRef.current || isPending) return;
+    isSubmittingRef.current = true;
     const fieldValues: Record<string, FieldValue> = { ...request.fieldValues };
     const uploads: Record<string, UploadedFile[]> = { ...request.uploads };
 
@@ -68,10 +78,17 @@ export function useRequestRevise(
       { id: request.id, fieldValues, uploads },
       {
         onSuccess: () => {
+          isSubmittingRef.current = false;
           toast.success("Revised request resubmitted for ARB review.");
           onDone?.();
         },
-        onError: () => toast.error("Unable to resubmit your request."),
+        onError: () => {
+          isSubmittingRef.current = false;
+          toast.error("Unable to resubmit your request.");
+        },
+        onSettled: () => {
+          isSubmittingRef.current = false;
+        },
       }
     );
   }

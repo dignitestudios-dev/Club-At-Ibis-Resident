@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -20,6 +20,7 @@ export function useLogin() {
   const returnUrl = searchParams.get("returnUrl");
   const dispatch = useAppDispatch();
   const toast = useToast();
+  const isSubmittingRef = useRef(false);
   const { mutate: login, isPending } = useLoginMutation();
   const { mutate: resendVerification, isPending: isResendingVerification } = useResendEmailVerificationMutation();
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
@@ -39,6 +40,8 @@ export function useLogin() {
   });
 
   function onSubmit(data: LoginCredentials) {
+    if (isSubmittingRef.current || isPending) return;
+    isSubmittingRef.current = true;
     setUnverifiedEmail(null);
     login(data, {
       onSuccess: ({ token, user }) => {
@@ -52,10 +55,14 @@ export function useLogin() {
         window.location.href = returnUrl ? decodeURIComponent(returnUrl) : DEFAULT_REDIRECT;
       },
       onError: (error: Error & { code?: string }) => {
+        isSubmittingRef.current = false;
         if (error.code === "EMAIL_VERIFICATION_REQUIRED" || error.message?.toLowerCase().includes("verification")) {
           setUnverifiedEmail(data.email);
         }
         toast.error(error.message || "Unable to sign in.");
+      },
+      onSettled: () => {
+        isSubmittingRef.current = false;
       },
     });
   }

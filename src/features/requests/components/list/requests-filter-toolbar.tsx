@@ -1,7 +1,6 @@
 "use client";
 
-import { RotateCcw, Search, X } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { RotateCcw } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -9,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { type DatePeriod } from "@/features/requests/hooks/use-requests-list";
+import { SearchInput } from "@/components/shared/search-input";
 
 interface FilterOption<T> {
   label: string;
@@ -23,12 +22,12 @@ interface RequestsFilterToolbarProps {
   onStatusChange: (status: RequestStatus | "all") => void;
   statusOptions: FilterOption<RequestStatus | "all">[];
   statusPlaceholder?: string;
-  requestTypeId: string;
-  onRequestTypeChange: (typeId: string) => void;
-  categoryOptions: FilterOption<string>[];
-  period: DatePeriod;
-  onPeriodChange: (period: DatePeriod) => void;
-  periodOptions: FilterOption<DatePeriod>[];
+  requestTypeId?: string;
+  onRequestTypeChange?: (typeId: string) => void;
+  categoryOptions?: FilterOption<string>[];
+  period?: string;
+  onPeriodChange?: (period: any) => void;
+  periodOptions?: FilterOption<any>[];
   hasActiveFilters: boolean;
   filteredCount: number;
   totalCount: number;
@@ -43,44 +42,24 @@ export function RequestsFilterToolbar({
   onStatusChange,
   statusOptions,
   statusPlaceholder = "Filter by status",
-  requestTypeId,
-  onRequestTypeChange,
-  categoryOptions,
-  period,
-  onPeriodChange,
-  periodOptions,
   hasActiveFilters,
   filteredCount,
   totalCount,
   onResetFilters,
-  searchPlaceholder = "Search by code, type, details...",
+  searchPlaceholder = "Search by code, category, title...",
 }: RequestsFilterToolbarProps) {
   return (
     <div className="space-y-2.5" role="search" aria-label="Requests filter toolbar">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-        {/* Search Input */}
-        <div className="relative">
-          <Search
-            className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
-            aria-hidden="true"
-          />
-          <Input
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+        {/* Search Input with 1s Debounce */}
+        <div className="lg:col-span-2">
+          <SearchInput
             value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
+            onChange={onSearchChange}
             placeholder={searchPlaceholder}
-            aria-label={searchPlaceholder}
-            className="pl-8 pr-8 bg-card dark:bg-card border-border"
+            ariaLabel={searchPlaceholder}
+            debounceMs={400}
           />
-          {search && search.trim().length > 0 && (
-            <button
-              type="button"
-              onClick={() => onSearchChange("")}
-              className="absolute top-1/2 right-2.5 -translate-y-1/2 rounded-full p-1 text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-foreground transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary"
-              aria-label="Clear search input"
-            >
-              <X className="size-3.5" aria-hidden="true" />
-            </button>
-          )}
         </div>
 
         {/* Status Filter */}
@@ -97,48 +76,6 @@ export function RequestsFilterToolbar({
           </SelectTrigger>
           <SelectContent>
             {statusOptions.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {/* Category Filter */}
-        <Select
-          items={categoryOptions}
-          value={requestTypeId}
-          onValueChange={(v) => onRequestTypeChange(v as string)}
-        >
-          <SelectTrigger
-            className="w-full bg-card dark:bg-card border-border"
-            aria-label="Filter requests by category"
-          >
-            <SelectValue placeholder="All Categories" />
-          </SelectTrigger>
-          <SelectContent>
-            {categoryOptions.map((cat) => (
-              <SelectItem key={cat.value} value={cat.value}>
-                {cat.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {/* Period Filter */}
-        <Select
-          items={periodOptions}
-          value={period}
-          onValueChange={(v) => onPeriodChange(v as DatePeriod)}
-        >
-          <SelectTrigger
-            className="w-full bg-card dark:bg-card border-border"
-            aria-label="Filter requests by timeframe"
-          >
-            <SelectValue placeholder="Timeframe" />
-          </SelectTrigger>
-          <SelectContent>
-            {periodOptions.map((opt) => (
               <SelectItem key={opt.value} value={opt.value}>
                 {opt.label}
               </SelectItem>

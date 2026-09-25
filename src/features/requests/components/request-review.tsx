@@ -9,6 +9,8 @@ import {
 } from "@/components/shared/file-preview-dialog";
 import { formatFileSize } from "@/utils/format";
 
+import { formatUsPhone } from "@/features/requests/schemas/request-step.schema";
+
 export function formatFieldValue(
   field: FieldConfig,
   value: unknown,
@@ -23,6 +25,10 @@ export function formatFieldValue(
   }
 
   if (value === undefined || value === null || value === "") return "—";
+
+  if (field.type === "phone") {
+    return formatUsPhone(String(value)) || String(value);
+  }
 
   const getOptionLabel = (optVal: string) => {
     if (!field.options) return optVal;

@@ -7,38 +7,35 @@ export interface StoredRequestState {
   savedAt: number;
 }
 
-export function saveWizardState(state: {
+/**
+ * Disabled: Form progress is autosaved directly to the backend draft API.
+ * Local/session storage is never used for wizard form data.
+ */
+export function saveWizardState(_state: {
   requestTypeId: string;
   stepIndex: number;
   fieldValues: Record<string, unknown>;
 }) {
-  try {
-    if (typeof window === "undefined") return;
-    sessionStorage.setItem(
-      WIZARD_STORAGE_KEY,
-      JSON.stringify({ ...state, savedAt: Date.now() })
-    );
-  } catch {
-    // Ignore storage quota or disabled storage errors
-  }
+  // No-op: Draft state is persisted exclusively via the backend API.
 }
 
+/**
+ * Disabled: Form progress is fetched directly from the backend draft API.
+ */
 export function getWizardState(): StoredRequestState | null {
-  try {
-    if (typeof window === "undefined") return null;
-    const raw = sessionStorage.getItem(WIZARD_STORAGE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as StoredRequestState;
-  } catch {
-    return null;
-  }
+  return null;
 }
 
+/**
+ * Cleans up any legacy storage keys from previous sessions.
+ */
 export function clearWizardState() {
   try {
     if (typeof window === "undefined") return;
     sessionStorage.removeItem(WIZARD_STORAGE_KEY);
+    localStorage.removeItem(WIZARD_STORAGE_KEY);
   } catch {
     // Ignore
   }
 }
+

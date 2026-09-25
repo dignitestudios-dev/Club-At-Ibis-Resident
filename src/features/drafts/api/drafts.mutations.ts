@@ -21,6 +21,7 @@ export function useDeleteDraftMutation() {
     mutationFn: (draftId: string) => deleteDraft(draftId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["drafts"] });
+      queryClient.invalidateQueries({ queryKey: ["requests"] });
     },
   });
 }

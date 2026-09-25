@@ -1,61 +1,79 @@
-import { db, delay } from "@/lib/mock/store";
+import {
+  getResidentRequests,
+  getRequestById,
+  autosaveDraft,
+  createDraftRequest,
+} from "@/features/requests/api/requests.service";
+import axiosInstance from "@/lib/axios";
 
-export async function getDraftsForResident(residentId: string): Promise<RequestDraft[]> {
-  const all = db.getDrafts().filter((d) => d.residentId === residentId);
-  return delay(
-    [...all].sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1)),
-    80
-  );
+function toDraft(r: RequestRecord): RequestDraft {
+  return {
+    id: r.id,
+    residentId: r.residentId,
+    requestTypeId: r.categoryId || r.requestTypeId,
+    categoryId: r.categoryId,
+    categoryName: r.categoryName,
+    title: r.categoryName || r.title || "Architectural Request",
+    reference: r.reference || r.code,
+    code: r.code || r.reference,
+    status: r.status,
+    propertyAddress: r.propertyAddress || (r.fieldValues?.propertyAddress as string),
+    lotNo: r.lotNo || (r.fieldValues?.lotNo as string),
+    fieldValues: r.fieldValues,
+    uploads: r.uploads,
+    stepIndex: r.currentStep ? Math.max(0, r.currentStep - 1) : 0,
+    draftRevision: r.draftRevision ?? 0,
+    hoaApproved: r.hoaApproved,
+    submittedAt: r.submittedAt,
+    createdAt: r.createdAt,
+    updatedAt: r.updatedAt,
+  };
+}
+
+export async function getDraftsForResident(params?: {
+  search?: string;
+  page?: number;
+  limit?: number;
+}): Promise<RequestDraft[]> {
+  const res = await getResidentRequests({
+    status: "draft",
+    search: params?.search,
+    page: params?.page,
+    limit: params?.limit,
+  });
+  return res.requests.map(toDraft);
 }
 
 export async function getDraftById(id: string): Promise<RequestDraft | undefined> {
-  const found = db.getDrafts().find((d) => d.id === id);
-  return delay(found, 60);
+  try {
+    const r = await getRequestById(id);
+    return toDraft(r);
+  } catch {
+    return undefined;
+  }
 }
 
 export async function saveDraft(payload: SaveDraftPayload): Promise<RequestDraft> {
-  const all = db.getDrafts();
-  const now = new Date().toISOString();
-
   if (payload.id) {
-    const idx = all.findIndex((d) => d.id === payload.id);
-    if (idx !== -1) {
-      const updated: RequestDraft = {
-        ...all[idx],
-        requestTypeId: payload.requestTypeId,
-        fieldValues: payload.fieldValues,
-        uploads: payload.uploads,
-        stepIndex: payload.stepIndex ?? all[idx].stepIndex,
-        hoaApproved: payload.hoaApproved ?? all[idx].hoaApproved,
-        updatedAt: now,
-      };
-      const next = [...all];
-      next[idx] = updated;
-      db.setDrafts(next);
-      return delay(updated, 150);
-    }
+    const updated = await autosaveDraft(payload.id, {
+      expectedDraftRevision: payload.expectedDraftRevision ?? 0,
+      currentStep: (payload.stepIndex ?? 0) + 1,
+      fieldValues: payload.fieldValues,
+    });
+    return toDraft(updated);
   }
 
-  // Create new draft
-  const record: RequestDraft = {
-    id: payload.id || `draft-${Date.now()}`,
-    residentId: payload.residentId,
-    requestTypeId: payload.requestTypeId,
-    fieldValues: payload.fieldValues,
-    uploads: payload.uploads,
-    stepIndex: payload.stepIndex ?? 0,
-    hoaApproved: payload.hoaApproved ?? false,
-    createdAt: now,
-    updatedAt: now,
-  };
-
-  db.setDrafts([record, ...all]);
-  return delay(record, 150);
+  const created = await createDraftRequest(
+    {
+      categoryId: payload.requestTypeId,
+      commonFormVersion: 1,
+      categoryFormVersion: 1,
+    },
+    `draft-create-${payload.requestTypeId}-${Date.now()}`
+  );
+  return toDraft(created);
 }
 
 export async function deleteDraft(id: string): Promise<void> {
-  const all = db.getDrafts();
-  const filtered = all.filter((d) => d.id !== id);
-  db.setDrafts(filtered);
-  return delay(undefined, 100);
+  await axiosInstance.delete(`/requests/${id}`);
 }

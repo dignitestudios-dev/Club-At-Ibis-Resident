@@ -16,7 +16,7 @@ export const DraftCard = memo(function DraftCard({
   style,
 }: {
   draft: RequestDraft;
-  onDelete: (id: string) => void;
+  onDelete: (id: string, onSettled?: () => void) => void;
   isDeleting?: boolean;
   viewMode?: "grid" | "list";
   className?: string;
@@ -24,9 +24,13 @@ export const DraftCard = memo(function DraftCard({
 }) {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const requestType = getRequestTypeById(draft.requestTypeId);
-  const address = (draft.fieldValues.propertyAddress as string) || "142 Egret Landing Way";
-  const filledCount = Object.keys(draft.fieldValues).filter(
-    (k) => draft.fieldValues[k] !== "" && draft.fieldValues[k] !== undefined
+  const categoryTitle = draft.categoryName || draft.title || requestType?.name || "Architectural Request";
+  const reference = draft.reference || draft.code;
+  const address = (draft.fieldValues?.propertyAddress as string | undefined) || draft.propertyAddress;
+  const lotNo = (draft.fieldValues?.lotNo as string | undefined) || draft.lotNo;
+  const fullAddress = address ? (lotNo ? `${address} (Lot #${lotNo})` : address) : undefined;
+  const filledCount = Object.keys(draft.fieldValues || {}).filter(
+    (k) => draft.fieldValues[k] !== "" && draft.fieldValues[k] !== undefined && draft.fieldValues[k] !== null
   ).length;
 
   if (viewMode === "list") {
@@ -47,25 +51,31 @@ export const DraftCard = memo(function DraftCard({
         <div className="min-w-0 flex-1 space-y-1.5">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="font-heading text-base sm:text-lg font-medium text-foreground group-hover:text-primary transition-colors truncate">
-              {requestType?.name ?? "Architectural Request"}
+              {categoryTitle}
             </h3>
-            <span className="rounded-md bg-amber-50 dark:bg-amber-950/40 border border-amber-200/90 dark:border-amber-800/60 px-2 py-0.5 text-xs font-mono font-semibold text-amber-900 dark:text-amber-300">
+            {reference && (
+              <span className="rounded-md bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 px-2 py-0.5 text-xs font-mono font-semibold text-slate-700 dark:text-slate-200 whitespace-nowrap shrink-0">
+                {reference}
+              </span>
+            )}
+            <span className="rounded-md bg-amber-50 dark:bg-amber-950/40 border border-amber-200/90 dark:border-amber-800/60 px-2 py-0.5 text-xs font-mono font-semibold text-amber-900 dark:text-amber-300 whitespace-nowrap shrink-0">
               Draft
-            </span>
-            <span className="text-xs text-muted-foreground font-medium">
-              {filledCount} field{filledCount !== 1 ? "s" : ""} filled
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-            {address && (
+            {fullAddress && (
               <span className="inline-flex items-center gap-1 text-slate-600 dark:text-slate-300 font-medium truncate max-w-xs">
                 <MapPin className="size-3 text-brand-gold shrink-0" />
-                {address}
+                {fullAddress}
               </span>
             )}
             <span className="inline-flex items-center gap-1">
               <Clock className="size-3 text-slate-400" />
               Saved {formatRelative(draft.updatedAt)}
+            </span>
+            <span>·</span>
+            <span className="text-slate-600 dark:text-slate-400 font-medium">
+              {filledCount} field{filledCount !== 1 ? "s" : ""} filled
             </span>
           </div>
         </div>
@@ -76,7 +86,7 @@ export const DraftCard = memo(function DraftCard({
             size="sm"
             onClick={() => setConfirmingDelete(true)}
             disabled={isDeleting}
-            aria-label={`Discard draft for ${requestType?.name ?? "request"}`}
+            aria-label={`Discard draft for ${categoryTitle}`}
             className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive h-8 px-2.5"
             title="Discard Draft"
           >
@@ -88,7 +98,7 @@ export const DraftCard = memo(function DraftCard({
             size="sm"
             nativeButton={false}
             render={<Link href={`/requests/new?draftId=${draft.id}`} />}
-            aria-label={`Resume draft for ${requestType?.name ?? "request"}`}
+            aria-label={`Resume draft for ${categoryTitle}`}
             className="h-8 gap-1.5"
           >
             <span>Resume</span>
@@ -98,13 +108,16 @@ export const DraftCard = memo(function DraftCard({
 
         <ConfirmDialog
           open={confirmingDelete}
-          onOpenChange={setConfirmingDelete}
-          title="Discard Draft?"
-          description="Are you sure you want to discard this draft? All saved progress for this request will be permanently removed."
-          confirmLabel="Discard Draft"
+          onOpenChange={(open) => {
+            if (!isDeleting) setConfirmingDelete(open);
+          }}
+          title="Discard Draft Permanently?"
+          description="Are you sure you want to discard this draft? This request and all uploaded documents will be permanently deleted and cannot be recovered."
+          confirmLabel={isDeleting ? "Discarding..." : "Discard Permanently"}
+          destructive={true}
+          loading={isDeleting}
           onConfirm={() => {
-            onDelete(draft.id);
-            setConfirmingDelete(false);
+            onDelete(draft.id, () => setConfirmingDelete(false));
           }}
         />
       </div>
@@ -126,18 +139,23 @@ export const DraftCard = memo(function DraftCard({
       />
 
       <div className="space-y-3 pt-1">
-        <div className="flex items-center justify-between gap-2.5">
-          <span className="rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200/90 dark:border-amber-800/60 px-2.5 py-1 text-xs font-mono font-semibold text-amber-900 dark:text-amber-300 shadow-2xs tracking-wide">
+        {/* Top Header: Monospace Reference Badge + Draft Badge */}
+        <div className="flex items-center justify-between gap-2">
+          {reference ? (
+            <span className="rounded-lg bg-slate-100 dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700/80 px-2.5 py-1 text-xs font-mono font-semibold text-slate-800 dark:text-slate-200 shadow-2xs tracking-wide whitespace-nowrap shrink-0">
+              {reference}
+            </span>
+          ) : (
+            <div />
+          )}
+          <span className="rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200/90 dark:border-amber-800/60 px-2.5 py-1 text-xs font-mono font-semibold text-amber-900 dark:text-amber-300 shadow-2xs tracking-wide whitespace-nowrap shrink-0">
             Draft
-          </span>
-          <span className="text-xs text-muted-foreground font-medium">
-            {filledCount} field{filledCount !== 1 ? "s" : ""} filled
           </span>
         </div>
 
         <div className="space-y-1.5">
           <h3 className="font-heading text-lg sm:text-xl font-medium text-foreground group-hover:text-primary transition-colors line-clamp-1">
-            {requestType?.name ?? "Architectural Request"}
+            {categoryTitle}
           </h3>
           <p className="text-xs text-muted-foreground leading-relaxed min-h-[2.25rem]">
             In progress submittal · Unsubmitted changes preserved
@@ -146,17 +164,20 @@ export const DraftCard = memo(function DraftCard({
       </div>
 
       <div className="pt-3 mt-4 border-t border-border/60 space-y-3">
-        {address && (
+        {fullAddress && (
           <div className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300 font-medium truncate">
             <MapPin className="size-3.5 text-brand-gold shrink-0" aria-hidden="true" />
-            <span className="truncate">{address}</span>
+            <span className="truncate">{fullAddress}</span>
           </div>
         )}
 
-        <div className="flex items-center justify-between text-[11px] text-muted-foreground/80">
-          <span className="flex items-center gap-1">
+        <div className="flex items-center justify-between text-[11px] text-muted-foreground/80 gap-2">
+          <span className="flex items-center gap-1 shrink-0">
             <Clock className="size-3 text-slate-400" aria-hidden="true" />
             Saved {formatRelative(draft.updatedAt)}
+          </span>
+          <span className="text-slate-600 dark:text-slate-400 font-medium whitespace-nowrap">
+            {filledCount} field{filledCount !== 1 ? "s" : ""} filled
           </span>
         </div>
 
@@ -166,7 +187,7 @@ export const DraftCard = memo(function DraftCard({
             size="sm"
             onClick={() => setConfirmingDelete(true)}
             disabled={isDeleting}
-            aria-label={`Discard draft for ${requestType?.name ?? "request"}`}
+            aria-label={`Discard draft for ${categoryTitle}`}
             className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive h-8 px-2.5 flex-1"
             title="Discard Draft"
           >
@@ -178,7 +199,7 @@ export const DraftCard = memo(function DraftCard({
             size="sm"
             nativeButton={false}
             render={<Link href={`/requests/new?draftId=${draft.id}`} />}
-            aria-label={`Resume draft for ${requestType?.name ?? "request"}`}
+            aria-label={`Resume draft for ${categoryTitle}`}
             className="h-8 gap-1.5 flex-1"
           >
             <span>Resume</span>
@@ -189,13 +210,16 @@ export const DraftCard = memo(function DraftCard({
 
       <ConfirmDialog
         open={confirmingDelete}
-        onOpenChange={setConfirmingDelete}
-        title="Discard Draft?"
-        description="Are you sure you want to discard this draft? All saved progress for this request will be permanently removed."
-        confirmLabel="Discard Draft"
+        onOpenChange={(open) => {
+          if (!isDeleting) setConfirmingDelete(open);
+        }}
+        title="Discard Draft Permanently?"
+        description="Are you sure you want to discard this draft? This request and all uploaded documents will be permanently deleted and cannot be recovered."
+        confirmLabel={isDeleting ? "Discarding..." : "Discard Permanently"}
+        destructive={true}
+        loading={isDeleting}
         onConfirm={() => {
-          onDelete(draft.id);
-          setConfirmingDelete(false);
+          onDelete(draft.id, () => setConfirmingDelete(false));
         }}
       />
     </div>

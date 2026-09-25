@@ -1,25 +1,34 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useResidentDraftsQuery } from "@/features/drafts/api/drafts.queries";
 import { useDeleteDraftMutation } from "@/features/drafts/api/drafts.mutations";
 import { useToast } from "@/hooks/use-toast";
 
-export function useDrafts() {
-  const user = useCurrentUser();
+export function useDrafts(params?: { search?: string; page?: number; limit?: number }) {
   const toast = useToast();
-  const { data: drafts = [], isLoading } = useResidentDraftsQuery(user?.id);
-  const { mutate: deleteDraftMutate, isPending: isDeleting } = useDeleteDraftMutation();
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const { data: drafts = [], isLoading } = useResidentDraftsQuery({
+    search: params?.search?.trim() || undefined,
+    page: params?.page,
+    limit: params?.limit,
+  });
+  const { mutate: deleteDraftMutate, isPending } = useDeleteDraftMutation();
 
   const deleteDraft = useCallback(
-    (id: string) => {
+    (id: string, onSettled?: () => void) => {
+      setDeletingId(id);
       deleteDraftMutate(id, {
         onSuccess: () => {
-          toast.success("Draft discarded.");
+          setDeletingId(null);
+          toast.success("Draft discarded", "The draft has been permanently deleted.");
+          onSettled?.();
         },
-        onError: () => {
-          toast.error("Failed to delete draft.");
+        onError: (error: any) => {
+          setDeletingId(null);
+          toast.error("Failed to discard draft", error?.response?.data?.message || error?.message || "An unexpected error occurred.");
+          onSettled?.();
         },
       });
     },
@@ -29,7 +38,8 @@ export function useDrafts() {
   return {
     drafts,
     isLoading,
-    isDeleting,
+    isDeleting: isPending,
+    deletingId,
     deleteDraft,
   };
 }

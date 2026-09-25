@@ -113,7 +113,10 @@ export default function LoginForm() {
               control={control}
               render={({ field }) => (
                 <Field data-invalid={!!errors.email}>
-                  <FieldLabel htmlFor="email">Email Address</FieldLabel>
+                  <FieldLabel htmlFor="email">
+                    Email Address
+                    <span className="text-red-500 font-bold ml-0.5 text-sm leading-none" aria-hidden="true">*</span>
+                  </FieldLabel>
                   <FieldContent>
                     <Input
                       id="email"
@@ -142,7 +145,10 @@ export default function LoginForm() {
               render={({ field }) => (
                 <Field data-invalid={!!errors.password}>
                   <div className="flex items-center justify-between">
-                    <FieldLabel htmlFor="password">Password</FieldLabel>
+                    <FieldLabel htmlFor="password">
+                      Password
+                      <span className="text-red-500 font-bold ml-0.5 text-sm leading-none" aria-hidden="true">*</span>
+                    </FieldLabel>
                     <Link
                       href="/auth/forgot-password"
                       className="text-xs font-medium text-primary hover:underline"

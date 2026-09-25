@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { FileText, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -61,10 +63,19 @@ export default function RequestDetailPage({ id }: { id: string }) {
     );
   }
 
-  const uploadEntries = Object.entries(request.uploads).filter(
-    ([, files]) => files.length > 0
+  const uploadEntries = Object.entries(request.uploads || {}).filter(
+    ([, files]) => files && files.length > 0
   );
-  const allFields = requestType ? getAllFieldsForRequestType(requestType) : [];
+  const formFields: FieldConfig[] =
+    request.formSnapshot && request.formSnapshot.length > 0
+      ? request.formSnapshot
+      : request.form?.fields && request.form.fields.length > 0
+      ? request.form.fields
+      : requestType
+      ? getAllFieldsForRequestType(requestType)
+      : [];
+
+  const isDraft = request.status === "draft";
 
   return (
     <div className="space-y-6">
@@ -74,6 +85,26 @@ export default function RequestDetailPage({ id }: { id: string }) {
         onBack={handleBack}
       />
 
+      {isDraft && (
+        <Alert className="border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200">
+          <FileText className="size-4 text-amber-600 dark:text-amber-400" />
+          <AlertTitle className="font-semibold">Unsubmitted In-Progress Draft</AlertTitle>
+          <AlertDescription className="mt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <span>
+              This request has not been submitted for ARB review yet. You can resume editing and complete your submittal.
+            </span>
+            <Button
+              size="sm"
+              nativeButton={false}
+              render={<Link href={`/requests/new?draftId=${request.id}`} />}
+              className="shrink-0"
+            >
+              Resume Draft
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <RequestDetailAlerts
         request={request}
         revising={revising}
@@ -81,7 +112,7 @@ export default function RequestDetailPage({ id }: { id: string }) {
         onPreviewLetter={(file) => setPreviewFile(file)}
       />
 
-      {revising && requestType && (
+      {revising && (
         <Card>
           <CardHeader>
             <CardTitle>Revise Your Submission</CardTitle>
@@ -90,6 +121,7 @@ export default function RequestDetailPage({ id }: { id: string }) {
             <RequestReviseForm
               request={request}
               requestType={requestType}
+              customFields={formFields}
               onDone={stopRevising}
             />
           </CardContent>
@@ -112,20 +144,19 @@ export default function RequestDetailPage({ id }: { id: string }) {
                 </TabsList>
 
                 <TabsContent value="details" className="pt-4">
-                  {requestType && (
-                    <RequestReview
-                      requestType={requestType}
-                      values={request.fieldValues}
-                      uploads={request.uploads}
-                      onPreviewFile={(f) => setPreviewFile(f)}
-                    />
-                  )}
+                  <RequestReview
+                    fields={formFields.length > 0 ? formFields : undefined}
+                    requestType={requestType}
+                    values={request.fieldValues}
+                    uploads={request.uploads}
+                    onPreviewFile={(f) => setPreviewFile(f)}
+                  />
                 </TabsContent>
 
                 <TabsContent value="documents" className="pt-4">
                   <RequestDocumentsTab
                     uploadEntries={uploadEntries}
-                    allFields={allFields}
+                    allFields={formFields}
                     onPreviewFile={(f) => setPreviewFile(f)}
                   />
                 </TabsContent>

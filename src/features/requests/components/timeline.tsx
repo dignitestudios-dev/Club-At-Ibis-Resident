@@ -91,15 +91,15 @@ const EVENT_CONFIG: Record<
 };
 
 export function Timeline({ entries }: { entries: ActivityEntry[] }) {
-  const sorted = [...entries].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  const list = entries ?? [];
 
   return (
     <div className="space-y-0">
-      {sorted.map((entry, index) => {
+      {list.map((entry, index) => {
         const config = EVENT_CONFIG[entry.type] ?? EVENT_CONFIG.updated;
         const Icon = config.icon;
         const isLatest = index === 0;
-        const isLast = index === sorted.length - 1;
+        const isLast = index === list.length - 1;
 
         return (
           <div key={entry.id} className="relative flex gap-4 group">
@@ -151,7 +151,7 @@ export function Timeline({ entries }: { entries: ActivityEntry[] }) {
               </div>
 
               {/* Message */}
-              <p className="text-sm text-foreground/85 leading-relaxed font-normal">
+              <p className="text-sm text-foreground/85 leading-relaxed font-normal break-words">
                 {entry.message}
               </p>
 
@@ -168,6 +168,7 @@ export function Timeline({ entries }: { entries: ActivityEntry[] }) {
           </div>
         );
       })}
+      {list.length === 0 && <p className="text-sm text-muted-foreground">No activity recorded.</p>}
     </div>
   );
 }

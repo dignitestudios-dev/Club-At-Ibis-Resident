@@ -23,6 +23,7 @@ export function clearPendingRegistration() {
 
 export function useRegister() {
   const toast = useToast();
+  const isSubmittingRef = useRef(false);
   const { mutate: register, isPending } = useRegisterMutation();
   const { mutate: resendVerification, isPending: isResendingVerification } = useResendEmailVerificationMutation();
   const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
@@ -73,8 +74,11 @@ export function useRegister() {
   }, [form]);
 
   function onSubmit(data: RegisterPayload) {
+    if (isSubmittingRef.current || isPending) return;
+    isSubmittingRef.current = true;
     register(data, {
       onSuccess: () => {
+        isSubmittingRef.current = false;
         setRegisteredEmail(data.email);
         try {
           localStorage.setItem(PENDING_REG_EMAIL_KEY, data.email);
@@ -85,7 +89,11 @@ export function useRegister() {
         toast.success("Registration received", "Please check your email to verify your account.");
       },
       onError: (error: Error) => {
+        isSubmittingRef.current = false;
         toast.error(error.message || "Unable to create account.");
+      },
+      onSettled: () => {
+        isSubmittingRef.current = false;
       },
     });
   }
