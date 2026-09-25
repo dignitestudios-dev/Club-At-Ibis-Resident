@@ -25,6 +25,7 @@ interface FieldConfig {
   multiple?: boolean;
   order?: number;
   source?: "common" | "category";
+  maxLength?: number;
 }
 
 interface RequestType {

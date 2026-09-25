@@ -16,15 +16,30 @@ import {
 } from "@/components/ui/field";
 import { Spinner } from "@/components/ui/spinner";
 import { useLogin } from "@/features/auth/hooks/use-login";
+import { clearPendingRegistration } from "@/features/auth/hooks/use-register";
 
 export default function LoginForm() {
-  const { form, onSubmit, isPending, unverifiedEmail, handleResendVerification, isResendingVerification } = useLogin();
+  const {
+    form,
+    onSubmit,
+    isPending,
+    unverifiedEmail,
+    handleResendVerification,
+    isResendingVerification,
+    resendCountdown,
+    resendFormattedTime,
+  } = useLogin();
   const {
     control,
     handleSubmit,
     setValue,
     formState: { errors },
   } = form;
+
+  // Clear any pending registration state when visiting/viewing the login form
+  useEffect(() => {
+    clearPendingRegistration();
+  }, []);
 
   // Keep React Hook Form state synchronized with browser / password-manager autofill
   useEffect(() => {
@@ -76,10 +91,16 @@ export default function LoginForm() {
             size="sm"
             className="w-full text-xs h-7"
             onClick={handleResendVerification}
-            disabled={isResendingVerification}
+            disabled={isResendingVerification || resendCountdown > 0}
           >
-            {isResendingVerification ? <Spinner className="size-3" /> : <RotateCw className="size-3 mr-1" />}
-            Resend Verification Email
+            {isResendingVerification ? (
+              <Spinner className="size-3" />
+            ) : (
+              <RotateCw className="size-3 mr-1" />
+            )}
+            {resendCountdown > 0
+              ? `Resend Verification Email (${resendFormattedTime})`
+              : "Resend Verification Email"}
           </Button>
         </div>
       )}
@@ -99,7 +120,7 @@ export default function LoginForm() {
                       type="email"
                       autoComplete="email"
                       placeholder="you@example.com"
-                      maxLength={320}
+                      maxLength={100}
                       disabled={isPending}
                       aria-invalid={!!errors.email}
                       value={field.value ?? ""}

@@ -17,7 +17,17 @@ import { Spinner } from "@/components/ui/spinner";
 import { useRegister } from "@/features/auth/hooks/use-register";
 
 export default function RegisterForm() {
-  const { form, onSubmit, isPending, registeredEmail, handleResendVerification, isResendingVerification, resetRegistration } = useRegister();
+  const {
+    form,
+    onSubmit,
+    isPending,
+    registeredEmail,
+    handleResendVerification,
+    isResendingVerification,
+    resetRegistration,
+    resendCountdown,
+    resendFormattedTime,
+  } = useRegister();
   const {
     register,
     control,
@@ -43,10 +53,16 @@ export default function RegisterForm() {
             variant="outline"
             className="w-full text-xs"
             onClick={handleResendVerification}
-            disabled={isResendingVerification}
+            disabled={isResendingVerification || resendCountdown > 0}
           >
-            {isResendingVerification ? <Spinner className="size-3" /> : <RotateCw className="size-3 mr-1.5" />}
-            Resend Verification Email
+            {isResendingVerification ? (
+              <Spinner className="size-3" />
+            ) : (
+              <RotateCw className="size-3 mr-1.5" />
+            )}
+            {resendCountdown > 0
+              ? `Resend Verification Email (${resendFormattedTime})`
+              : "Resend Verification Email"}
           </Button>
           <div className="flex flex-col gap-2 pt-2">
             <button
@@ -178,11 +194,17 @@ export default function RegisterForm() {
                       id="password"
                       autoComplete="new-password"
                       placeholder="Enter password"
+                      maxLength={128}
                       aria-invalid={!!errors.password}
                       showStrength
                       disabled={isPending}
                       value={field.value ?? ""}
-                      onChange={field.onChange}
+                      onChange={(e) => {
+                        field.onChange(e);
+                        if (form.getValues("confirmPassword")) {
+                          form.trigger("confirmPassword");
+                        }
+                      }}
                       onBlur={field.onBlur}
                       ref={field.ref}
                     />
@@ -206,6 +228,7 @@ export default function RegisterForm() {
                       id="confirmPassword"
                       autoComplete="new-password"
                       placeholder="Confirm password"
+                      maxLength={128}
                       aria-invalid={!!errors.confirmPassword}
                       disabled={isPending}
                       value={field.value ?? ""}

@@ -25,6 +25,7 @@ export interface CategoryFormField {
   multiple?: boolean;
   order: number;
   source: "common" | "category";
+  maxLength?: number;
 }
 
 export interface ActiveCategory {
