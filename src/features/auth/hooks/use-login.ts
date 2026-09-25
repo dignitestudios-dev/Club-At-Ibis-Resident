@@ -7,9 +7,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAppDispatch } from "@/store";
 import { setUser } from "@/store/slices/auth.slice";
 import { useToast } from "@/hooks/use-toast";
+import { useResendTimer } from "@/hooks/use-resend-timer";
 import { DEFAULT_REDIRECT } from "@/config/routes";
 import { loginSchema } from "@/features/auth/schemas/login.schema";
 import { useLoginMutation, useResendEmailVerificationMutation } from "@/features/auth/api/auth.mutations";
+
+const LOGIN_RESEND_COOLDOWN_KEY = "cai.resend-cooldown.login";
 
 export function useLogin() {
   const router = useRouter();
@@ -21,6 +24,14 @@ export function useLogin() {
   const { mutate: login, isPending } = useLoginMutation();
   const { mutate: resendVerification, isPending: isResendingVerification } = useResendEmailVerificationMutation();
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
+
+  const {
+    countdown: resendCountdown,
+    isCoolingDown: isResendCoolingDown,
+    formattedTime: resendFormattedTime,
+    startTimer: startResendTimer,
+    resetTimer: resetResendTimer,
+  } = useResendTimer(LOGIN_RESEND_COOLDOWN_KEY, 120);
 
   const form = useForm<LoginCredentials>({
     mode: "onChange",
@@ -34,7 +45,7 @@ export function useLogin() {
     setUnverifiedEmail(null);
     login(data, {
       onSuccess: ({ token, user }) => {
-        isSubmittingRef.current = false;
+        resetResendTimer();
         localStorage.removeItem("cai.logged-out");
         localStorage.setItem("auth-token", token);
         localStorage.setItem("auth-user", JSON.stringify(user));
@@ -57,11 +68,12 @@ export function useLogin() {
   }
 
   function handleResendVerification() {
-    if (!unverifiedEmail) return;
+    if (!unverifiedEmail || isResendCoolingDown || isResendingVerification) return;
     resendVerification(
       { email: unverifiedEmail },
       {
         onSuccess: () => {
+          startResendTimer(120);
           toast.success("Verification link sent", "Please check your email inbox.");
         },
         onError: (err: Error) => toast.error(err.message),
@@ -69,5 +81,15 @@ export function useLogin() {
     );
   }
 
-  return { form, onSubmit, isPending, unverifiedEmail, handleResendVerification, isResendingVerification };
+  return {
+    form,
+    onSubmit,
+    isPending,
+    unverifiedEmail,
+    handleResendVerification,
+    isResendingVerification,
+    resendCountdown,
+    isResendCoolingDown,
+    resendFormattedTime,
+  };
 }

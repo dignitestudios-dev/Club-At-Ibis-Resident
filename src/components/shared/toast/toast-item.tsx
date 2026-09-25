@@ -40,7 +40,7 @@ export function ToastItem({
     <div
       role="status"
       className={cn(
-        "animate-in slide-in-from-bottom-2 fade-in zoom-in-95 pointer-events-auto flex w-80 items-start gap-3 rounded-lg border border-border bg-card p-3.5 shadow-lg duration-200"
+        "animate-in slide-in-from-bottom-2 fade-in zoom-in-95 pointer-events-auto flex w-80 items-center gap-3 rounded-lg border border-border bg-card p-3.5 shadow-lg duration-200"
       )}
     >
       <span
@@ -51,10 +51,10 @@ export function ToastItem({
       >
         <Icon className={cn("size-4.5", iconClass)} />
       </span>
-      <div className="min-w-0 flex-1 pt-0.5">
-        <p className="text-sm font-medium text-foreground">{toast.title}</p>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-foreground leading-snug">{toast.title}</p>
         {toast.description && (
-          <p className="mt-0.5 text-xs text-muted-foreground">{toast.description}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground leading-normal">{toast.description}</p>
         )}
       </div>
       <button

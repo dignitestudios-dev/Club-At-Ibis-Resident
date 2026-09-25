@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
@@ -23,6 +24,16 @@ export function useChangePassword() {
       confirmNewPassword: "",
     },
   });
+
+  // Re-validate confirmNewPassword in real-time when newPassword changes
+  useEffect(() => {
+    const subscription = form.watch((_value, { name }) => {
+      if (name === "newPassword" && form.getValues("confirmNewPassword")) {
+        form.trigger("confirmNewPassword");
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
 
   function onSubmit(data: ChangePasswordPayload) {
     if (!user) return;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
@@ -22,6 +22,16 @@ export function useResetPassword(token: string) {
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: { password: "", confirmPassword: "" },
   });
+
+  // Re-validate confirmPassword in real-time when password changes
+  useEffect(() => {
+    const subscription = resetForm.watch((_value, { name }) => {
+      if (name === "password" && resetForm.getValues("confirmPassword")) {
+        resetForm.trigger("confirmPassword");
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [resetForm]);
 
   const resendForm = useForm<ForgotPasswordPayload>({
     mode: "onChange",
