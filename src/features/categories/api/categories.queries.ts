@@ -38,6 +38,19 @@ export function useActiveCategoryFormQuery(categoryId?: string | null) {
     queryKey: CATEGORIES_QUERY_KEYS.categoryForm(categoryId || ""),
     queryFn: () => getActiveCategoryForm(categoryId!),
     enabled: Boolean(categoryId),
+    retry: (failureCount, error: any) => {
+      const code = error?.code || error?.responseData?.code;
+      if (
+        code === "CATEGORY_NOT_FOUND" ||
+        code === "CATEGORY_ARCHIVED" ||
+        error?.statusCode === 404 ||
+        error?.response?.status === 404
+      ) {
+        return false;
+      }
+      return failureCount < 2;
+    },
+    refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000,
   });
 }
