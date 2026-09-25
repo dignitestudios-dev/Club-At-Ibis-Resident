@@ -72,7 +72,7 @@ export function FileDropzone({
             <Upload className="size-5" />
           </span>
           <div>
-            <p className="text-sm font-medium text-foreground">
+            <p className="text-sm text-primary hover:underline font-medium ">
               <span className="text-primary hover:underline">Click to upload</span> or drag and drop
             </p>
             <p className="mt-0.5 text-xs text-muted-foreground">

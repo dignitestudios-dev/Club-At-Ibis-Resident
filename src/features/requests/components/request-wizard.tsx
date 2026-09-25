@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Controller } from "react-hook-form";
@@ -41,7 +41,12 @@ import { DynamicField } from "@/features/requests/components/dynamic-field";
 import { RequestTypeCard } from "@/features/requests/components/request-type-card";
 import { RequestReview } from "@/features/requests/components/request-review";
 import { RequestHoaCard } from "@/features/requests/components/wizard/request-hoa-card";
-import { useRequestWizard } from "@/features/requests/hooks/use-request-wizard";
+import {
+  useRequestWizard,
+  isCategoryArchivedError,
+  isCategoryNotFoundError,
+  isCategoryUnavailableError,
+} from "@/features/requests/hooks/use-request-wizard";
 import { useQueryClient } from "@tanstack/react-query";
 import { useDraftDetailQuery } from "@/features/drafts/api/drafts.queries";
 import { useDeleteDraftMutation } from "@/features/drafts/api/drafts.mutations";
@@ -110,6 +115,59 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
 
   const categories = categoriesResult?.categories ?? [];
 
+  const isRedirectingRef = useRef(false);
+
+  // Auto-redirect if active category form returns not found or archived
+  useEffect(() => {
+    if (categoryFormError && isCategoryUnavailableError(categoryFormError)) {
+      if (isRedirectingRef.current) return;
+      isRedirectingRef.current = true;
+
+      clearWizardState();
+      // Remove this failing form query so it stops refetching
+      if (activeTypeId) {
+        queryClient.removeQueries({ queryKey: ["categories", "form", activeTypeId] });
+      }
+      queryClient.invalidateQueries({ queryKey: ["categories", "active"] });
+      queryClient.refetchQueries({ queryKey: ["categories", "active"] });
+      queryClient.invalidateQueries({ queryKey: ["drafts"] });
+
+      const isArchived = isCategoryArchivedError(categoryFormError);
+      const isNotFound = isCategoryNotFoundError(categoryFormError);
+
+      const title = isArchived
+        ? "Category Archived"
+        : isNotFound
+        ? "Category Not Found"
+        : "Category Unavailable";
+
+      const message =
+        (categoryFormError as any)?.responseData?.message ||
+        categoryFormError.message ||
+        (isArchived
+          ? "Archived categories cannot be submitted"
+          : "Active category not found");
+
+      // CATEGORY_ARCHIVED -> /requests/new
+      // CATEGORY_NOT_FOUND -> /requests
+      const destination = isArchived ? "/requests/new" : "/requests";
+
+      toast.error(
+        title,
+        `${message}. Redirecting...`
+      );
+
+      const timer = setTimeout(() => {
+        if (typeof window !== "undefined") {
+          window.location.href = destination;
+        } else {
+          router.replace(destination);
+        }
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [categoryFormError, activeTypeId, queryClient, router, toast]);
+
   // Fallback category metadata if found in categories list or static request types
   const selectedCategory: ActiveCategory | null =
     categoryFormData?.category ||
@@ -148,6 +206,37 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
       toast.success("Draft initialized", `Reference: ${newDraft.reference || newDraft.code}`);
       router.replace(`/requests/new?draftId=${newDraft.id}`);
     } catch (err: any) {
+      if (isCategoryUnavailableError(err)) {
+        clearWizardState();
+        queryClient.removeQueries({ queryKey: ["categories", "form", cat.id] });
+        queryClient.invalidateQueries({ queryKey: ["categories", "active"] });
+        queryClient.refetchQueries({ queryKey: ["categories", "active"] });
+        queryClient.invalidateQueries({ queryKey: ["drafts"] });
+
+        const isArchived = isCategoryArchivedError(err);
+        const isNotFound = isCategoryNotFoundError(err);
+        const title = isArchived ? "Category Archived" : isNotFound ? "Category Not Found" : "Category Unavailable";
+        const message =
+          err?.responseData?.message ||
+          err?.message ||
+          (isArchived
+            ? "Archived categories cannot be submitted"
+            : "Active category not found");
+        const destination = isArchived ? "/requests/new" : "/requests";
+
+        toast.error(
+          title,
+          `${message}. Redirecting...`
+        );
+        setTimeout(() => {
+          if (typeof window !== "undefined") {
+            window.location.href = destination;
+          } else {
+            router.replace(destination);
+          }
+        }, 3000);
+        return;
+      }
       const message = err?.message || "Failed to initialize draft request. Please try again.";
       toast.error("Initialization Failed", message);
     } finally {
@@ -412,6 +501,30 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
 
   // 3. Category Form Loading Error
   if (categoryFormError || !selectedCategory) {
+    const isArchived = isCategoryArchivedError(categoryFormError) || (selectedCategory as any)?.status === "archived";
+    const isNotFound = isCategoryNotFoundError(categoryFormError);
+    const isArchivedOrNotFound = isArchived || isNotFound;
+
+    const title = isArchived
+      ? "Category Archived"
+      : isNotFound
+      ? "Category Not Found"
+      : "Unable to load request form";
+
+    const defaultMsg = isArchived
+      ? "Archived categories cannot be submitted."
+      : isNotFound
+      ? "Active category not found."
+      : "We encountered an issue loading the form questions for this category.";
+
+    const errorMessage =
+      (categoryFormError as any)?.responseData?.message ||
+      categoryFormError?.message ||
+      defaultMsg;
+
+    const destination = isArchived ? "/requests/new" : "/requests";
+    const destinationLabel = isArchived ? "New Request" : "My Requests";
+
     return (
       <div className="space-y-6">
         <PageHeader
@@ -420,9 +533,13 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
         />
         <Alert variant="destructive" className="border-destructive/30 bg-destructive/5">
           <AlertCircle className="size-4" />
-          <AlertTitle>Unable to load request form</AlertTitle>
+          <AlertTitle>{title}</AlertTitle>
           <AlertDescription className="mt-2 space-y-3">
-            <p>We encountered an issue loading the form questions for this category.</p>
+            <p>
+              {isArchivedOrNotFound
+                ? `${errorMessage} You will be redirected to ${destinationLabel} shortly.`
+                : errorMessage}
+            </p>
             <div className="flex items-center gap-2.5">
               <Button
                 variant="outline"
@@ -430,18 +547,25 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
                 onClick={() => {
                   clearWizardState();
                   setRequestTypeId(null);
+                  if (typeof window !== "undefined") {
+                    window.location.href = destination;
+                  } else {
+                    router.replace(destination);
+                  }
                 }}
               >
                 <ArrowLeft className="size-3.5 mr-1.5" />
-                Choose Another Category
+                Go to {destinationLabel}
               </Button>
-              <Button
-                size="sm"
-                onClick={() => refetchCategoryForm()}
-              >
-                <RefreshCw className="size-3.5 mr-1.5" />
-                Retry
-              </Button>
+              {!isArchivedOrNotFound && (
+                <Button
+                  size="sm"
+                  onClick={() => refetchCategoryForm()}
+                >
+                  <RefreshCw className="size-3.5 mr-1.5" />
+                  Retry
+                </Button>
+              )}
             </div>
           </AlertDescription>
         </Alert>
@@ -461,7 +585,14 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
         clearWizardState();
         setRequestTypeId(null);
         setCreatedDraft(null);
-        router.replace("/requests/new");
+        queryClient.invalidateQueries({ queryKey: ["categories"] });
+        queryClient.refetchQueries({ queryKey: ["categories"] });
+        queryClient.invalidateQueries({ queryKey: ["drafts"] });
+        if (typeof window !== "undefined") {
+          window.location.href = "/requests/new";
+        } else {
+          router.replace("/requests/new");
+        }
       }}
     />
   );
@@ -609,8 +740,8 @@ function CategoryFormWizard({
 
       <Stepper steps={stepperSteps} currentIndex={stepIndex} />
 
-      <Card className="p-5 sm:p-6">
-        <form onSubmit={onSubmit}>
+      <form onSubmit={onSubmit}>
+        <Card className="p-5 sm:p-6">
           {!isReviewStep && currentStep && (
             <div className="space-y-5">
               <div>
@@ -682,50 +813,54 @@ function CategoryFormWizard({
               />
             </div>
           )}
+        </Card>
 
-          <div className="mt-7 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-5">
-            <Button type="button" variant="outline" onClick={handleBack}>
-              <ArrowLeft className="size-4 mr-1" />
-              Back
-            </Button>
+        <div className="sticky bottom-0 z-30 -mx-4 sm:-mx-6 lg:-mx-8 mt-6">
+          <div className="border-t border-border/80 bg-[#F8FAFC] dark:bg-[#0D1522] px-4 sm:px-6 lg:px-8 py-4 ">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <Button type="button" variant="outline" onClick={handleBack}>
+                <ArrowLeft className="size-4 mr-1" />
+                Back
+              </Button>
 
-            <div className="flex items-center gap-2.5">
-              {!isReviewStep ? (
-                <Button type="button" onClick={handleNext}>
-                  Next
-                  <ArrowRight className="size-4 ml-1" />
-                </Button>
-              ) : (
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
-                  {isSavingDraft && (
-                    <span className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-md px-2.5 py-1 flex items-center gap-1.5 animate-pulse">
-                      <Spinner className="size-3.5" />
-                      Saving draft in progress... Submit will be enabled once saved.
-                    </span>
-                  )}
-                  <Button
-                    type="submit"
-                    disabled={isPending || isSavingDraft || !reviewReady}
-                  >
-                    {isPending ? (
-                      <Spinner className="size-4 mr-1" />
-                    ) : isSavingDraft ? (
-                      <Spinner className="size-4 mr-1" />
-                    ) : (
-                      <Send className="size-4 mr-1" />
-                    )}
-                    {isSavingDraft
-                      ? "Saving Draft..."
-                      : isPending
-                      ? "Submitting..."
-                      : "Submit Request"}
+              <div className="flex items-center gap-2.5">
+                {!isReviewStep ? (
+                  <Button type="button" onClick={handleNext}>
+                    Next
+                    <ArrowRight className="size-4 ml-1" />
                   </Button>
-                </div>
-              )}
+                ) : (
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
+                    {isSavingDraft && (
+                      <span className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-md px-2.5 py-1 flex items-center gap-1.5 animate-pulse">
+                        <Spinner className="size-3.5" />
+                        Saving draft in progress... Submit will be enabled once saved.
+                      </span>
+                    )}
+                    <Button
+                      type="submit"
+                      disabled={isPending || isSavingDraft || !reviewReady}
+                    >
+                      {isPending ? (
+                        <Spinner className="size-4 mr-1" />
+                      ) : isSavingDraft ? (
+                        <Spinner className="size-4 mr-1" />
+                      ) : (
+                        <Send className="size-4 mr-1" />
+                      )}
+                      {isSavingDraft
+                        ? "Saving Draft..."
+                        : isPending
+                        ? "Submitting..."
+                        : "Submit Request"}
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </form>
-      </Card>
+        </div>
+      </form>
 
       <AlertDialog
         open={confirmingChangeCategory}

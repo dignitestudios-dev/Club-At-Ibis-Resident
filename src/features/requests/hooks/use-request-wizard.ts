@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
@@ -30,6 +31,38 @@ export interface WizardStep {
   fields: FieldConfig[];
 }
 
+export function isCategoryArchivedError(err: any): boolean {
+  if (!err) return false;
+  const code = err?.code || err?.responseData?.code || err?.response?.data?.code;
+  const message = err?.message || err?.responseData?.message || err?.response?.data?.message || "";
+  return (
+    code === "CATEGORY_ARCHIVED" ||
+    (typeof message === "string" && (
+      message.toLowerCase().includes("category_archived") ||
+      message.toLowerCase().includes("archived categories cannot be") ||
+      message.toLowerCase().includes("category is archived")
+    ))
+  );
+}
+
+export function isCategoryNotFoundError(err: any): boolean {
+  if (!err) return false;
+  const code = err?.code || err?.responseData?.code || err?.response?.data?.code;
+  const message = err?.message || err?.responseData?.message || err?.response?.data?.message || "";
+  return (
+    code === "CATEGORY_NOT_FOUND" ||
+    (typeof message === "string" && (
+      message.toLowerCase().includes("category_not_found") ||
+      message.toLowerCase().includes("active category not found") ||
+      message.toLowerCase().includes("category not found")
+    ))
+  );
+}
+
+export function isCategoryUnavailableError(err: any): boolean {
+  return isCategoryArchivedError(err) || isCategoryNotFoundError(err);
+}
+
 export function useRequestWizard(
   categoryOrType: ActiveCategory | RequestType,
   onChangeType: () => void,
@@ -37,6 +70,7 @@ export function useRequestWizard(
   dynamicFields?: CategoryFormField[]
 ) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const user = useCurrentUser();
   const toast = useToast();
 
@@ -157,6 +191,65 @@ export function useRequestWizard(
     defaultValues: initialFormValues,
   });
 
+  // Prevent accidental reload or link navigation when in-progress unsaved data exists
+  const { dialog: guardDialog, allowLeave: guardAllowLeave } = useUnsavedChanges(
+    hasUnsavedChanges || isSavingDraft
+  );
+
+  const isRedirectingArchivedRef = useRef(false);
+
+  const handleArchivedRedirect = useCallback(
+    (err: any) => {
+      if (isRedirectingArchivedRef.current) return;
+      isRedirectingArchivedRef.current = true;
+
+      clearWizardState();
+      guardAllowLeave();
+      if (categoryOrType?.id) {
+        queryClient.removeQueries({ queryKey: ["categories", "form", categoryOrType.id] });
+      }
+      queryClient.invalidateQueries({ queryKey: ["categories", "active"] });
+      queryClient.refetchQueries({ queryKey: ["categories", "active"] });
+      queryClient.invalidateQueries({ queryKey: ["drafts"] });
+
+      const isArchived = isCategoryArchivedError(err);
+      const isNotFound = isCategoryNotFoundError(err);
+
+      const title = isArchived
+        ? "Category Archived"
+        : isNotFound
+        ? "Category Not Found"
+        : "Category Unavailable";
+
+      const message =
+        (typeof err === "string" ? err : null) ||
+        err?.responseData?.message ||
+        err?.response?.data?.message ||
+        err?.message ||
+        (isArchived
+          ? "Archived categories cannot be submitted"
+          : "Active category not found");
+
+      // CATEGORY_ARCHIVED -> redirect to /requests/new
+      // CATEGORY_NOT_FOUND -> redirect to /requests (My Requests)
+      const destination = isArchived ? "/requests/new" : "/requests";
+
+      toast.error(
+        title,
+        `${message}. Redirecting...`
+      );
+
+      setTimeout(() => {
+        if (typeof window !== "undefined") {
+          window.location.href = destination;
+        } else {
+          router.replace(destination);
+        }
+      }, 3000);
+    },
+    [categoryOrType?.id, guardAllowLeave, queryClient, router, toast]
+  );
+
   // Extract structured values and uploads for autosave or submit
   const extractPayload = useCallback(
     (targetStepIndex?: number) => {
@@ -229,10 +322,14 @@ export function useRequestWizard(
         })
         .catch((err) => {
           console.error("Failed to initialize draft request:", err);
+          if (isCategoryUnavailableError(err)) {
+            handleArchivedRedirect(err);
+            return;
+          }
           draftInitializingRef.current = false;
         });
     }
-  }, [categoryOrType.id, initialDraft]);
+  }, [categoryOrType.id, initialDraft, handleArchivedRedirect]);
 
   // Sync draft if loaded asynchronously from query
   useEffect(() => {
@@ -306,6 +403,10 @@ function extractCurrentRevision(err: any): number | null {
             fieldValues: payload.fieldValues,
           });
         } catch (err: any) {
+          if (isCategoryUnavailableError(err)) {
+            handleArchivedRedirect(err);
+            return;
+          }
           const remoteRev = extractCurrentRevision(err);
           if (remoteRev !== null) {
             draftRevisionRef.current = remoteRev;
@@ -329,6 +430,10 @@ function extractCurrentRevision(err: any): number | null {
         setHasUnsavedChanges(false);
         setIsStaleForm(false);
       } catch (err: any) {
+        if (isCategoryUnavailableError(err)) {
+          handleArchivedRedirect(err);
+          return;
+        }
         const message = err?.message || "";
         if (message.includes("FORM_VERSION_STALE") || err?.statusCode === 409 || err?.response?.status === 409) {
           if (message.includes("FORM_VERSION_STALE")) {
@@ -347,7 +452,7 @@ function extractCurrentRevision(err: any): number | null {
         setIsSavingDraft(false);
       }
     },
-    [extractPayload, toast]
+    [extractPayload, handleArchivedRedirect, toast]
   );
 
   // Debounced autosave on field changes
@@ -399,11 +504,6 @@ function extractCurrentRevision(err: any): number | null {
     });
   }
 
-  // Prevent accidental reload or link navigation when in-progress unsaved data exists
-  const { dialog: guardDialog, allowLeave: guardAllowLeave } = useUnsavedChanges(
-    hasUnsavedChanges || isSavingDraft
-  );
-
   async function handleSaveDraft(options: { redirect?: boolean } = { redirect: true }) {
     const draftId = currentDraftIdRef.current;
     if (!draftId) {
@@ -422,6 +522,10 @@ function extractCurrentRevision(err: any): number | null {
           fieldValues: payload.fieldValues,
         });
       } catch (err: any) {
+        if (isCategoryUnavailableError(err)) {
+          handleArchivedRedirect(err);
+          return;
+        }
         const remoteRev = extractCurrentRevision(err);
         if (remoteRev !== null) {
           draftRevisionRef.current = remoteRev;
@@ -448,7 +552,11 @@ function extractCurrentRevision(err: any): number | null {
         guardAllowLeave();
         router.push("/drafts");
       }
-    } catch {
+    } catch (err: any) {
+      if (isCategoryUnavailableError(err)) {
+        handleArchivedRedirect(err);
+        return;
+      }
       toast.error("Failed to save draft.");
     } finally {
       setIsSavingDraft(false);
@@ -502,6 +610,10 @@ function extractCurrentRevision(err: any): number | null {
             toast.success("Form upgraded to latest category version.");
           },
           onError: (err: any) => {
+            if (isCategoryUnavailableError(err)) {
+              handleArchivedRedirect(err);
+              return;
+            }
             const remoteRev = extractCurrentRevision(err);
             if (remoteRev !== null && remoteRev !== rev) {
               draftRevisionRef.current = remoteRev;
@@ -571,6 +683,11 @@ function extractCurrentRevision(err: any): number | null {
             router.push(`/requests/${record.id}`);
           },
           onError: (err: any) => {
+            if (isCategoryUnavailableError(err)) {
+              isSubmittingRef.current = false;
+              handleArchivedRedirect(err);
+              return;
+            }
             const remoteRev = extractCurrentRevision(err);
             if (remoteRev !== null && remoteRev !== rev) {
               draftRevisionRef.current = remoteRev;
