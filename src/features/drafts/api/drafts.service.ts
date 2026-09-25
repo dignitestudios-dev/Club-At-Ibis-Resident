@@ -6,7 +6,7 @@ import {
 } from "@/features/requests/api/requests.service";
 import axiosInstance from "@/lib/axios";
 
-function toDraft(r: RequestRecord): RequestDraft {
+export function toDraft(r: RequestRecord): RequestDraft {
   return {
     id: r.id,
     residentId: r.residentId,
@@ -24,6 +24,10 @@ function toDraft(r: RequestRecord): RequestDraft {
     stepIndex: r.currentStep ? Math.max(0, r.currentStep - 1) : 0,
     draftRevision: r.draftRevision ?? 0,
     hoaApproved: r.hoaApproved,
+    commonFormVersion: r.commonFormVersion,
+    categoryFormVersion: r.categoryFormVersion,
+    form: r.form,
+    formSnapshot: r.formSnapshot,
     submittedAt: r.submittedAt,
     createdAt: r.createdAt,
     updatedAt: r.updatedAt,

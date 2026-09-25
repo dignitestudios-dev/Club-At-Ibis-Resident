@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Controller } from "react-hook-form";
@@ -330,7 +330,7 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
   // 1. Category Selection View
   if (!activeTypeId) {
     return (
-      <div className="space-y-6">
+      <div className="mx-auto max-w-3xl space-y-6 animate-in fade-in">
         <PageHeader
           title="New Request"
           description="Choose the type of architectural request you'd like to submit."
@@ -399,7 +399,7 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
   // 2. Loading Form Definition
   if (isLoadingCategoryForm) {
     return (
-      <div className="space-y-6">
+      <div className="mx-auto max-w-3xl space-y-6 animate-in fade-in">
         <div className="space-y-2">
           <Skeleton className="h-8 w-48 rounded" />
           <Skeleton className="h-4 w-96 rounded" />
@@ -413,7 +413,7 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
   // 3. Category Form Loading Error
   if (categoryFormError || !selectedCategory) {
     return (
-      <div className="space-y-6">
+      <div className="mx-auto max-w-3xl space-y-6 animate-in fade-in">
         <PageHeader
           title="New Request"
           description="Submit an architectural review request."
@@ -449,11 +449,14 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
     );
   }
 
-  const dynamicFields: CategoryFormField[] = categoryFormData?.fields ?? [];
+  const dynamicFields: CategoryFormField[] =
+    effectiveDraft?.form?.fields && effectiveDraft.form.fields.length > 0
+      ? (effectiveDraft.form.fields as CategoryFormField[])
+      : categoryFormData?.fields ?? [];
 
   return (
     <CategoryFormWizard
-      key={selectedCategory.id}
+      key={`${selectedCategory.id}-${effectiveDraft?.categoryFormVersion ?? 1}-${effectiveDraft?.commonFormVersion ?? 1}-${dynamicFields.length}`}
       category={selectedCategory}
       dynamicFields={dynamicFields}
       initialDraft={effectiveDraft}
@@ -481,6 +484,7 @@ function CategoryFormWizard({
   const {
     form,
     stepIndex,
+    setStepIndex,
     isReviewStep,
     currentStep,
     stepperSteps,
@@ -488,6 +492,8 @@ function CategoryFormWizard({
     categoryFields,
     reviewReady,
     isPending,
+    isSubmitting,
+    submissionErrors,
     isSavingDraft,
     hasUnsavedChanges,
     lastSavedAt,
@@ -511,6 +517,21 @@ function CategoryFormWizard({
   const [confirmingDiscard, setConfirmingDiscard] = useState(false);
   const { mutate: deleteDraftMutate, isPending: isDeletingDraft } = useDeleteDraftMutation();
 
+  const staleAlertRef = useRef<HTMLDivElement | null>(null);
+  const upgradeBtnRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    if (isStaleForm) {
+      if (staleAlertRef.current) {
+        staleAlertRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      const timer = setTimeout(() => {
+        upgradeBtnRef.current?.focus();
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isStaleForm]);
+
   const handleDiscard = () => {
     if (!currentDraftId) return;
     deleteDraftMutate(currentDraftId, {
@@ -528,7 +549,7 @@ function CategoryFormWizard({
   const hoaError = form.formState.errors.hoaApproved;
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
+    <div className="mx-auto max-w-3xl space-y-6 animate-in fade-in duration-300">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <PageHeader
           title={category.name}
@@ -544,7 +565,7 @@ function CategoryFormWizard({
                 <Spinner className="size-3" />
                 Saving...
               </span>
-            ) : hasUnsavedChanges ? (
+            ) : hasUnsavedChanges && !isStaleForm ? (
               <div className="flex items-center gap-2">
                 <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 font-medium">
                   <AlertCircle className="size-3.5" />
@@ -555,7 +576,7 @@ function CategoryFormWizard({
                   variant="outline"
                   size="sm"
                   onClick={() => handleSaveDraft({ redirect: false })}
-                  disabled={isSavingDraft}
+                  disabled={isSavingDraft || isStaleForm}
                   className="h-7 px-2.5 text-xs gap-1 border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 hover:bg-amber-100/50 dark:hover:bg-amber-950/50"
                 >
                   Save
@@ -574,7 +595,7 @@ function CategoryFormWizard({
                 variant="ghost"
                 size="sm"
                 onClick={() => setConfirmingDiscard(true)}
-                disabled={isPending || isSavingDraft || isDeletingDraft}
+                disabled={isPending || isSavingDraft || isDeletingDraft || isStaleForm}
                 className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                 title="Discard this draft permanently"
               >
@@ -587,29 +608,40 @@ function CategoryFormWizard({
       </div>
 
       {isStaleForm && (
-        <Alert className="border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200">
-          <AlertTriangle className="size-4 text-amber-600 dark:text-amber-400" />
-          <AlertTitle className="font-semibold">Category Form Updated</AlertTitle>
-          <AlertDescription className="mt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <span>
-              The administrator has updated the questions for this category. Upgrade your draft to load the latest questions without losing your answers.
-            </span>
-            <Button
-              size="sm"
-              onClick={handleMigrateForm}
-              disabled={isPending}
-              className="shrink-0"
-            >
-              {isPending ? <Spinner className="size-3.5 mr-1" /> : <RefreshCw className="size-3.5 mr-1" />}
-              Upgrade Form
-            </Button>
-          </AlertDescription>
-        </Alert>
+        <div ref={staleAlertRef} tabIndex={-1} className="outline-hidden animate-in fade-in slide-in-from-top-2 duration-300">
+          <Alert className="border-amber-400/90 bg-amber-50/95 dark:border-amber-700/80 dark:bg-amber-950/50 text-amber-950 dark:text-amber-100 shadow-sm ring-2 ring-amber-400/30 dark:ring-amber-500/20">
+            <AlertTriangle className="size-5 text-amber-600 dark:text-amber-400 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <AlertTitle className="font-semibold text-base text-amber-950 dark:text-amber-100">
+                Category Form Updated
+              </AlertTitle>
+              <AlertDescription className="mt-1.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm text-amber-900/90 dark:text-amber-200/90">
+                <span>
+                  The administrator updated the questions for this category. You must upgrade your draft to the latest form version before proceeding.
+                </span>
+                <Button
+                  ref={upgradeBtnRef}
+                  size="sm"
+                  onClick={handleMigrateForm}
+                  disabled={isPending}
+                  className="shrink-0 font-medium shadow-xs"
+                >
+                  {isPending ? (
+                    <Spinner className="size-3.5 mr-1.5" />
+                  ) : (
+                    <RefreshCw className="size-3.5 mr-1.5" />
+                  )}
+                  Upgrade Form
+                </Button>
+              </AlertDescription>
+            </div>
+          </Alert>
+        </div>
       )}
 
       <Stepper steps={stepperSteps} currentIndex={stepIndex} />
 
-      <Card className="p-5 sm:p-6">
+      <Card className="p-5 sm:p-6 shadow-2xs">
         <form onSubmit={onSubmit}>
           {!isReviewStep && currentStep && (
             <div className="space-y-5">
@@ -627,23 +659,14 @@ function CategoryFormWizard({
                   No additional information required for this step. Click &ldquo;Next&rdquo; to proceed.
                 </div>
               ) : (
-                <div className="grid gap-5 sm:grid-cols-2">
+                <div className="space-y-5">
                   {currentStep.fields.map((field) => (
-                    <div
-                      key={field.id}
-                      className={
-                        field.type === "textarea" ||
-                        field.type === "file" ||
-                        field.type === "checkbox"
-                          ? "sm:col-span-2"
-                          : undefined
-                      }
-                    >
+                    <div key={field.id}>
                       <DynamicField
                         field={field}
                         control={form.control}
                         errors={form.formState.errors}
-                        disabled={isPending}
+                        disabled={isPending || isStaleForm}
                       />
                     </div>
                   ))}
@@ -663,10 +686,37 @@ function CategoryFormWizard({
                 </p>
               </div>
 
+              {submissionErrors.length > 0 && !isStaleForm && (
+                <Alert variant="destructive" className="border-destructive/40 bg-destructive/5 dark:bg-destructive/10">
+                  <AlertCircle className="size-4" />
+                  <AlertTitle className="font-semibold">Unable to submit request</AlertTitle>
+                  <AlertDescription className="mt-2 space-y-2">
+                    <p className="text-xs text-muted-foreground">
+                      Please review and fix the following items before submitting:
+                    </p>
+                    <ul className="list-disc list-inside space-y-1 text-xs">
+                      {submissionErrors.map((err, i) => (
+                        <li key={i}>{err}</li>
+                      ))}
+                    </ul>
+                  </AlertDescription>
+                </Alert>
+              )}
+
               <RequestReview
                 commonFields={commonFields}
                 categoryFields={categoryFields}
                 values={form.getValues()}
+                errors={form.formState.errors}
+                disabled={isStaleForm}
+                onNavigateToStep={
+                  isStaleForm
+                    ? undefined
+                    : (idx) => {
+                        setStepIndex(idx);
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }
+                }
               />
 
               <Controller
@@ -676,7 +726,8 @@ function CategoryFormWizard({
                   <RequestHoaCard
                     checked={rhf.value === true}
                     onCheckedChange={(checked) => rhf.onChange(checked)}
-                    error={hoaError?.message as string | undefined}
+                    error={!isStaleForm ? (hoaError?.message as string | undefined) : undefined}
+                    disabled={isPending || isStaleForm}
                   />
                 )}
               />
@@ -684,43 +735,40 @@ function CategoryFormWizard({
           )}
 
           <div className="mt-7 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-5">
-            <Button type="button" variant="outline" onClick={handleBack}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleBack}
+              disabled={isPending || isStaleForm}
+            >
               <ArrowLeft className="size-4 mr-1" />
               Back
             </Button>
 
             <div className="flex items-center gap-2.5">
               {!isReviewStep ? (
-                <Button type="button" onClick={handleNext}>
+                <Button
+                  type="button"
+                  onClick={handleNext}
+                  disabled={isPending || isStaleForm}
+                >
                   Next
                   <ArrowRight className="size-4 ml-1" />
                 </Button>
               ) : (
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
-                  {isSavingDraft && (
-                    <span className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-md px-2.5 py-1 flex items-center gap-1.5 animate-pulse">
-                      <Spinner className="size-3.5" />
-                      Saving draft in progress... Submit will be enabled once saved.
-                    </span>
+                <Button
+                  type="submit"
+                  disabled={isPending || isSubmitting || !reviewReady || isStaleForm}
+                >
+                  {isPending || isSubmitting ? (
+                    <Spinner className="size-4 mr-1" />
+                  ) : (
+                    <Send className="size-4 mr-1" />
                   )}
-                  <Button
-                    type="submit"
-                    disabled={isPending || isSavingDraft || !reviewReady}
-                  >
-                    {isPending ? (
-                      <Spinner className="size-4 mr-1" />
-                    ) : isSavingDraft ? (
-                      <Spinner className="size-4 mr-1" />
-                    ) : (
-                      <Send className="size-4 mr-1" />
-                    )}
-                    {isSavingDraft
-                      ? "Saving Draft..."
-                      : isPending
-                      ? "Submitting..."
-                      : "Submit Request"}
-                  </Button>
-                </div>
+                  {isSubmitting || isPending
+                    ? "Submitting..."
+                    : "Submit Request"}
+                </Button>
               )}
             </div>
           </div>

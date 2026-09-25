@@ -62,6 +62,9 @@ export function buildStepSchema(fields: FieldConfig[]) {
 
   for (const field of fields) {
     let schema: z.ZodTypeAny;
+    const optionValues = (field.options || []).map((o) =>
+      typeof o === "string" ? o : o.value
+    );
 
     switch (field.type) {
       case "email": {
@@ -94,6 +97,7 @@ export function buildStepSchema(fields: FieldConfig[]) {
               .string()
               .trim()
               .min(1, `${field.label} is required.`)
+              .max(255, `${field.label} cannot exceed 255 characters.`)
               .refine(
                 (val) => isValidUsPhone(val) && val.replace(/\D/g, "").length >= 10,
                 { message: `${field.label} must be a valid 10-digit phone number (e.g. (555) 123-4567).` }
@@ -101,6 +105,7 @@ export function buildStepSchema(fields: FieldConfig[]) {
           : z
               .string()
               .trim()
+              .max(255, `${field.label} cannot exceed 255 characters.`)
               .refine(
                 (val) => isValidUsPhone(val),
                 { message: `${field.label} must be a valid 10-digit phone number (e.g. (555) 123-4567).` }
@@ -176,7 +181,16 @@ export function buildStepSchema(fields: FieldConfig[]) {
       }
 
       case "checkbox": {
-        const base = z.array(z.string());
+        let base = z.array(z.string());
+        if (optionValues.length > 0) {
+          base = base
+            .refine((items) => new Set(items).size === items.length, {
+              message: `${field.label} contains duplicate selections.`,
+            })
+            .refine((items) => items.every((i) => optionValues.includes(i)), {
+              message: `${field.label} contains an invalid option.`,
+            });
+        }
         schema = field.required
           ? base.min(1, `Select at least one option for ${field.label}.`)
           : base.optional().default([]);
@@ -185,14 +199,35 @@ export function buildStepSchema(fields: FieldConfig[]) {
 
       case "select":
       case "radio": {
-        schema = field.required
-          ? z.string().trim().min(1, `Please select an option for ${field.label}.`)
-          : z.string().optional().nullable();
+        if (field.required) {
+          schema = z
+            .string()
+            .trim()
+            .min(1, `Please select an option for ${field.label}.`)
+            .refine(
+              (val) => optionValues.length === 0 || optionValues.includes(val),
+              { message: `${field.label} contains an invalid option.` }
+            );
+        } else {
+          schema = z
+            .string()
+            .trim()
+            .refine(
+              (val) => !val || optionValues.length === 0 || optionValues.includes(val),
+              { message: `${field.label} contains an invalid option.` }
+            )
+            .or(z.literal(""))
+            .optional()
+            .nullable();
+        }
         break;
       }
 
       case "file": {
-        const base = z.array(z.any());
+        let base = z.array(z.any());
+        if (!field.multiple) {
+          base = base.max(1, `${field.label} allows only one file.`);
+        }
         schema = field.required
           ? base.min(1, `${field.label} is required. Please upload at least one file.`)
           : base.optional().default([]);

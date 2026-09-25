@@ -49,13 +49,20 @@ export function DynamicField({
   }, [field.options]);
 
   const normalizedAccept = useMemo(() => {
-    if (!field.accept) return undefined;
-    if (Array.isArray(field.accept)) {
-      return field.accept
-        .map((a) => (a === "images" ? "image/*" : a === "pdf" ? ".pdf" : a))
-        .join(",");
+    const mapGroup = (a: string) => {
+      if (a === "images") return ".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp";
+      if (a === "pdf") return ".pdf,application/pdf";
+      if (a === "word") return ".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+      return a;
+    };
+
+    if (!field.accept || (Array.isArray(field.accept) && field.accept.length === 0)) {
+      return ".png,.jpg,.jpeg,.webp,.pdf,.doc,.docx,image/png,image/jpeg,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
     }
-    return field.accept;
+    if (Array.isArray(field.accept)) {
+      return field.accept.map(mapGroup).join(",");
+    }
+    return mapGroup(field.accept);
   }, [field.accept]);
 
   return (
