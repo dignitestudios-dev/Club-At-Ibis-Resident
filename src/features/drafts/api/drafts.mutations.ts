@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { saveDraft, deleteDraft } from "./drafts.service";
+import { saveDraft, deleteDraft, deleteDrafts } from "./drafts.service";
 
 export function useSaveDraftMutation() {
   const queryClient = useQueryClient();
@@ -18,10 +18,13 @@ export function useSaveDraftMutation() {
 export function useDeleteDraftMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (draftId: string) => deleteDraft(draftId),
+    mutationFn: (draftIds: string | string[]) => deleteDrafts(draftIds),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["drafts"] });
       queryClient.invalidateQueries({ queryKey: ["requests"] });
     },
   });
 }
+
+export const useDeleteDraftsMutation = useDeleteDraftMutation;
+

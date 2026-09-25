@@ -22,6 +22,7 @@ export default function LoginForm() {
   const {
     form,
     onSubmit,
+    onInvalid,
     isPending,
     unverifiedEmail,
     handleResendVerification,
@@ -105,7 +106,7 @@ export default function LoginForm() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)} noValidate>
+      <form onSubmit={handleSubmit(onSubmit, onInvalid)} noValidate>
         <FieldGroup>
           <div className="auth-field-enter auth-stagger-2">
             <Controller

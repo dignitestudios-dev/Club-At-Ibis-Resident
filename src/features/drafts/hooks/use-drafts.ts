@@ -35,11 +35,29 @@ export function useDrafts(params?: { search?: string; page?: number; limit?: num
     [deleteDraftMutate, toast]
   );
 
+  const deleteDrafts = useCallback(
+    (ids: string[], onSettled?: () => void) => {
+      if (!ids.length) return;
+      deleteDraftMutate(ids, {
+        onSuccess: () => {
+          toast.success("Drafts discarded", `${ids.length} draft${ids.length > 1 ? "s have" : " has"} been permanently deleted.`);
+          onSettled?.();
+        },
+        onError: (error: any) => {
+          toast.error("Failed to discard drafts", error?.response?.data?.message || error?.message || "An unexpected error occurred.");
+          onSettled?.();
+        },
+      });
+    },
+    [deleteDraftMutate, toast]
+  );
+
   return {
     drafts,
     isLoading,
     isDeleting: isPending,
     deletingId,
     deleteDraft,
+    deleteDrafts,
   };
 }

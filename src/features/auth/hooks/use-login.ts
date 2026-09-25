@@ -39,6 +39,14 @@ export function useLogin() {
     defaultValues: { email: "", password: "" },
   });
 
+  function onInvalid(errors: import("react-hook-form").FieldErrors<LoginCredentials>) {
+    if (errors.password?.message === "Invalid credentials") {
+      toast.error("Invalid credentials");
+    } else if (errors.email?.message || errors.password?.message) {
+      toast.error(errors.email?.message || errors.password?.message || "Invalid credentials");
+    }
+  }
+
   function onSubmit(data: LoginCredentials) {
     if (isSubmittingRef.current || isPending) return;
     isSubmittingRef.current = true;
@@ -84,6 +92,7 @@ export function useLogin() {
   return {
     form,
     onSubmit,
+    onInvalid,
     isPending,
     unverifiedEmail,
     handleResendVerification,

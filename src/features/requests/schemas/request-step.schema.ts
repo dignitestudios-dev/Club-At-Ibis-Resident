@@ -43,18 +43,28 @@ export function isValidTime(value: string | undefined | null): boolean {
 }
 
 /**
- * Checks if a value is a valid finite number.
+ * Checks if a value is a valid non-negative finite number within max digit limit (15 digits).
  */
 export function isValidNumber(value: unknown): boolean {
   if (value === undefined || value === null || value === "") return true;
-  if (typeof value === "number") return !isNaN(value) && isFinite(value);
-  if (typeof value === "string") {
+  let num: number;
+  let strVal = "";
+  if (typeof value === "number") {
+    num = value;
+    strVal = String(value);
+  } else if (typeof value === "string") {
     const trimmed = value.trim();
     if (trimmed === "") return true;
-    const num = Number(trimmed);
-    return !isNaN(num) && isFinite(num);
+    num = Number(trimmed);
+    strVal = trimmed;
+  } else {
+    return false;
   }
-  return false;
+  if (isNaN(num) || !isFinite(num)) return false;
+  if (num < 0) return false;
+  const digitsOnly = strVal.replace(/\D/g, "");
+  if (digitsOnly.length > 15) return false;
+  return true;
 }
 
 export function buildStepSchema(fields: FieldConfig[]) {
@@ -164,16 +174,45 @@ export function buildStepSchema(fields: FieldConfig[]) {
               .union([z.number(), z.string().trim()])
               .refine(
                 (val) => {
-                  if (typeof val === "number") return !isNaN(val) && isFinite(val);
-                  return String(val).trim() !== "" && !isNaN(Number(val)) && isFinite(Number(val));
+                  if (val === "" || val === undefined || val === null) return false;
+                  const str = String(val).trim();
+                  return str !== "";
                 },
-                { message: `${field.label} must be a valid number.` }
+                { message: `${field.label} is required.` }
+              )
+              .refine(
+                (val) => {
+                  const num = Number(val);
+                  return !isNaN(num) && isFinite(num) && num >= 0;
+                },
+                { message: `${field.label} must be a positive number.` }
+              )
+              .refine(
+                (val) => {
+                  const str = String(val).trim();
+                  const digitsOnly = str.replace(/\D/g, "");
+                  return digitsOnly.length <= 15;
+                },
+                { message: `${field.label} cannot exceed 15 digits.` }
               )
           : z
               .union([z.number(), z.string().trim(), z.null(), z.undefined()])
               .refine(
-                (val) => isValidNumber(val),
-                { message: `${field.label} must be a valid number.` }
+                (val) => {
+                  if (val === undefined || val === null || val === "") return true;
+                  const num = Number(val);
+                  return !isNaN(num) && isFinite(num) && num >= 0;
+                },
+                { message: `${field.label} must be a positive number.` }
+              )
+              .refine(
+                (val) => {
+                  if (val === undefined || val === null || val === "") return true;
+                  const str = String(val).trim();
+                  const digitsOnly = str.replace(/\D/g, "");
+                  return digitsOnly.length <= 15;
+                },
+                { message: `${field.label} cannot exceed 15 digits.` }
               )
               .optional()
               .nullable();

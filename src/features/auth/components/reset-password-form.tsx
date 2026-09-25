@@ -193,14 +193,21 @@ export default function ResetPasswordForm({ token }: { token: string }) {
         </FieldGroup>
       </form>
 
-      <div className="text-center pt-1">
-        <button
-          type="button"
-          onClick={() => setIsTokenExpired(true)}
-          className="text-xs text-muted-foreground hover:text-primary underline cursor-pointer"
-        >
-          Need a new reset link? Resend here
-        </button>
+      <div className="space-y-3 text-center pt-1">
+        <div>
+          <button
+            type="button"
+            onClick={() => setIsTokenExpired(true)}
+            className="text-xs text-muted-foreground hover:text-primary underline cursor-pointer"
+          >
+            Need a new reset link? Resend here
+          </button>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          <Link href="/auth/login" className="font-medium text-primary hover:underline dark:text-amber-300">
+            Back to Sign In
+          </Link>
+        </p>
       </div>
     </div>
   );
