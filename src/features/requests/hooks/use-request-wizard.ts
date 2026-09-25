@@ -11,6 +11,7 @@ import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { clearWizardState } from "@/features/requests/utils/request-storage";
 import {
   autosaveDraft,
+  createDraftRequest,
 } from "@/features/requests/api/requests.service";
 import {
   useMigrateDraftFormMutation,
@@ -100,6 +101,42 @@ export function parseBackendErrors(err: any): ParsedBackendErrors {
   };
 }
 
+export function isCategoryArchivedError(err: any): boolean {
+  const code = err?.responseData?.code || err?.response?.data?.code || err?.code;
+  const message = (
+    err?.responseData?.message ||
+    err?.response?.data?.message ||
+    err?.message ||
+    ""
+  ).toLowerCase();
+  return (
+    code === "CATEGORY_ARCHIVED" ||
+    message.includes("archived") ||
+    message.includes("archived categories cannot be submitted")
+  );
+}
+
+export function isCategoryNotFoundError(err: any): boolean {
+  const code = err?.responseData?.code || err?.response?.data?.code || err?.code;
+  const message = (
+    err?.responseData?.message ||
+    err?.response?.data?.message ||
+    err?.message ||
+    ""
+  ).toLowerCase();
+  return (
+    code === "CATEGORY_NOT_FOUND" ||
+    code === "RESOURCE_NOT_FOUND" ||
+    code === "NOT_FOUND" ||
+    message.includes("active category not found") ||
+    message.includes("category not found")
+  );
+}
+
+export function isCategoryUnavailableError(err: any): boolean {
+  return isCategoryArchivedError(err) || isCategoryNotFoundError(err);
+}
+
 export function isStaleFormError(err: any): boolean {
   const errCode = err?.responseData?.code || err?.response?.data?.code || err?.code;
   const errMsg = err?.responseData?.message || err?.response?.data?.message || err?.message || "";
@@ -130,7 +167,7 @@ export function useRequestWizard(
   const queryClient = useQueryClient();
   const user = useCurrentUser();
   const toast = useToast();
-  const queryClient = useQueryClient();
+  // const queryClient = useQueryClient();
 
   const migrateDraftMutate = useMigrateDraftFormMutation();
   const submitRequestMutate = useSubmitRequestMutation();
@@ -258,6 +295,7 @@ export function useRequestWizard(
   );
 
   const isRedirectingArchivedRef = useRef(false);
+  const draftInitializingRef = useRef(false);
 
   const handleArchivedRedirect = useCallback(
     (err: any) => {
@@ -373,14 +411,14 @@ export function useRequestWizard(
         },
         idempotencyKey
       )
-        .then((record) => {
+        .then((record: RequestRecord) => {
           setCurrentDraftId(record.id);
           currentDraftIdRef.current = record.id;
           setDraftRevision(record.draftRevision ?? 0);
           draftRevisionRef.current = record.draftRevision ?? 0;
           setReference(record.reference || record.code || null);
         })
-        .catch((err) => {
+        .catch((err: unknown) => {
           console.error("Failed to initialize draft request:", err);
           if (isCategoryUnavailableError(err)) {
             handleArchivedRedirect(err);

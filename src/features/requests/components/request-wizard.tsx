@@ -582,7 +582,7 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
       initialDraft={effectiveDraft}
       onChangeType={() => {
         clearWizardState();
-        setRequestTypeId(null);
+        setIsChoosingCategory(true);
         setCreatedDraft(null);
         queryClient.invalidateQueries({ queryKey: ["categories"] });
         queryClient.refetchQueries({ queryKey: ["categories"] });
