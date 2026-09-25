@@ -41,14 +41,6 @@ export function DynamicField({
   const hasError = !disabled && !!error;
   const errorId = hasError ? `${field.id}-error` : undefined;
 
-  const isRequired =
-    field.required ||
-    field.id === "propertyAddress" ||
-    field.id === "lotNo" ||
-    field.id === "projectDescription" ||
-    field.id === "contractorName" ||
-    field.id === "contractorNumber";
-
   const normalizedOptions: FieldOption[] = useMemo(() => {
     if (!field.options) return [];
     return field.options.map((opt) =>
@@ -142,7 +134,7 @@ export function DynamicField({
               <Field data-invalid={hasError} data-disabled={disabled}>
                 <FieldLabel htmlFor={field.id} className="flex items-center gap-1">
                   <span>{field.label}</span>
-                  {isRequired && !disabled && (
+                  {field.required && !disabled && (
                     <span className="text-red-500 font-bold text-sm leading-none" aria-hidden="true">*</span>
                   )}
                   {!disabled && <FieldHelpTooltip content={field.helpText} />}
@@ -154,7 +146,7 @@ export function DynamicField({
                     value={(rhf.value as string) ?? ""}
                     onChange={rhf.onChange}
                     disabled={disabled}
-                    aria-required={isRequired}
+                    aria-required={field.required}
                     aria-invalid={hasError}
                     aria-describedby={errorId}
                   />
@@ -192,14 +184,13 @@ export function DynamicField({
                 </FieldContent>
               </Field>
             );
-          }
 
           case "number":
             return (
               <Field data-invalid={hasError} data-disabled={disabled}>
                 <FieldLabel htmlFor={field.id} className="flex items-center gap-1">
                   <span>{field.label}</span>
-                  {isRequired && !disabled && (
+                  {field.required && !disabled && (
                     <span className="text-red-500 font-bold text-sm leading-none" aria-hidden="true">*</span>
                   )}
                   {!disabled && <FieldHelpTooltip content={field.helpText} />}
@@ -213,7 +204,7 @@ export function DynamicField({
                     value={(rhf.value as number | string) ?? ""}
                     onChange={rhf.onChange}
                     disabled={disabled}
-                    aria-required={isRequired}
+                    aria-required={field.required}
                     aria-invalid={hasError}
                     aria-describedby={errorId}
                   />
@@ -272,43 +263,6 @@ export function DynamicField({
                   {!disabled && <FieldHelpTooltip content={field.helpText} />}
                 </FieldLabel>
                 <FieldContent>
-                  <Textarea
-                    id={field.id}
-                    placeholder={field.placeholder}
-                    rows={3}
-                    maxLength={5000}
-                    value={(rhf.value as string) ?? ""}
-                    onChange={rhf.onChange}
-                    disabled={disabled}
-                    aria-required={field.required}
-                    aria-invalid={hasError}
-                    aria-describedby={errorId}
-                  />
-                  {!disabled && (
-                    <div className="flex justify-end mt-1">
-                      <span className="text-[11px] text-muted-foreground/70 tabular-nums">
-                        {((rhf.value as string) ?? "").length}/5000
-                      </span>
-                    </div>
-                  )}
-                  {hasError && (
-                    <FieldError id={errorId} errors={error ? [error as { message?: string }] : []} />
-                  )}
-                </FieldContent>
-              </Field>
-            );
-
-          case "select":
-            return (
-              <Field data-invalid={hasError} data-disabled={disabled}>
-                <FieldLabel htmlFor={field.id} className="flex items-center gap-1">
-                  <span>{field.label}</span>
-                  {isRequired && !disabled && (
-                    <span className="text-red-500 font-bold text-sm leading-none" aria-hidden="true">*</span>
-                  )}
-                  {!disabled && <FieldHelpTooltip content={field.helpText} />}
-                </FieldLabel>
-                <FieldContent>
                   <Select
                     items={normalizedOptions}
                     value={(rhf.value as string) ?? ""}
@@ -318,7 +272,7 @@ export function DynamicField({
                     <SelectTrigger
                       id={field.id}
                       className="w-full"
-                      aria-required={isRequired}
+                      aria-required={field.required}
                       aria-invalid={hasError}
                       aria-describedby={errorId}
                       disabled={disabled}
@@ -345,7 +299,7 @@ export function DynamicField({
               <FieldSet data-invalid={hasError} data-disabled={disabled} aria-describedby={errorId}>
                 <FieldLegend variant="label" className="flex items-center gap-1 text-sm font-medium text-foreground">
                   <span>{field.label}</span>
-                  {isRequired && !disabled && (
+                  {field.required && !disabled && (
                     <span className="text-red-500 font-bold text-sm leading-none" aria-hidden="true">*</span>
                   )}
                   {!disabled && <FieldHelpTooltip content={field.helpText} />}
@@ -355,7 +309,7 @@ export function DynamicField({
                     value={(rhf.value as string) ?? ""}
                     onValueChange={rhf.onChange}
                     disabled={disabled}
-                    aria-required={isRequired}
+                    aria-required={field.required}
                   >
                     {normalizedOptions.map((opt) => (
                       <FieldLabel
@@ -384,7 +338,7 @@ export function DynamicField({
               <FieldSet data-invalid={hasError} data-disabled={disabled} aria-describedby={errorId}>
                 <FieldLegend variant="label" className="flex items-center gap-1 text-sm font-medium text-foreground">
                   <span>{field.label}</span>
-                  {isRequired && !disabled && (
+                  {field.required && !disabled && (
                     <span className="text-red-500 font-bold text-sm leading-none" aria-hidden="true">*</span>
                   )}
                   {!disabled && <FieldHelpTooltip content={field.helpText} />}
@@ -430,7 +384,7 @@ export function DynamicField({
               <Field data-invalid={hasError} data-disabled={disabled}>
                 <FieldLabel htmlFor={field.id} className="flex items-center gap-1">
                   <span>{field.label}</span>
-                  {isRequired && !disabled && (
+                  {field.required && !disabled && (
                     <span className="text-red-500 font-bold text-sm leading-none" aria-hidden="true">*</span>
                   )}
                   {!disabled && <FieldHelpTooltip content={field.helpText} />}
@@ -451,23 +405,12 @@ export function DynamicField({
               </Field>
             );
 
-          default: {
-            const maxLen =
-              field.id === "propertyAddress"
-                ? 200
-                : field.id === "contractorName"
-                ? 100
-                : field.id === "contractorNumber"
-                ? 11
-                : field.id === "lotNo"
-                ? 30
-                : field.maxLength ?? 255;
-
+          default:
             return (
               <Field data-invalid={hasError} data-disabled={disabled}>
                 <FieldLabel htmlFor={field.id} className="flex items-center gap-1">
                   <span>{field.label}</span>
-                  {isRequired && !disabled && (
+                  {field.required && !disabled && (
                     <span className="text-red-500 font-bold text-sm leading-none" aria-hidden="true">*</span>
                   )}
                   {!disabled && <FieldHelpTooltip content={field.helpText} />}
@@ -479,14 +422,9 @@ export function DynamicField({
                     maxLength={255}
                     placeholder={field.placeholder}
                     value={(rhf.value as string) ?? ""}
-                    onChange={(e) => {
-                      if (field.id === "contractorNumber") {
-                        e.target.value = e.target.value.replace(/\D/g, "");
-                      }
-                      rhf.onChange(e);
-                    }}
+                    onChange={rhf.onChange}
                     disabled={disabled}
-                    aria-required={isRequired}
+                    aria-required={field.required}
                     aria-invalid={hasError}
                     aria-describedby={errorId}
                   />
@@ -496,9 +434,9 @@ export function DynamicField({
                 </FieldContent>
               </Field>
             );
-          }
         }
       }}
     />
   );
 }
+
