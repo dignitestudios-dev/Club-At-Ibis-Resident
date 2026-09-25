@@ -206,10 +206,28 @@ export function DynamicField({
                   <Input
                     id={field.id}
                     type="number"
+                    min={0}
                     step="any"
-                    placeholder={field.placeholder}
+                    maxLength={15}
+                    placeholder={field.placeholder || "0"}
                     value={(rhf.value as number | string) ?? ""}
-                    onChange={rhf.onChange}
+                    onKeyDown={(e) => {
+                      if (e.key === "-" || e.key === "e" || e.key === "E" || e.key === "+") {
+                        e.preventDefault();
+                      }
+                    }}
+                    onChange={(e) => {
+                      let val = e.target.value;
+                      if (val.startsWith("-")) {
+                        val = val.replace(/^-+/, "");
+                      }
+                      const parts = val.split(".");
+                      if (parts[0] && parts[0].length > 15) {
+                        parts[0] = parts[0].slice(0, 15);
+                        val = parts.join(".");
+                      }
+                      rhf.onChange(val);
+                    }}
                     disabled={disabled}
                     aria-required={field.required}
                     aria-invalid={hasError}

@@ -3,11 +3,13 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { PlusCircle, FileText, FileEdit, History } from "lucide-react";
+import { PlusCircle, FileText, FileEdit, History, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { SearchInput } from "@/components/shared/search-input";
 import { RequestListItem } from "@/features/requests/components/request-list-item";
 import { DraftCard } from "@/features/drafts/components/draft-card";
@@ -106,7 +108,13 @@ export default function RequestsListPage() {
 
   const toast = useToast();
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [selectedDraftIds, setSelectedDraftIds] = useState<string[]>([]);
+  const [confirmingBatchDelete, setConfirmingBatchDelete] = useState(false);
   const { mutate: deleteDraftMutate, isPending: isDeleting } = useDeleteDraftMutation();
+
+  useEffect(() => {
+    setSelectedDraftIds((prev) => prev.filter((id) => draftRequests.some((d) => d.id === id)));
+  }, [draftRequests]);
 
   const handleDeleteDraft = (id: string, onSettled?: () => void) => {
     setDeletingId(id);
@@ -120,6 +128,38 @@ export default function RequestsListPage() {
         setDeletingId(null);
         toast.error("Failed to discard draft", error?.response?.data?.message || error?.message || "An unexpected error occurred.");
         onSettled?.();
+      },
+    });
+  };
+
+  const isAllDraftsSelected = draftRequests.length > 0 && selectedDraftIds.length === draftRequests.length;
+  const selectedDraftsCount = selectedDraftIds.length;
+
+  const handleToggleSelectDraft = (id: string, selected: boolean) => {
+    setSelectedDraftIds((prev) =>
+      selected ? [...prev, id] : prev.filter((item) => item !== id)
+    );
+  };
+
+  const handleToggleSelectAllDrafts = () => {
+    if (isAllDraftsSelected) {
+      setSelectedDraftIds([]);
+    } else {
+      setSelectedDraftIds(draftRequests.map((d) => d.id));
+    }
+  };
+
+  const handleBatchDeleteDrafts = () => {
+    if (!selectedDraftIds.length) return;
+    deleteDraftMutate(selectedDraftIds, {
+      onSuccess: () => {
+        const count = selectedDraftIds.length;
+        setSelectedDraftIds([]);
+        setConfirmingBatchDelete(false);
+        toast.success("Drafts discarded", `${count} draft${count > 1 ? "s have" : " has"} been permanently deleted.`);
+      },
+      onError: (error: any) => {
+        toast.error("Failed to discard drafts", error?.response?.data?.message || error?.message || "An unexpected error occurred.");
       },
     });
   };
@@ -372,6 +412,55 @@ export default function RequestsListPage() {
             />
           </div>
 
+          {/* Batch selection and action toolbar */}
+          {!isLoadingRequests && draftRequests.length > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/80 bg-muted/40 px-4 py-2.5">
+              <div className="flex items-center gap-2.5">
+                <Checkbox
+                  id="select-all-drafts-tab"
+                  checked={isAllDraftsSelected}
+                  onCheckedChange={handleToggleSelectAllDrafts}
+                  aria-label={isAllDraftsSelected ? "Deselect all drafts" : "Select all drafts"}
+                  className="size-4.5 rounded-[5px]"
+                />
+                <label
+                  htmlFor="select-all-drafts-tab"
+                  className="text-xs font-medium text-foreground cursor-pointer select-none"
+                >
+                  {isAllDraftsSelected ? "Deselect All" : "Select All"} ({draftRequests.length})
+                </label>
+                {selectedDraftsCount > 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    · <strong className="text-foreground">{selectedDraftsCount}</strong> selected
+                  </span>
+                )}
+              </div>
+
+              {selectedDraftsCount > 0 && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedDraftIds([])}
+                    className="h-8 px-2.5 text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setConfirmingBatchDelete(true)}
+                    disabled={isDeleting}
+                    className="h-8 gap-1.5 px-3 text-xs shadow-2xs"
+                  >
+                    <Trash2 className="size-3.5" />
+                    <span>Discard Selected ({selectedDraftsCount})</span>
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+
           {isLoadingRequests && (
             <div
               className={cn(
@@ -442,14 +531,29 @@ export default function RequestsListPage() {
                   key={draft.id}
                   draft={draft}
                   viewMode={viewMode}
+                  selected={selectedDraftIds.includes(draft.id)}
+                  onToggleSelect={handleToggleSelectDraft}
                   onDelete={handleDeleteDraft}
-                  isDeleting={deletingId === draft.id}
+                  isDeleting={isDeleting && (deletingId === draft.id || selectedDraftIds.includes(draft.id))}
                   className="animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-both"
                   style={{ animationDelay: `${Math.min(idx * 50, 350)}ms` }}
                 />
               ))}
             </div>
           )}
+
+          <ConfirmDialog
+            open={confirmingBatchDelete}
+            onOpenChange={(open) => {
+              if (!isDeleting) setConfirmingBatchDelete(open);
+            }}
+            title={`Discard ${selectedDraftsCount} Draft${selectedDraftsCount > 1 ? "s" : ""} Permanently?`}
+            description={`Are you sure you want to discard ${selectedDraftsCount} selected draft${selectedDraftsCount > 1 ? "s" : ""}? All submittals and uploaded files will be permanently deleted and cannot be recovered.`}
+            confirmLabel={isDeleting ? "Discarding..." : `Discard ${selectedDraftsCount} Draft${selectedDraftsCount > 1 ? "s" : ""}`}
+            destructive={true}
+            loading={isDeleting}
+            onConfirm={handleBatchDeleteDrafts}
+          />
         </div>
       )}
     </div>

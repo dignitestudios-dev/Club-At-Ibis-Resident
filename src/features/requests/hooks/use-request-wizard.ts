@@ -10,7 +10,6 @@ import { useCurrentUser } from "@/hooks/use-current-user";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { clearWizardState } from "@/features/requests/utils/request-storage";
 import {
-  createDraftRequest,
   autosaveDraft,
 } from "@/features/requests/api/requests.service";
 import {
@@ -29,6 +28,96 @@ export interface WizardStep {
   title: string;
   description: string;
   fields: FieldConfig[];
+}
+
+export interface ParsedBackendErrors {
+  fieldErrors: Record<string, string>;
+  generalErrors: string[];
+}
+
+export function parseBackendErrors(err: any): ParsedBackendErrors {
+  const fieldErrors: Record<string, string> = {};
+  const generalErrors: string[] = [];
+
+  const responseData = err?.responseData || err?.response?.data || err;
+  const details = responseData?.details;
+  const code = responseData?.code || err?.code;
+  const mainMessage = responseData?.message || err?.message || "An unexpected error occurred.";
+
+  if (Array.isArray(details)) {
+    for (const issue of details) {
+      if (typeof issue === "string") {
+        generalErrors.push(issue);
+      } else if (issue && typeof issue === "object") {
+        const issueMsg = issue.message || mainMessage;
+        let fieldId = issue.fieldId;
+
+        if (!fieldId && typeof issue.path === "string") {
+          const parts = issue.path.split(".");
+          const lastPart = parts[parts.length - 1];
+          if (lastPart === "hoaConfirmed") {
+            fieldId = "hoaApproved";
+          } else {
+            fieldId = lastPart;
+          }
+        }
+
+        if (fieldId) {
+          if (fieldId === "hoaConfirmed") fieldId = "hoaApproved";
+          fieldErrors[fieldId] = issueMsg;
+        } else {
+          generalErrors.push(issueMsg);
+        }
+      }
+    }
+  } else if (details && typeof details === "object") {
+    if (code === "FORM_VERSION_STALE") {
+      // Handled exclusively by the top Stale Form Upgrade banner
+    } else if (code === "STALE_DRAFT_REVISION") {
+      generalErrors.push("The draft was modified in another session. Synchronizing with latest version...");
+    } else {
+      generalErrors.push(mainMessage);
+    }
+  } else {
+    if (code === "HOA_CONFIRMATION_REQUIRED") {
+      fieldErrors["hoaApproved"] = "HOA approval confirmation is required before submission.";
+    } else if (code === "TITLE_REQUIRED") {
+      generalErrors.push("Request title is required.");
+    } else if (code === "CATEGORY_ARCHIVED") {
+      generalErrors.push("This category is archived and cannot be submitted.");
+    } else if (code === "DEFAULT_REVIEWER_NOT_CONFIGURED") {
+      generalErrors.push("No intake reviewer is currently configured. Please contact the administrator.");
+    } else if (mainMessage) {
+      generalErrors.push(mainMessage);
+    }
+  }
+
+  const uniqueGeneralErrors = Array.from(new Set(generalErrors.filter(Boolean)));
+
+  return {
+    fieldErrors,
+    generalErrors: uniqueGeneralErrors,
+  };
+}
+
+export function isStaleFormError(err: any): boolean {
+  const errCode = err?.responseData?.code || err?.response?.data?.code || err?.code;
+  const errMsg = err?.responseData?.message || err?.response?.data?.message || err?.message || "";
+  return (
+    errCode === "FORM_VERSION_STALE" ||
+    (typeof errMsg === "string" && (
+      errMsg.includes("FORM_VERSION_STALE") ||
+      errMsg.includes("form changed while this draft was being completed")
+    ))
+  );
+}
+
+function extractCurrentRevision(err: any): number | null {
+  const details = err?.responseData?.details || err?.response?.data?.details;
+  if (details && typeof details.currentDraftRevision === "number") {
+    return details.currentDraftRevision;
+  }
+  return null;
 }
 
 export function useRequestWizard(
@@ -81,6 +170,7 @@ export function useRequestWizard(
   const [submissionErrors, setSubmissionErrors] = useState<string[]>([]);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isStaleForm, setIsStaleForm] = useState(false);
+  const [hasMigratedNotice, setHasMigratedNotice] = useState(false);
   const [confirmingChangeCategory, setConfirmingChangeCategory] = useState(false);
 
   // 1. Partition dynamic fields into Step 1 (Common) and Step 2 (Category-Specific)
@@ -261,7 +351,6 @@ export function useRequestWizard(
   );
 
   // Synchronous refs to prevent duplicate calls and loops
-  const draftInitializingRef = useRef(false);
   const currentDraftIdRef = useRef<string | null>(currentDraftId);
   currentDraftIdRef.current = currentDraftId;
 
@@ -390,6 +479,9 @@ export function useRequestWizard(
             handleArchivedRedirect(err);
             return;
           }
+          if (isStaleFormError(err)) {
+            throw err;
+          }
           const remoteRev = extractCurrentRevision(err);
           if (remoteRev !== null) {
             draftRevisionRef.current = remoteRev;
@@ -417,11 +509,16 @@ export function useRequestWizard(
           handleArchivedRedirect(err);
           return;
         }
-        const message = err?.message || "";
-        if (message.includes("FORM_VERSION_STALE") || err?.statusCode === 409 || err?.response?.status === 409) {
-          if (message.includes("FORM_VERSION_STALE")) {
-            setIsStaleForm(true);
-          } else if (message.includes("STALE_DRAFT_REVISION")) {
+        if (isStaleFormError(err)) {
+          setIsStaleForm(true);
+          toast.error(
+            "Category Form Updated",
+            "The category form was updated by an administrator. Please upgrade your draft to proceed."
+          );
+        } else {
+          const errCode = err?.responseData?.code || err?.response?.data?.code || err?.code;
+          const errMsg = err?.responseData?.message || err?.response?.data?.message || err?.message || "";
+          if (errCode === "STALE_DRAFT_REVISION" || errMsg.includes("STALE_DRAFT_REVISION")) {
             const remoteRev = extractCurrentRevision(err);
             if (remoteRev !== null) {
               draftRevisionRef.current = remoteRev;
@@ -509,6 +606,9 @@ export function useRequestWizard(
           handleArchivedRedirect(err);
           return;
         }
+        if (isStaleFormError(err)) {
+          throw err;
+        }
         const remoteRev = extractCurrentRevision(err);
         if (remoteRev !== null) {
           draftRevisionRef.current = remoteRev;
@@ -540,7 +640,15 @@ export function useRequestWizard(
         handleArchivedRedirect(err);
         return;
       }
-      toast.error("Failed to save draft.");
+      if (isStaleFormError(err)) {
+        setIsStaleForm(true);
+        toast.error(
+          "Category Form Updated",
+          "The category form was updated by an administrator. Please upgrade your draft to proceed."
+        );
+      } else {
+        toast.error("Failed to save draft.");
+      }
     } finally {
       setIsSavingDraft(false);
     }
@@ -597,6 +705,7 @@ export function useRequestWizard(
             draftRevisionRef.current = nextRev;
             setIsStaleForm(false);
             setSubmissionErrors([]);
+            setHasMigratedNotice(true);
 
             queryClient.invalidateQueries({ queryKey: ["categories"] });
             queryClient.invalidateQueries({ queryKey: ["drafts"] });
@@ -627,11 +736,8 @@ export function useRequestWizard(
 
             form.reset(merged);
 
-            // Determine if common fields are missing any required value
-            const commonReqMissing = commonFields.some(
-              (f) => f.required && (merged[f.id] === undefined || merged[f.id] === null || merged[f.id] === "")
-            );
-            const targetStepIdx = commonReqMissing ? 0 : 1;
+            // Redirect user to the Category Details dynamic form (stepIndex = 1)
+            const targetStepIdx = newFields.length > 0 || categoryFields.length > 0 ? 1 : 0;
             setStepIndex(targetStepIdx);
             window.scrollTo({ top: 0, behavior: "smooth" });
 
@@ -655,9 +761,9 @@ export function useRequestWizard(
             lastSavedSignatureRef.current = JSON.stringify(signaturePayload);
             setHasUnsavedChanges(false);
 
-            toast.success(
-              "Form upgraded successfully",
-              "New category fields have been loaded. Please complete any required questions before submitting."
+            toast.info(
+              "Form upgraded to latest version",
+              "Please review the updated category fields below and update your responses accordingly before submitting."
             );
           },
           onError: (err: any) => {
@@ -757,6 +863,16 @@ export function useRequestWizard(
       draftRevisionRef.current = currentRevision;
       lastSavedSignatureRef.current = JSON.stringify(payload);
     } catch (err: any) {
+      if (isStaleFormError(err)) {
+        isSubmittingRef.current = false;
+        setIsSubmitting(false);
+        setIsStaleForm(true);
+        toast.error(
+          "Category Form Updated",
+          "The category form was updated by an administrator. Please upgrade your draft to proceed."
+        );
+        return;
+      }
       const remoteRev = extractCurrentRevision(err);
       if (remoteRev !== null) {
         currentRevision = remoteRev;
@@ -771,7 +887,17 @@ export function useRequestWizard(
           currentRevision = saved.draftRevision ?? remoteRev + 1;
           setDraftRevision(currentRevision);
           draftRevisionRef.current = currentRevision;
-        } catch {
+        } catch (innerErr: any) {
+          if (isStaleFormError(innerErr)) {
+            isSubmittingRef.current = false;
+            setIsSubmitting(false);
+            setIsStaleForm(true);
+            toast.error(
+              "Category Form Updated",
+              "The category form was updated by an administrator. Please upgrade your draft to proceed."
+            );
+            return;
+          }
           // Proceed with submission attempt
         }
       }
@@ -829,13 +955,7 @@ export function useRequestWizard(
               });
             }
 
-            const errCode = err?.responseData?.code || err?.response?.data?.code || err?.code;
-            const errMsg = err?.responseData?.message || err?.response?.data?.message || err?.message || "";
-            const isVersionStale =
-              errCode === "FORM_VERSION_STALE" ||
-              errMsg.includes("FORM_VERSION_STALE") ||
-              errMsg.includes("form changed while this draft was being completed");
-
+            const isVersionStale = isStaleFormError(err);
             if (isVersionStale) {
               setIsStaleForm(true);
             }
@@ -884,6 +1004,8 @@ export function useRequestWizard(
     hasUnsavedChanges,
     lastSavedAt,
     isStaleForm,
+    hasMigratedNotice,
+    dismissMigratedNotice: () => setHasMigratedNotice(false),
     reference,
     currentDraftId,
     handleMigrateForm,

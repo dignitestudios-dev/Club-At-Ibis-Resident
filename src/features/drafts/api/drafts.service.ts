@@ -78,6 +78,25 @@ export async function saveDraft(payload: SaveDraftPayload): Promise<RequestDraft
   return toDraft(created);
 }
 
-export async function deleteDraft(id: string): Promise<void> {
-  await axiosInstance.delete(`/requests/${id}`);
+export async function deleteDrafts(ids: string[] | string): Promise<{
+  deletedCount: number;
+  deletedRequests: Array<{ id: string; reference: string }>;
+}> {
+  const normalizedIds = Array.isArray(ids) ? ids : [ids];
+  const response = await axiosInstance.delete<{
+    success: boolean;
+    message: string;
+    data: {
+      deletedCount: number;
+      deletedRequests: Array<{ id: string; reference: string }>;
+    };
+  }>("/requests", {
+    data: { ids: normalizedIds },
+  });
+  return response.data.data;
 }
+
+export async function deleteDraft(id: string): Promise<void> {
+  await deleteDrafts([id]);
+}
+

@@ -13,6 +13,8 @@ import {
   Layers,
   CheckCircle2,
   AlertTriangle,
+  Info,
+  X,
   Lock,
   FileCheck2,
   Trash2,
@@ -71,13 +73,14 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
   const queryClient = useQueryClient();
   const toast = useToast();
   const draftId = draftIdProp || searchParams.get("draftId");
-  const { data: draft, isLoading: isLoadingDraft } = useDraftDetailQuery(draftId ?? undefined);
-
+  const [isChoosingCategory, setIsChoosingCategory] = useState(false);
   const [createdDraft, setCreatedDraft] = useState<any>(null);
   const [initializingCategory, setInitializingCategory] = useState<ActiveCategory | null>(null);
 
-  const effectiveDraft = draft || createdDraft;
-  const effectiveDraftId = draftId || createdDraft?.id;
+  const effectiveDraftId = isChoosingCategory ? undefined : (draftId ?? undefined);
+  const { data: draft, isLoading: isLoadingDraft } = useDraftDetailQuery(effectiveDraftId);
+
+  const effectiveDraft = isChoosingCategory ? null : (draft || createdDraft);
 
   const {
     data: categoriesResult,
@@ -86,24 +89,18 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
     refetch: refetchCategories,
   } = useActiveCategoriesQuery();
 
-  const [requestTypeId, setRequestTypeId] = useState<string | null>(null);
-
-  // Clear any legacy storage on mount if starting fresh
+  // Clear legacy storage and state when starting fresh or navigating to /requests/new
   useEffect(() => {
     if (!draftId) {
       clearWizardState();
+      setCreatedDraft(null);
+      setIsChoosingCategory(false);
     }
   }, [draftId]);
 
-  // Sync category ID if resuming from draft
-  useEffect(() => {
-    const catId = effectiveDraft?.categoryId || effectiveDraft?.requestTypeId;
-    if (catId && !requestTypeId) {
-      setRequestTypeId(catId);
-    }
-  }, [effectiveDraft, requestTypeId]);
-
-  const activeTypeId = requestTypeId || effectiveDraft?.categoryId || effectiveDraft?.requestTypeId || null;
+  const activeTypeId = isChoosingCategory
+    ? null
+    : (effectiveDraft?.categoryId || effectiveDraft?.requestTypeId || null);
 
   // Fetch live category form definition once a category is selected
   const {
@@ -188,6 +185,7 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
       : null);
 
   async function handleSelectCategory(cat: ActiveCategory) {
+    setIsChoosingCategory(false);
     setInitializingCategory(cat);
     try {
       const key = `create-draft-${cat.id}-${Date.now()}`;
@@ -202,7 +200,6 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
       queryClient.setQueryData(["drafts", "detail", newDraft.id], newDraft);
       queryClient.invalidateQueries({ queryKey: ["drafts"] });
       setCreatedDraft(newDraft as any);
-      setRequestTypeId(cat.id);
       toast.success("Draft initialized", `Reference: ${newDraft.reference || newDraft.code}`);
       router.replace(`/requests/new?draftId=${newDraft.id}`);
     } catch (err: any) {
@@ -244,6 +241,13 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
     }
   }
 
+  const handleResetToCategorySelection = () => {
+    clearWizardState();
+    setIsChoosingCategory(true);
+    setCreatedDraft(null);
+    router.replace("/requests/new");
+  };
+
   if (initializingCategory) {
     return (
       <div className="space-y-6 animate-in fade-in duration-300">
@@ -268,7 +272,7 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
     );
   }
 
-  if (draftId && isLoadingDraft) {
+  if (!isChoosingCategory && draftId && isLoadingDraft) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-14 w-1/3 rounded-lg" />
@@ -279,7 +283,7 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
   }
 
   // Handle non-existent draft ID in route
-  if (draftId && !isLoadingDraft && !draft) {
+  if (!isChoosingCategory && draftId && !isLoadingDraft && !draft) {
     return (
       <div className="space-y-6 animate-in fade-in duration-300">
         <PageHeader
@@ -295,7 +299,7 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
               <Button nativeButton={false} render={<Link href="/requests" />} variant="outline">
                 Back to All Requests
               </Button>
-              <Button nativeButton={false} render={<Link href="/requests/new" />}>
+              <Button onClick={handleResetToCategorySelection}>
                 Start New Request
               </Button>
             </div>
@@ -306,7 +310,7 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
   }
 
   // Handle already-submitted / non-draft requests accessed via new/draft route
-  if (draft && draft.status && draft.status !== "draft") {
+  if (!isChoosingCategory && draft && draft.status && draft.status !== "draft") {
     const isUnderReview = draft.status === "submitted" || draft.status === "under_review" || draft.status === "resubmitted";
     const isChangesRequired = draft.status === "changes_required";
     const isClosed = ["approved", "rejected", "completed", "withdrawn"].includes(draft.status);
@@ -544,15 +548,7 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => {
-                  clearWizardState();
-                  setRequestTypeId(null);
-                  if (typeof window !== "undefined") {
-                    window.location.href = destination;
-                  } else {
-                    router.replace(destination);
-                  }
-                }}
+                onClick={handleResetToCategorySelection}
               >
                 <ArrowLeft className="size-3.5 mr-1.5" />
                 Go to {destinationLabel}
@@ -629,6 +625,8 @@ function CategoryFormWizard({
     hasUnsavedChanges,
     lastSavedAt,
     isStaleForm,
+    hasMigratedNotice,
+    dismissMigratedNotice,
     reference,
     currentDraftId,
     handleMigrateForm,
@@ -770,6 +768,30 @@ function CategoryFormWizard({
         </div>
       )}
 
+      {hasMigratedNotice && !isStaleForm && (
+        <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+          <Alert className="relative border-sky-300/90 bg-sky-50/95 dark:border-sky-800/80 dark:bg-sky-950/50 text-sky-950 dark:text-sky-100 shadow-xs ring-1 ring-sky-300/40 dark:ring-sky-700/30">
+            <Info className="size-5 text-sky-600 dark:text-sky-400 shrink-0 mt-0.5" />
+            <div className="flex-1 pr-6">
+              <AlertTitle className="font-semibold text-base text-sky-950 dark:text-sky-100">
+                Form Upgraded to Latest Version
+              </AlertTitle>
+              <AlertDescription className="mt-1 text-sm text-sky-900/90 dark:text-sky-200/90 leading-relaxed">
+                The administrator updated the questions and fields for this category. Please review the updated form below, update your answers and uploaded documents accordingly, and proceed with your submission.
+              </AlertDescription>
+            </div>
+            <button
+              type="button"
+              onClick={dismissMigratedNotice}
+              className="absolute top-3 right-3 p-1 rounded-md text-sky-700/70 hover:text-sky-950 hover:bg-sky-200/50 dark:text-sky-300/70 dark:hover:text-sky-100 dark:hover:bg-sky-900/50 transition-colors cursor-pointer"
+              aria-label="Dismiss upgrade notice"
+            >
+              <X className="size-4" />
+            </button>
+          </Alert>
+        </div>
+      )}
+
       <Stepper steps={stepperSteps} currentIndex={stepIndex} />
 
       <form onSubmit={onSubmit}>
@@ -807,7 +829,7 @@ function CategoryFormWizard({
           )}
 
           {isReviewStep && (
-            <div className="space-y-5">
+            <div className="space-y-5 min-w-0">
               <div>
                 <h2 className="font-heading text-xl font-medium text-foreground">
                   Review &amp; Submit
@@ -825,7 +847,7 @@ function CategoryFormWizard({
                     <p className="text-xs text-muted-foreground">
                       Please review and fix the following items before submitting:
                     </p>
-                    <ul className="list-disc list-inside space-y-1 text-xs">
+                    <ul className="list-disc list-inside space-y-1 text-xs break-words [overflow-wrap:anywhere]">
                       {submissionErrors.map((err, i) => (
                         <li key={i}>{err}</li>
                       ))}
