@@ -97,7 +97,17 @@ axiosInstance.interceptors.response.use(
       clearSessionAndRedirect();
     }
 
-    if (status === 403) {
+    // A 403 on an /auth/* call (login, registration, password flows, email
+    // verification) is a pre-auth/self-auth business rule — e.g.
+    // EMAIL_VERIFICATION_REQUIRED or ACCOUNT_SETUP_REQUIRED on login —
+    // meant to be shown inline by that form's own error handler, not
+    // treated as "you lack permission for an authenticated action" and
+    // bounced to /dashboard. Without this check, a failed login attempt
+    // would show the error toast and then get silently navigated away
+    // (bouncing back to /auth/login via the proxy since there's no
+    // session), wiping the just-shown error off the screen.
+    const isAuthEndpoint = typeof error.config?.url === "string" && error.config.url.includes("/auth/");
+    if (status === 403 && !isAuthEndpoint) {
       handleForbidden();
     }
 

@@ -19,7 +19,6 @@ import { RequestDetailAlerts } from "@/features/requests/components/detail/reque
 import { RequestDetailSidebar } from "@/features/requests/components/detail/request-detail-sidebar";
 import { RequestDocumentsTab } from "@/features/requests/components/detail/request-documents-tab";
 import { useRequestDetail } from "@/features/requests/hooks/use-request-detail";
-import { getAllFieldsForRequestType } from "@/features/requests/schemas/request-step.schema";
 
 const FilePreviewDialog = dynamic(
   () => import("@/components/shared/file-preview-dialog").then((m) => m.FilePreviewDialog),
@@ -28,7 +27,7 @@ const FilePreviewDialog = dynamic(
 
 export default function RequestDetailPage({ id }: { id: string }) {
   const router = useRouter();
-  const { request, requestType, isLoading, revising, startRevising, stopRevising } =
+  const { request, isLoading, revising, startRevising, stopRevising } =
     useRequestDetail(id);
   const [previewFile, setPreviewFile] = useState<PreviewableFile | null>(null);
 
@@ -71,8 +70,6 @@ export default function RequestDetailPage({ id }: { id: string }) {
       ? request.formSnapshot
       : request.form?.fields && request.form.fields.length > 0
       ? request.form.fields
-      : requestType
-      ? getAllFieldsForRequestType(requestType)
       : [];
 
   const isDraft = request.status === "draft";
@@ -81,7 +78,6 @@ export default function RequestDetailPage({ id }: { id: string }) {
     <div className="space-y-6">
       <RequestDetailHeader
         request={request}
-        requestType={requestType}
         onBack={handleBack}
       />
 
@@ -120,7 +116,6 @@ export default function RequestDetailPage({ id }: { id: string }) {
           <CardContent>
             <RequestReviseForm
               request={request}
-              requestType={requestType}
               customFields={formFields}
               onDone={stopRevising}
             />
@@ -129,7 +124,7 @@ export default function RequestDetailPage({ id }: { id: string }) {
       )}
 
       <div className="grid gap-6 lg:grid-cols-3 items-start">
-        <div className="space-y-6 lg:col-span-2 lg:sticky lg:top-20 self-start">
+        <div className="min-w-0 space-y-6 lg:col-span-2 lg:sticky lg:top-20 self-start">
           <Card className="shadow-2xs">
             <CardContent className="pt-1">
               <Tabs defaultValue="details">
@@ -146,7 +141,6 @@ export default function RequestDetailPage({ id }: { id: string }) {
                 <TabsContent value="details" className="pt-4">
                   <RequestReview
                     fields={formFields.length > 0 ? formFields : undefined}
-                    requestType={requestType}
                     values={request.fieldValues}
                     uploads={request.uploads}
                     onPreviewFile={(f) => setPreviewFile(f)}
@@ -169,7 +163,7 @@ export default function RequestDetailPage({ id }: { id: string }) {
           </Card>
         </div>
 
-        <div className="space-y-6 lg:col-span-1 lg:sticky lg:top-20 self-start">
+        <div className="min-w-0 space-y-6 lg:col-span-1 lg:sticky lg:top-20 self-start">
           <RequestDetailSidebar request={request} />
         </div>
       </div>

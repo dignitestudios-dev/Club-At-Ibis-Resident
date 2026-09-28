@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { baseProjectInfoFields } from "@/lib/mock/request-types";
+import { baseProjectInfoFields } from "@/features/requests/config/common-form-fields";
 
 /**
  * Formats a phone string into standard US phone format: (XXX) XXX-XXXX
@@ -78,24 +78,21 @@ export function buildStepSchema(fields: FieldConfig[]) {
 
     switch (field.type) {
       case "email": {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        // Same rules as the resident sign-up email: trimmed, lower-cased,
+        // at most 100 characters, and a valid address (zod .email()).
+        const emailBase = z
+          .string()
+          .trim()
+          .toLowerCase()
+          .max(100, `${field.label} must not exceed 100 characters.`);
         schema = field.required
-          ? z
-              .string()
-              .trim()
+          ? emailBase
               .min(1, `${field.label} is required.`)
-              .max(255, `${field.label} cannot exceed 255 characters.`)
-              .refine((val) => emailRegex.test(val), {
-                message: `${field.label} must be a valid email address.`,
+              .email(`Enter a valid email address.`)
+          : emailBase
+              .refine((val) => !val || z.string().email().safeParse(val).success, {
+                message: "Enter a valid email address.",
               })
-          : z
-              .string()
-              .trim()
-              .max(255, `${field.label} cannot exceed 255 characters.`)
-              .refine((val) => !val || emailRegex.test(val), {
-                message: `${field.label} must be a valid email address.`,
-              })
-              .or(z.literal(""))
               .optional()
               .nullable();
         break;
@@ -274,32 +271,37 @@ export function buildStepSchema(fields: FieldConfig[]) {
       }
 
       case "textarea": {
+        const max = field.maxLength ?? 2000;
         schema = field.required
           ? z
               .string()
               .trim()
               .min(1, `${field.label} is required.`)
-              .max(5000, `${field.label} cannot exceed 5000 characters.`)
+              .max(max, `${field.label} cannot exceed ${max.toLocaleString()} characters.`)
           : z
               .string()
-              .max(5000, `${field.label} cannot exceed 5000 characters.`)
+              .max(max, `${field.label} cannot exceed ${max.toLocaleString()} characters.`)
               .optional()
               .nullable();
         break;
       }
 
       default: {
+        const max = field.maxLength ?? 255;
+        const tooLong = `${field.label} cannot exceed ${max} characters.`;
+        const rule =
+          field.inputRule === "digits"
+            ? { re: /^[0-9]+$/, msg: `${field.label} can contain numbers only.` }
+            : field.inputRule === "alphanumeric"
+              ? { re: /^[A-Za-z0-9-]+$/, msg: `${field.label} can contain only letters, numbers and hyphens (e.g. 12-A or 45B).` }
+              : null;
+        let base = z.string().trim().max(max, tooLong);
+        const withRule = (b: z.ZodString) => (rule ? b.regex(rule.re, rule.msg) : b);
         schema = field.required
-          ? z
-              .string()
-              .trim()
-              .min(1, `${field.label} is required.`)
-              .max(255, `${field.label} cannot exceed 255 characters.`)
-          : z
-              .string()
-              .max(255, `${field.label} cannot exceed 255 characters.`)
-              .optional()
-              .nullable();
+          ? withRule(base.min(1, `${field.label} is required.`))
+          : rule
+            ? base.refine((v) => !v || rule.re.test(v), { message: rule.msg }).or(z.literal("")).optional().nullable()
+            : z.string().max(max, tooLong).optional().nullable();
         break;
       }
     }

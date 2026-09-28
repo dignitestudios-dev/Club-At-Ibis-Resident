@@ -17,7 +17,7 @@ import {
   useMigrateDraftFormMutation,
   useSubmitRequestMutation,
 } from "@/features/requests/api/requests.mutations";
-import { baseProjectInfoFields } from "@/lib/mock/request-types";
+import { applyCommonFieldRules, baseProjectInfoFields } from "@/features/requests/config/common-form-fields";
 import {
   buildCategoryFormSchema,
   defaultValuesForFields,
@@ -214,11 +214,11 @@ export function useRequestWizard(
   const commonFields: FieldConfig[] = useMemo(() => {
     if (dynamicFields && dynamicFields.length > 0) {
       const comm = dynamicFields.filter((f) => f.source === "common");
-      if (comm.length > 0) return comm;
+      if (comm.length > 0) return comm.map(applyCommonFieldRules);
     }
     if ("fields" in categoryOrType && Array.isArray(categoryOrType.fields)) {
       const comm = (categoryOrType.fields as CategoryFormField[]).filter((f) => f.source === "common");
-      if (comm.length > 0) return comm;
+      if (comm.length > 0) return comm.map(applyCommonFieldRules);
     }
     return [...baseProjectInfoFields, ...((categoryOrType as RequestType).additionalFields || [])];
   }, [categoryOrType, dynamicFields]);

@@ -29,15 +29,15 @@ export function RequestDetailHeader({
         Back
       </Button>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1.5">
+        <div className="min-w-0 space-y-1.5">
           <div className="flex flex-wrap items-center gap-2.5">
-            <h1 className="font-heading text-2xl font-medium text-foreground">
+            <h1 className="font-heading text-2xl font-medium text-foreground break-words [overflow-wrap:anywhere]">
               {request.categoryName || requestType?.name || "Architectural Request"}
             </h1>
             <StatusBadge status={request.status} className="text-sm" />
           </div>
           <p className="text-sm text-muted-foreground">
-            <span className="font-mono font-semibold text-slate-700 dark:text-slate-300">
+            <span className="font-mono font-semibold text-slate-700 dark:text-slate-300 break-all">
               {request.code}
             </span>{" "}
             · Submitted {formatDate(request.submittedAt ?? request.createdAt)}

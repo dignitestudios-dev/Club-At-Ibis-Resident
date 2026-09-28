@@ -47,7 +47,7 @@ export function RequestDetailAlerts({
               </span>
               <div className="space-y-1">
                 <h3 className="font-heading text-lg font-medium text-amber-950 dark:text-amber-200">
-                  ARB Action Required — Changes Requested
+                  ARB Action Required: Changes Requested
                 </h3>
                 <p className="text-xs sm:text-sm text-amber-900/90 dark:text-amber-300/90 leading-relaxed">
                   The Review Board has flagged items on this submission. Review the directive below, revise the indicated details, and resubmit.
@@ -71,11 +71,11 @@ export function RequestDetailAlerts({
                   <MessageSquare className="size-3.5 text-amber-700 dark:text-amber-400" aria-hidden="true" />
                   Reviewer Directive
                 </span>
-                <span className="font-normal text-muted-foreground">
+                <span className="font-normal text-muted-foreground break-words [overflow-wrap:anywhere]">
                   {latestComment.author} · {formatRelative(latestComment.createdAt)}
                 </span>
               </div>
-              <p className="font-medium italic text-slate-800 dark:text-slate-200 leading-relaxed text-sm">
+              <p className="font-medium italic text-slate-800 dark:text-slate-200 leading-relaxed text-sm break-words [overflow-wrap:anywhere] whitespace-pre-wrap">
                 &ldquo;{latestComment.message}&rdquo;
               </p>
             </div>
@@ -109,7 +109,7 @@ export function RequestDetailAlerts({
         <Alert variant="destructive">
           <AlertTriangle className="size-4" aria-hidden="true" />
           <AlertTitle>Request Rejected</AlertTitle>
-          <AlertDescription>{request.rejectionReason}</AlertDescription>
+          <AlertDescription className="break-words [overflow-wrap:anywhere] whitespace-pre-wrap">{request.rejectionReason}</AlertDescription>
         </Alert>
       )}
 
@@ -180,11 +180,11 @@ export function RequestDetailAlerts({
             </span>
           </div>
           <div className="sm:pl-9 space-y-1">
-            <p className="text-sm font-medium text-foreground leading-relaxed">
+            <p className="text-sm font-medium text-foreground leading-relaxed break-words [overflow-wrap:anywhere] whitespace-pre-wrap">
               &ldquo;{latestComment.message}&rdquo;
             </p>
             <p className="text-xs text-muted-foreground">
-              — {latestComment.author} · {formatRelative(latestComment.createdAt)}
+              by {latestComment.author} • {formatRelative(latestComment.createdAt)}
             </p>
           </div>
         </div>

@@ -29,6 +29,8 @@ interface FieldConfig {
   order?: number;
   source?: "common" | "category";
   maxLength?: number;
+  /** Extra input restriction on top of the field type: "alphanumeric" allows letters, digits and hyphens (e.g. 12-A); "digits" allows digits only. */
+  inputRule?: "alphanumeric" | "digits";
 }
 
 interface RequestType {

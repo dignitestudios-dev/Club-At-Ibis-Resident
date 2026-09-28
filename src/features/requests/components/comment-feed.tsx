@@ -31,7 +31,7 @@ export function CommentFeed({ comments }: { comments: CommentEntry[] }) {
             )}
           >
             <div className="flex items-center justify-between gap-3 mb-2">
-              <div className="flex items-center gap-2">
+              <div className="flex min-w-0 items-center gap-2">
                 <span
                   aria-hidden="true"
                   className={cn(
@@ -43,8 +43,8 @@ export function CommentFeed({ comments }: { comments: CommentEntry[] }) {
                 >
                   {isArb ? <ShieldCheck className="size-3.5" /> : <User className="size-3.5" />}
                 </span>
-                <div>
-                  <p className="text-xs font-semibold text-foreground">
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-foreground break-words [overflow-wrap:anywhere]">
                     {comment.author}
                   </p>
                   {isArb && (
@@ -58,7 +58,7 @@ export function CommentFeed({ comments }: { comments: CommentEntry[] }) {
                 {formatDateTime(comment.createdAt)}
               </time>
             </div>
-            <p className="text-sm text-foreground/90 leading-relaxed pl-9">
+            <p className="text-sm text-foreground/90 leading-relaxed pl-9 break-words [overflow-wrap:anywhere] whitespace-pre-wrap">
               {comment.message}
             </p>
           </article>

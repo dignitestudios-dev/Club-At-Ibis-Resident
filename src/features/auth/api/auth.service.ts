@@ -113,7 +113,7 @@ export async function logoutUser(): Promise<void> {
       headers: { Authorization: `Bearer ${token}` },
     });
   } catch {
-    // Best-effort — the caller clears local storage regardless
+    // Best-effort: the caller clears local storage regardless
   }
 }
 

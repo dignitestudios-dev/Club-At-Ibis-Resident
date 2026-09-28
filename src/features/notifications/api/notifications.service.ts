@@ -1,5 +1,4 @@
 import axiosInstance from "@/lib/axios";
-import { db, delay } from "@/lib/mock/store";
 
 function toNotificationRecord(raw: any, residentId?: string): NotificationRecord {
   return {
@@ -19,33 +18,17 @@ export async function getNotificationsForResident(
 ): Promise<NotificationRecord[]> {
   try {
     const { data } = await axiosInstance.get("/notifications");
-    const list = data?.data?.notifications || [];
+    const list = data?.data?.notifications || data?.notifications || [];
     return list.map((n: any) => toNotificationRecord(n, residentId));
   } catch {
-    const all = db
-      .getNotifications()
-      .filter((n) => n.residentId === residentId)
-      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
-    return delay(all, 80);
+    return [];
   }
 }
 
 export async function markNotificationRead(id: string): Promise<void> {
-  try {
-    await axiosInstance.patch(`/notifications/${id}/read`);
-  } catch {
-    const all = db.getNotifications();
-    const next = all.map((n) => (n.id === id ? { ...n, read: true } : n));
-    db.setNotifications(next);
-  }
+  await axiosInstance.patch(`/notifications/${id}/read`);
 }
 
-export async function markAllNotificationsRead(residentId: string): Promise<void> {
-  try {
-    await axiosInstance.post("/notifications/read-all");
-  } catch {
-    const all = db.getNotifications();
-    const next = all.map((n) => (n.residentId === residentId ? { ...n, read: true } : n));
-    db.setNotifications(next);
-  }
+export async function markAllNotificationsRead(_residentId: string): Promise<void> {
+  await axiosInstance.post("/notifications/read-all");
 }

@@ -151,7 +151,7 @@ export function Timeline({ entries }: { entries: ActivityEntry[] }) {
               </div>
 
               {/* Message */}
-              <p className="text-sm text-foreground/85 leading-relaxed font-normal break-words">
+              <p className="text-sm text-foreground/85 leading-relaxed font-normal break-words [overflow-wrap:anywhere] whitespace-pre-wrap">
                 {entry.message}
               </p>
 

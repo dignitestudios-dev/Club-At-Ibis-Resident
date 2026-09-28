@@ -44,7 +44,7 @@ export default function RegisterForm() {
         <div className="space-y-2">
           <h1 className="font-heading text-2xl font-medium text-foreground">Verify Your Email</h1>
           <p className="text-sm text-muted-foreground">
-            We&apos;ve sent a verification link to <strong className="text-foreground">{registeredEmail}</strong>. Please check your inbox and click the link to activate your account.
+            We&apos;ve sent a verification link to <strong className="text-foreground break-all">{registeredEmail}</strong>. Please check your inbox and click the link to activate your account.
           </p>
         </div>
         <div className="pt-2 space-y-3">

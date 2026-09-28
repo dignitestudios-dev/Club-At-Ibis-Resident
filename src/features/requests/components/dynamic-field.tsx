@@ -86,8 +86,8 @@ export function DynamicField({
                     id={field.id}
                     type="email"
                     autoComplete="email"
-                    maxLength={255}
-                    placeholder={field.placeholder || "name@example.com"}
+                    maxLength={100}
+                    placeholder={field.placeholder || field.helpText || "name@example.com"}
                     value={(rhf.value as string) ?? ""}
                     onChange={rhf.onChange}
                     disabled={disabled}
@@ -118,7 +118,7 @@ export function DynamicField({
                     type="tel"
                     inputMode="tel"
                     maxLength={14}
-                    placeholder={field.placeholder || "(555) 000-0000"}
+                    placeholder={field.placeholder || field.helpText || "(555) 000-0000"}
                     value={formatUsPhone((rhf.value as string) ?? "")}
                     onChange={(e) => {
                       const formatted = formatUsPhone(e.target.value);
@@ -209,7 +209,7 @@ export function DynamicField({
                     min={0}
                     step="any"
                     maxLength={15}
-                    placeholder={field.placeholder || "0"}
+                    placeholder={field.placeholder || field.helpText || "0"}
                     value={(rhf.value as number | string) ?? ""}
                     onKeyDown={(e) => {
                       if (e.key === "-" || e.key === "e" || e.key === "E" || e.key === "+") {
@@ -253,9 +253,9 @@ export function DynamicField({
                 <FieldContent>
                   <Textarea
                     id={field.id}
-                    placeholder={field.placeholder}
+                    placeholder={field.placeholder || field.helpText}
                     rows={3}
-                    maxLength={5000}
+                    maxLength={field.maxLength ?? 2000}
                     value={(rhf.value as string) ?? ""}
                     onChange={rhf.onChange}
                     disabled={disabled}
@@ -266,7 +266,7 @@ export function DynamicField({
                   {!disabled && (
                     <div className="flex justify-end mt-1">
                       <span className="text-[11px] text-muted-foreground/70 tabular-nums">
-                        {((rhf.value as string) ?? "").length}/5000
+                        {((rhf.value as string) ?? "").length}/{field.maxLength ?? 2000}
                       </span>
                     </div>
                   )}
@@ -302,7 +302,7 @@ export function DynamicField({
                       aria-describedby={errorId}
                       disabled={disabled}
                     >
-                      <SelectValue placeholder="Select an option" />
+                      <SelectValue placeholder={field.placeholder || field.helpText || "Select an option"} />
                     </SelectTrigger>
                     <SelectContent>
                       {normalizedOptions.map((opt) => (
@@ -445,7 +445,7 @@ export function DynamicField({
                     id={field.id}
                     type="text"
                     maxLength={255}
-                    placeholder={field.placeholder}
+                    placeholder={field.placeholder || field.helpText || `Enter ${field.label.toLowerCase()}`}
                     value={(rhf.value as string) ?? ""}
                     onChange={rhf.onChange}
                     disabled={disabled}

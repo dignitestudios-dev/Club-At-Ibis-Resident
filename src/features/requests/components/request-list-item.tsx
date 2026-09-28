@@ -7,7 +7,6 @@ import {
   Calendar,
 } from "lucide-react";
 import { StatusBadge } from "@/features/requests/components/status-badge";
-import { getRequestTypeById } from "@/lib/mock/request-types";
 import { formatDate } from "@/utils/format";
 import { cn } from "@/utils/cn";
 
@@ -35,8 +34,7 @@ export const RequestListItem = memo(function RequestListItem({
   className?: string;
   style?: React.CSSProperties;
 }) {
-  const requestType = getRequestTypeById(request.requestTypeId);
-  const categoryTitle = request.categoryName || requestType?.name || "Architectural Request";
+  const categoryTitle = request.categoryName || "Architectural Request";
   const address = (request.fieldValues?.propertyAddress as string | undefined) || request.propertyAddress;
   const lotNo = (request.fieldValues?.lotNo as string | undefined) || request.lotNo;
   const fullAddress = address ? (lotNo ? `${address} (Lot #${lotNo})` : address) : undefined;

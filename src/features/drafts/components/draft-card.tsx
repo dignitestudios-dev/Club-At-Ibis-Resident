@@ -4,7 +4,6 @@ import { ArrowRight, Trash2, Clock, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
-import { getRequestTypeById } from "@/lib/mock/request-types";
 import { formatRelative } from "@/utils/format";
 import { cn } from "@/utils/cn";
 
@@ -28,8 +27,7 @@ export const DraftCard = memo(function DraftCard({
   style?: React.CSSProperties;
 }) {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
-  const requestType = getRequestTypeById(draft.requestTypeId);
-  const categoryTitle = draft.categoryName || draft.title || requestType?.name || "Architectural Request";
+  const categoryTitle = draft.categoryName || draft.title || "Architectural Request";
   const reference = draft.reference || draft.code;
   const address = (draft.fieldValues?.propertyAddress as string | undefined) || draft.propertyAddress;
   const lotNo = (draft.fieldValues?.lotNo as string | undefined) || draft.lotNo;

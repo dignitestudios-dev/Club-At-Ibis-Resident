@@ -5,7 +5,7 @@ import { FileText, Eye, AlertCircle, Pencil } from "lucide-react";
 import { type FieldErrors } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
-import { baseProjectInfoFields } from "@/lib/mock/request-types";
+import { baseProjectInfoFields } from "@/features/requests/config/common-form-fields";
 import {
   FilePreviewDialog,
   type PreviewableFile,

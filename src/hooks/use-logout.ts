@@ -26,7 +26,7 @@ export function useLogout() {
       dispatch(clearUser());
       queryClient.setQueryData(authKeys.currentUser, null);
       queryClient.removeQueries({ queryKey: authKeys.all });
-      window.location.href = "/auth/login";
+      window.location.replace("/auth/login");
     }
   }
 

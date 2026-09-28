@@ -37,6 +37,7 @@ import {
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
+import { SearchInput } from "@/components/shared/search-input";
 import { StatusBadge } from "@/features/requests/components/status-badge";
 import { Stepper } from "@/features/requests/components/stepper";
 import { DynamicField } from "@/features/requests/components/dynamic-field";
@@ -63,7 +64,6 @@ import type {
   ActiveCategory,
   CategoryFormField,
 } from "@/features/categories/types/categories.types";
-import { requestTypes } from "@/lib/mock/request-types";
 import { formatDate } from "@/utils/format";
 import { cn } from "@/utils/cn";
 
@@ -76,6 +76,7 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
   const [isChoosingCategory, setIsChoosingCategory] = useState(false);
   const [createdDraft, setCreatedDraft] = useState<any>(null);
   const [initializingCategory, setInitializingCategory] = useState<ActiveCategory | null>(null);
+  const [categorySearch, setCategorySearch] = useState("");
 
   const effectiveDraftId = isChoosingCategory ? undefined : (draftId ?? undefined);
   const { data: draft, isLoading: isLoadingDraft } = useDraftDetailQuery(effectiveDraftId);
@@ -87,7 +88,7 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
     isLoading: isLoadingCategories,
     error: categoriesError,
     refetch: refetchCategories,
-  } = useActiveCategoriesQuery();
+  } = useActiveCategoriesQuery({ search: categorySearch });
 
   // Clear legacy storage and state when starting fresh or navigating to /requests/new
   useEffect(() => {
@@ -165,24 +166,11 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
     }
   }, [categoryFormError, activeTypeId, queryClient, router, toast]);
 
-  // Fallback category metadata if found in categories list or static request types
+  // Selected category metadata from category form query or categories list
   const selectedCategory: ActiveCategory | null =
     categoryFormData?.category ||
     categories.find((c) => c.id === activeTypeId) ||
-    (activeTypeId
-      ? (() => {
-          const match = requestTypes.find((t) => t.id === activeTypeId);
-          return match
-            ? {
-                id: match.id,
-                name: match.name,
-                description: match.description,
-                status: "active" as const,
-                currentVersion: 1,
-              }
-            : null;
-        })()
-      : null);
+    null;
 
   async function handleSelectCategory(cat: ActiveCategory) {
     setIsChoosingCategory(false);
@@ -245,6 +233,7 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
     clearWizardState();
     setIsChoosingCategory(true);
     setCreatedDraft(null);
+    setCategorySearch("");
     router.replace("/requests/new");
   };
 
@@ -429,6 +418,13 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
           description="Choose the type of architectural request you'd like to submit."
         />
 
+        <SearchInput
+          value={categorySearch}
+          onChange={setCategorySearch}
+          placeholder="Search categories…"
+          ariaLabel="Search request categories"
+        />
+
         {isLoadingCategories && (
           <div className="grid gap-3 sm:grid-cols-2">
             {Array.from({ length: 8 }).map((_, i) => (
@@ -469,8 +465,12 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
         {!isLoadingCategories && !categoriesError && categories.length === 0 && (
           <EmptyState
             icon={Layers}
-            title="No Categories Available"
-            description="There are currently no active request categories configured. Please check back later."
+            title={categorySearch.trim() ? "No Matching Categories" : "No Categories Available"}
+            description={
+              categorySearch.trim()
+                ? `No request categories match "${categorySearch.trim()}". Try a different search term.`
+                : "There are currently no active request categories configured. Please check back later."
+            }
           />
         )}
 

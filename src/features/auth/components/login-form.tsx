@@ -79,10 +79,10 @@ export default function LoginForm() {
         <div className="rounded-lg border border-amber-200/80 bg-amber-50/70 p-3 text-xs text-amber-900 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-200 space-y-2 auth-field-enter">
           <div className="flex items-start gap-2">
             <AlertCircle className="size-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
-            <div>
+            <div className="min-w-0">
               <p className="font-medium">Email Verification Required</p>
-              <p className="text-muted-foreground mt-0.5">
-                Your account is pending email verification. Please verify your email before logging in.
+              <p className="text-muted-foreground mt-0.5 break-words [overflow-wrap:anywhere]">
+                Your account <strong className="font-semibold text-foreground break-all">{unverifiedEmail}</strong> is pending email verification. Please verify your email before logging in.
               </p>
             </div>
           </div>
