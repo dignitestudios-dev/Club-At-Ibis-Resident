@@ -65,8 +65,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           </div>
 
           {/* Fixed Card Header */}
-          <div className="relative z-10 shrink-0 pt-4 pb-2.5 px-6 sm:px-8 border-b border-slate-100 dark:border-slate-800 flex flex-col items-center justify-center gap-0.5">
-            <Logo variant="navy" size={26} />
+          <div className="relative z-10 shrink-0 pt-4 pb-3.5 px-6 sm:px-8 border-b border-slate-100 dark:border-slate-800 flex flex-col items-center justify-center gap-3">
+            <Logo variant="navy" size={34} />
             <p className="text-[10px] font-semibold tracking-widest text-brand-gold uppercase">
               Architectural Review Board
             </p>
