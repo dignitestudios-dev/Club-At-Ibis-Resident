@@ -679,13 +679,13 @@ function CategoryFormWizard({
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 animate-in fade-in duration-300">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="flex flex-col gap-3">
         <PageHeader
           title={category.name}
           description={category.description || "Submit an architectural review request."}
         />
         {reference && (
-          <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-lg bg-slate-100 dark:bg-slate-800 border border-border px-2.5 py-1 text-xs font-mono font-semibold text-foreground">
               {reference}
             </span>
