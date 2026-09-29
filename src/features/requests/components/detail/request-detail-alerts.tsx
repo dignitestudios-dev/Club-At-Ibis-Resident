@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { type PreviewableFile } from "@/components/shared/file-preview-dialog";
-import { formatDate, formatRelative } from "@/utils/format";
+import { formatDate, formatDateTime, formatRelative } from "@/utils/format";
 
 interface RequestDetailAlertsProps {
   request: RequestRecord;
@@ -107,7 +107,15 @@ export function RequestDetailAlerts({
         <Alert variant="destructive">
           <AlertTriangle className="size-4" aria-hidden="true" />
           <AlertTitle>Request Rejected</AlertTitle>
-          <AlertDescription className="break-words [overflow-wrap:anywhere] whitespace-pre-wrap">{request.rejectionReason}</AlertDescription>
+          <AlertDescription className="space-y-1.5">
+            <p className="break-words [overflow-wrap:anywhere] whitespace-pre-wrap">{request.rejectionReason}</p>
+            {(request.decision?.decidedBy || request.decidedAt) && (
+              <p className="text-xs opacity-80">
+                {request.decision?.decidedBy ? `Decided by ${request.decision.decidedBy.displayName}` : "Decided"}
+                {request.decidedAt ? ` · ${formatDateTime(request.decidedAt)}` : ""}
+              </p>
+            )}
+          </AlertDescription>
         </Alert>
       )}
 
@@ -115,8 +123,14 @@ export function RequestDetailAlerts({
         <Alert className="border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/40">
           <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
           <AlertTitle className="text-emerald-900 dark:text-emerald-200">Request Approved</AlertTitle>
-          <AlertDescription className="text-emerald-800 dark:text-emerald-300">
-            Final processing (deposit, if applicable, and the approval letter) is in progress. You will be notified once this request is marked completed.
+          <AlertDescription className="space-y-1.5 text-emerald-800 dark:text-emerald-300">
+            <p>Final processing (deposit, if applicable, and the approval letter) is in progress. You will be notified once this request is marked completed.</p>
+            {(request.decision?.decidedBy || request.decidedAt) && (
+              <p className="text-xs opacity-80">
+                {request.decision?.decidedBy ? `Decided by ${request.decision.decidedBy.displayName}` : "Decided"}
+                {request.decidedAt ? ` · ${formatDateTime(request.decidedAt)}` : ""}
+              </p>
+            )}
           </AlertDescription>
         </Alert>
       )}

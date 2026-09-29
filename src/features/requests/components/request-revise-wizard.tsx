@@ -150,8 +150,9 @@ export function RequestReviseWizard({ request }: { request: RequestRecord }) {
                 </div>
               ) : (
                 <RequestReview
-                  commonFields={flaggedFields.filter((f) => f.source === "common")}
-                  categoryFields={flaggedFields.filter((f) => f.source === "category")}
+                  commonFields={flaggedFields.filter((f) => f.source === "common" && f.type !== "file")}
+                  categoryFields={flaggedFields.filter((f) => f.source === "category" && f.type !== "file")}
+                  documentFields={flaggedFields.filter((f) => f.type === "file")}
                   values={form.getValues()}
                   errors={form.formState.errors}
                 />

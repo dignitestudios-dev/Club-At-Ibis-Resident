@@ -60,8 +60,12 @@ export function useRequestRevise(request: RequestRecord) {
     return raw.map((f) => (f.source === "common" ? applyCommonFieldRules(f) : f));
   }, [request.form?.fields, request.formSnapshot]);
 
-  const commonFields = useMemo(() => allFields.filter((f) => f.source === "common"), [allFields]);
-  const categoryFields = useMemo(() => allFields.filter((f) => f.source === "category"), [allFields]);
+  // Same 4-step shape as the create-request wizard: documents get their own
+  // step instead of sitting inside whichever of Project Info/Category
+  // Details they happened to belong to.
+  const commonFields = useMemo(() => allFields.filter((f) => f.source === "common" && f.type !== "file"), [allFields]);
+  const categoryFields = useMemo(() => allFields.filter((f) => f.source === "category" && f.type !== "file"), [allFields]);
+  const documentFields = useMemo(() => allFields.filter((f) => f.type === "file"), [allFields]);
 
   const flagsByField = useMemo(
     () => new Map((request.revision?.items ?? []).map((item) => [item.fieldId, item.reason])),
@@ -92,8 +96,14 @@ export function useRequestRevise(request: RequestRecord) {
         description: "Only the fields flagged by the ARB below can be edited.",
         fields: categoryFields,
       },
+      {
+        id: "documents",
+        title: "Documents",
+        description: "Document corrections aren't supported yet — contact the ARB office if a flagged file needs to be replaced.",
+        fields: documentFields,
+      },
     ],
-    [commonFields, categoryFields]
+    [commonFields, categoryFields, documentFields]
   );
 
   // The reviewer flagged these fields specifically because they need to
@@ -150,6 +160,7 @@ export function useRequestRevise(request: RequestRecord) {
   const [stepIndex, setStepIndex] = useState(() => {
     const firstFlagged = allFields.find((field) => flagsByField.has(field.id));
     if (!firstFlagged) return 0;
+    if (firstFlagged.type === "file") return 2;
     return firstFlagged.source === "category" ? 1 : 0;
   });
   const isReviewStep = stepIndex === steps.length;
@@ -392,6 +403,7 @@ export function useRequestRevise(request: RequestRecord) {
     stepperSteps,
     commonFields,
     categoryFields,
+    documentFields,
     allFields,
     flaggedFields,
     flagsByField,

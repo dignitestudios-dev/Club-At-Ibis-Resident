@@ -70,6 +70,23 @@ function toRequestRecord(raw: any): RequestRecord {
       }))
     : [];
 
+  // The decision (approve/reject) lives under `raw.decision`, not at the
+  // top level — `raw.rejectionReason`/`raw.decidedAt` don't exist on the
+  // real response, so reading them directly always came back undefined.
+  const decision: RequestDecisionInfo | null = raw.decision
+    ? {
+        rejectionReason: raw.decision.rejectionReason ?? null,
+        decidedAt: raw.decision.decidedAt ?? null,
+        decidedBy: raw.decision.decidedBy
+          ? {
+              actorId: raw.decision.decidedBy.actorId,
+              role: raw.decision.decidedBy.role,
+              displayName: raw.decision.decidedBy.displayName || "ARB Reviewer",
+            }
+          : null,
+      }
+    : null;
+
   const submissions: SubmissionVersionRecord[] = Array.isArray(raw.submissions)
     ? raw.submissions.map((s: any) => ({
         id: s.id || s._id || crypto.randomUUID(),
@@ -118,7 +135,8 @@ function toRequestRecord(raw: any): RequestRecord {
     depositRequired: raw.depositRequired,
     depositAmount: raw.depositAmount,
     depositReceived: raw.depositReceived,
-    rejectionReason: raw.rejectionReason,
+    rejectionReason: decision?.rejectionReason ?? raw.rejectionReason,
+    decision,
     approvalLetterAvailable: raw.approvalLetterAvailable,
     approvalLetter: raw.approvalLetter,
     refundStatus: raw.refundStatus,
@@ -127,7 +145,7 @@ function toRequestRecord(raw: any): RequestRecord {
     createdAt: raw.createdAt || new Date().toISOString(),
     updatedAt: raw.updatedAt || new Date().toISOString(),
     submittedAt: raw.submittedAt,
-    decidedAt: raw.decidedAt,
+    decidedAt: decision?.decidedAt ?? raw.decidedAt,
     completedAt: raw.completedAt,
   };
 }

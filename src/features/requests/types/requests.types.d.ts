@@ -156,6 +156,13 @@ interface HistoryEvent {
   submissionNumber?: number;
 }
 
+/** Who decided (approved/rejected) the request, from GET /requests/:id's `decision` object. */
+interface RequestDecisionInfo {
+  rejectionReason: string | null;
+  decidedAt: string | null;
+  decidedBy: { actorId?: string; role?: string; displayName: string } | null;
+}
+
 type RefundStatus = "awaiting" | "refunded" | "no_refund";
 
 interface ApiPagination {
@@ -207,6 +214,8 @@ interface RequestRecord {
   depositAmount?: number;
   depositReceived?: boolean;
   rejectionReason?: string;
+  /** The full `decision` object from GET /requests/:id — who decided and when, beyond just the reason text. */
+  decision?: RequestDecisionInfo | null;
   approvalLetterAvailable?: boolean;
   approvalLetter?: UploadedFile;
   refundStatus?: RefundStatus;
