@@ -7,18 +7,19 @@ import dynamic from "next/dynamic";
 import { FileText, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/shared/empty-state";
 import { type PreviewableFile } from "@/components/shared/file-preview-dialog";
 import { CommentFeed } from "@/features/requests/components/comment-feed";
+import { EarlierSubmissions } from "@/features/requests/components/earlier-submissions";
 import { RequestReview } from "@/features/requests/components/request-review";
-import { RequestReviseForm } from "@/features/requests/components/request-revise-form";
 import { RequestDetailHeader } from "@/features/requests/components/detail/request-detail-header";
 import { RequestDetailAlerts } from "@/features/requests/components/detail/request-detail-alerts";
 import { RequestDetailSidebar } from "@/features/requests/components/detail/request-detail-sidebar";
 import { RequestDocumentsTab } from "@/features/requests/components/detail/request-documents-tab";
 import { useRequestDetail } from "@/features/requests/hooks/use-request-detail";
+import { earlierSubmissions } from "@/features/requests/utils/submissions";
 
 const FilePreviewDialog = dynamic(
   () => import("@/components/shared/file-preview-dialog").then((m) => m.FilePreviewDialog),
@@ -27,8 +28,7 @@ const FilePreviewDialog = dynamic(
 
 export default function RequestDetailPage({ id }: { id: string }) {
   const router = useRouter();
-  const { request, isLoading, revising, startRevising, stopRevising } =
-    useRequestDetail(id);
+  const { request, isLoading } = useRequestDetail(id);
   const [previewFile, setPreviewFile] = useState<PreviewableFile | null>(null);
 
   const handleBack = () => {
@@ -73,6 +73,7 @@ export default function RequestDetailPage({ id }: { id: string }) {
       : [];
 
   const isDraft = request.status === "draft";
+  const earlierRounds = earlierSubmissions(request);
 
   return (
     <div className="space-y-6">
@@ -103,25 +104,8 @@ export default function RequestDetailPage({ id }: { id: string }) {
 
       <RequestDetailAlerts
         request={request}
-        revising={revising}
-        onStartRevising={startRevising}
         onPreviewLetter={(file) => setPreviewFile(file)}
       />
-
-      {revising && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Revise Your Submission</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <RequestReviseForm
-              request={request}
-              customFields={formFields}
-              onDone={stopRevising}
-            />
-          </CardContent>
-        </Card>
-      )}
 
       <div className="grid gap-6 lg:grid-cols-3 items-start">
         <div className="min-w-0 space-y-6 lg:col-span-2 lg:sticky lg:top-20 self-start">
@@ -133,6 +117,11 @@ export default function RequestDetailPage({ id }: { id: string }) {
                   <TabsTrigger value="documents">
                     Documents{uploadEntries.length > 0 ? ` (${uploadEntries.length})` : ""}
                   </TabsTrigger>
+                  {earlierRounds.length > 0 && (
+                    <TabsTrigger value="submissionHistory">
+                      Submission History ({earlierRounds.length})
+                    </TabsTrigger>
+                  )}
                   <TabsTrigger value="feedback">
                     Feedback{request.comments.length > 0 ? ` (${request.comments.length})` : ""}
                   </TabsTrigger>
@@ -154,6 +143,12 @@ export default function RequestDetailPage({ id }: { id: string }) {
                     onPreviewFile={(f) => setPreviewFile(f)}
                   />
                 </TabsContent>
+
+                {earlierRounds.length > 0 && (
+                  <TabsContent value="submissionHistory" className="pt-4">
+                    <EarlierSubmissions request={request} onPreview={(f) => setPreviewFile(f)} />
+                  </TabsContent>
+                )}
 
                 <TabsContent value="feedback" className="pt-4">
                   <CommentFeed comments={request.comments} />

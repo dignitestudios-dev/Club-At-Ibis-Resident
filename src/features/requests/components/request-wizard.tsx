@@ -391,7 +391,7 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
           <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-border/70">
             <Button
               nativeButton={false}
-              render={<Link href={`/requests/${draft.id}`} />}
+              render={<Link href={isChangesRequired ? `/requests/${draft.id}/revise` : `/requests/${draft.id}`} />}
               className="font-semibold shadow-xs"
             >
               {isChangesRequired ? "Revise Submission" : "View Request Details"}
@@ -617,6 +617,7 @@ function CategoryFormWizard({
     stepperSteps,
     commonFields,
     categoryFields,
+    documentFields,
     reviewReady,
     isPending,
     isSubmitting,
@@ -859,6 +860,7 @@ function CategoryFormWizard({
               <RequestReview
                 commonFields={commonFields}
                 categoryFields={categoryFields}
+                documentFields={documentFields}
                 values={form.getValues()}
                 errors={form.formState.errors}
                 disabled={isStaleForm}

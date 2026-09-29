@@ -100,9 +100,60 @@ interface CommentEntry {
   createdAt: string;
 }
 
-interface FieldFlag {
+/** A single reviewer-flagged item on a `changes_required` request, as returned by GET /requests/:id under `revision.items`. */
+interface RevisionItem {
+  kind: string;
   fieldId: string;
+  label: string;
   reason: string;
+}
+
+/** Only present while `status === "changes_required"`. `revisionVersion` guards PATCH .../revision and POST .../resubmit against concurrent edits. */
+interface RequestRevisionInfo {
+  revisionVersion: number;
+  items: RevisionItem[];
+}
+
+/** One resubmission round, as returned by GET /requests/:id under `submissions[]`. */
+interface SubmissionVersionRecord {
+  id: string;
+  number: number;
+  submittedAt: string;
+  changedFieldIds: string[];
+  fieldValues: Record<string, FieldValue>;
+  files: Record<string, UploadedFile[]>;
+}
+
+type HistoryEventType =
+  | "submitted"
+  | "assigned"
+  | "reassigned"
+  | "review_started"
+  | "item_accepted"
+  | "item_flagged"
+  | "revision_requested"
+  | "resubmitted"
+  | "approved"
+  | "rejected"
+  | "deposit_required"
+  | "receipt_recorded"
+  | "letter_uploaded"
+  | "completed"
+  | "letter_email"
+  | "withdrawn"
+  | "refunded"
+  | "no_refund";
+
+interface HistoryEvent {
+  id: string;
+  type: HistoryEventType;
+  actor: { name: string; role: string };
+  message: string;
+  createdAt: string;
+  /** Set on a "revision-requested" event: the exact fields flagged for that review round, with the reviewer's reason. `submissions[]` never carries per-round item reviews, so this is the only place a past round's flagged items are reconstructable from. */
+  flaggedItems?: { fieldId: string; label: string; reason: string }[];
+  /** The submission round this event applies to. */
+  submissionNumber?: number;
 }
 
 type RefundStatus = "awaiting" | "refunded" | "no_refund";
@@ -132,6 +183,10 @@ interface RequestRecord {
   lotNo?: string;
   status: RequestStatus;
   draftRevision?: number;
+  /** Optimistic-concurrency guard for reviewer-assignment/review actions; also required by PATCH .../revision and POST .../resubmit. */
+  workflowVersion?: number;
+  /** Only present while status is "changes_required". */
+  revision?: RequestRevisionInfo | null;
   currentStep?: number;
   commonFormVersion?: number;
   categoryFormVersion?: number;
@@ -142,9 +197,9 @@ interface RequestRecord {
   fieldValues: Record<string, FieldValue>;
   uploads: Record<string, UploadedFile[]>;
   activity: ActivityEntry[];
-  history?: any[];
+  history: HistoryEvent[];
+  submissions?: SubmissionVersionRecord[];
   comments: CommentEntry[];
-  flags?: FieldFlag[];
   submissionReadiness?: SubmissionReadiness;
   hoaApproved: boolean;
   hoaConfirmedAt?: string;
@@ -198,10 +253,17 @@ interface CreateRequestPayload {
   hoaApproved: boolean;
 }
 
-interface ResubmitRequestPayload {
-  id: string;
+/** PATCH /requests/:id/revision — saves edits to flagged fields only; the request stays in `changes_required`. */
+interface UpdateRevisionPayload {
+  expectedWorkflowVersion: number;
+  expectedRevisionVersion: number;
   fieldValues: Record<string, FieldValue>;
-  uploads: Record<string, UploadedFile[]>;
+}
+
+/** POST /requests/:id/resubmit — finalizes the revision; every flagged field must already differ from the original submission. */
+interface ResubmitRevisionPayload {
+  expectedWorkflowVersion: number;
+  expectedRevisionVersion: number;
 }
 
 interface ResidentRequestsResult {

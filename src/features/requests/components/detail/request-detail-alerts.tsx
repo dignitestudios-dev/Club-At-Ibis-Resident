@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -15,15 +16,11 @@ import { formatDate, formatRelative } from "@/utils/format";
 
 interface RequestDetailAlertsProps {
   request: RequestRecord;
-  revising: boolean;
-  onStartRevising: () => void;
   onPreviewLetter: (file: PreviewableFile) => void;
 }
 
 export function RequestDetailAlerts({
   request,
-  revising,
-  onStartRevising,
   onPreviewLetter,
 }: RequestDetailAlertsProps) {
   const latestComment =
@@ -32,7 +29,7 @@ export function RequestDetailAlerts({
   return (
     <div className="space-y-4" role="region" aria-label="Request Status Alerts">
       {/* Unified Directive Banner for Changes Required */}
-      {request.status === "changes_required" && !revising && (
+      {request.status === "changes_required" && (
         <div
           role="alert"
           className="rounded-2xl border border-amber-300 dark:border-amber-800/80 bg-gradient-to-r from-amber-50 to-amber-100/40 dark:from-amber-950/50 dark:to-amber-950/20 p-5 sm:p-6 shadow-2xs space-y-4 animate-in fade-in duration-300"
@@ -56,8 +53,9 @@ export function RequestDetailAlerts({
             </div>
             <Button
               size="default"
+              nativeButton={false}
+              render={<Link href={`/requests/${request.id}/revise`} />}
               className="shrink-0 bg-amber-600 hover:bg-amber-700 text-white shadow-xs font-semibold"
-              onClick={onStartRevising}
             >
               Revise &amp; Resubmit
             </Button>
@@ -161,7 +159,7 @@ export function RequestDetailAlerts({
       )}
 
       {/* Reviewer feedback banner for non-changes-required statuses */}
-      {latestComment && !revising && request.status !== "changes_required" && (
+      {latestComment && request.status !== "changes_required" && (
         <div className="rounded-2xl border border-border/80 bg-slate-50/80 dark:bg-slate-900/60 p-4 sm:p-5 shadow-2xs space-y-2 animate-in fade-in duration-200">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">

@@ -53,6 +53,34 @@ function toRequestRecord(raw: any): RequestRecord {
     activity = raw.activity;
   }
 
+  const history: HistoryEvent[] = Array.isArray(raw.history)
+    ? raw.history.map((h: any) => ({
+        id: h.id || h._id || crypto.randomUUID(),
+        // The backend's event slugs are hyphenated (e.g. "request.review-started"),
+        // but HistoryEventType uses underscores ("review_started").
+        type: (h.type?.replace(/^request\./, "").replace(/-/g, "_") || "submitted") as HistoryEventType,
+        actor: {
+          name: h.actor?.displayName || h.actor?.name || "User",
+          role: h.actor?.role || "system",
+        },
+        message: h.message || "",
+        createdAt: h.occurredAt || h.createdAt || new Date().toISOString(),
+        flaggedItems: Array.isArray(h.details?.flaggedItems) ? h.details.flaggedItems : undefined,
+        submissionNumber: typeof h.details?.submissionNumber === "number" ? h.details.submissionNumber : undefined,
+      }))
+    : [];
+
+  const submissions: SubmissionVersionRecord[] = Array.isArray(raw.submissions)
+    ? raw.submissions.map((s: any) => ({
+        id: s.id || s._id || crypto.randomUUID(),
+        number: s.number ?? 1,
+        submittedAt: s.submittedAt || new Date().toISOString(),
+        changedFieldIds: Array.isArray(s.changedFieldIds) ? s.changedFieldIds : [],
+        fieldValues: s.fieldValues || {},
+        files: s.files || {},
+      }))
+    : [];
+
   return {
     id: raw.id || raw._id,
     code,
@@ -66,6 +94,13 @@ function toRequestRecord(raw: any): RequestRecord {
     lotNo: propLotNo,
     status: raw.status || "draft",
     draftRevision: raw.draftRevision ?? 0,
+    workflowVersion: raw.workflowVersion ?? 0,
+    revision: raw.revision
+      ? {
+          revisionVersion: raw.revision.revisionVersion ?? 0,
+          items: Array.isArray(raw.revision.items) ? raw.revision.items : [],
+        }
+      : null,
     currentStep: raw.currentStep ?? 1,
     commonFormVersion: raw.commonFormVersion ?? 1,
     categoryFormVersion: raw.categoryFormVersion ?? 1,
@@ -74,9 +109,9 @@ function toRequestRecord(raw: any): RequestRecord {
     fieldValues,
     uploads,
     activity,
-    history: Array.isArray(raw.history) ? raw.history : undefined,
+    history,
+    submissions,
     comments: Array.isArray(raw.comments) ? raw.comments : [],
-    flags: raw.flags,
     submissionReadiness: raw.submissionReadiness,
     hoaApproved: !!(raw.hoaConfirmed ?? raw.hoaApproved),
     hoaConfirmedAt: raw.hoaConfirmedAt || raw.hoaApprovedAt,
@@ -263,11 +298,36 @@ export async function createRequest(payload: CreateRequestPayload): Promise<Requ
   );
 }
 
-export async function resubmitRequest(payload: ResubmitRequestPayload): Promise<RequestRecord> {
-  return autosaveDraft(payload.id, {
-    expectedDraftRevision: 1,
-    fieldValues: payload.fieldValues,
+/**
+ * Save edits to reviewer-flagged fields while a request is `changes_required`.
+ * Only fields present in `revision.items` may be included — the backend
+ * rejects anything else with FIELD_NOT_EDITABLE.
+ */
+export async function updateRequestRevision(
+  id: string,
+  payload: UpdateRevisionPayload
+): Promise<RequestRecord> {
+  const { data } = await axiosInstance.patch(`/requests/${id}/revision`, payload);
+  return toRequestRecord(data.data.request);
+}
+
+/**
+ * Finalize a revision and send it back to the assigned reviewer. Every
+ * flagged field must already have a value different from the original
+ * submission (enforced server-side as FLAGGED_FIELD_UNCHANGED) — call
+ * updateRequestRevision with the corrected values first.
+ */
+export async function resubmitRequestRevision(
+  id: string,
+  payload: ResubmitRevisionPayload,
+  idempotencyKey: string
+): Promise<RequestRecord> {
+  const { data } = await axiosInstance.post(`/requests/${id}/resubmit`, payload, {
+    headers: {
+      "Idempotency-Key": idempotencyKey,
+    },
   });
+  return toRequestRecord(data.data.request);
 }
 
 export async function withdrawRequest(id: string): Promise<RequestRecord> {

@@ -227,7 +227,7 @@ export default function RegisterForm() {
                     <PasswordInput
                       id="confirmPassword"
                       autoComplete="new-password"
-                      placeholder="Confirm password"
+                      placeholder="Re-enter password"
                       maxLength={128}
                       aria-invalid={!!errors.confirmPassword}
                       disabled={isPending}

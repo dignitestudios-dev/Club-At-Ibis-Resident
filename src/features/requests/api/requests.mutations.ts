@@ -5,7 +5,6 @@ import {
   migrateDraftForm,
   submitRequest,
   createRequest,
-  resubmitRequest,
   withdrawRequest,
 } from "./requests.service";
 import { toDraft } from "@/features/drafts/api/drafts.service";
@@ -76,18 +75,6 @@ export function useCreateRequestMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: CreateRequestPayload) => createRequest(payload),
-    onSuccess: (record) => {
-      queryClient.setQueryData(["requests", "detail", record.id], record);
-      queryClient.invalidateQueries({ queryKey: ["requests"] });
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
-    },
-  });
-}
-
-export function useResubmitRequestMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (payload: ResubmitRequestPayload) => resubmitRequest(payload),
     onSuccess: (record) => {
       queryClient.setQueryData(["requests", "detail", record.id], record);
       queryClient.invalidateQueries({ queryKey: ["requests"] });

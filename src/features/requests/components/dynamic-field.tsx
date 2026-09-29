@@ -257,7 +257,10 @@ export function DynamicField({
                     id={field.id}
                     placeholder={field.placeholder || field.helpText}
                     rows={3}
-                    maxLength={field.maxLength ?? 2000}
+                    // Deliberately no `maxLength` here: the resident may type past
+                    // the limit, see the count/error below, and still save the
+                    // draft — only advancing to the next step or submitting is
+                    // blocked (see handleNext/handleSubmit in use-request-wizard.ts).
                     value={(rhf.value as string) ?? ""}
                     onChange={rhf.onChange}
                     disabled={disabled}
@@ -265,13 +268,22 @@ export function DynamicField({
                     aria-invalid={hasError}
                     aria-describedby={errorId}
                   />
-                  {!disabled && (
-                    <div className="flex justify-end mt-1">
-                      <span className="text-[11px] text-muted-foreground/70 tabular-nums">
-                        {((rhf.value as string) ?? "").length}/{field.maxLength ?? 2000}
-                      </span>
-                    </div>
-                  )}
+                  {!disabled && (() => {
+                    const max = field.maxLength ?? 2000;
+                    const length = ((rhf.value as string) ?? "").length;
+                    const overLimit = length > max;
+                    return (
+                      <div className="flex justify-end mt-1">
+                        <span
+                          className={`text-[11px] tabular-nums ${
+                            overLimit ? "font-medium text-destructive" : "text-muted-foreground/70"
+                          }`}
+                        >
+                          {length}/{max}
+                        </span>
+                      </div>
+                    );
+                  })()}
                   {hasError && (
                     <FieldError id={errorId} errors={error ? [error as { message?: string }] : []} />
                   )}

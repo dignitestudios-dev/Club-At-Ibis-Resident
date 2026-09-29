@@ -58,6 +58,7 @@ export function RequestReview({
   fields,
   commonFields,
   categoryFields,
+  documentFields,
   values,
   uploads,
   errors,
@@ -69,6 +70,8 @@ export function RequestReview({
   fields?: FieldConfig[];
   commonFields?: FieldConfig[];
   categoryFields?: FieldConfig[];
+  /** Renders as its own "Documents" group — used by the create-request wizard, whose Documents step is index 2. */
+  documentFields?: FieldConfig[];
   values: Record<string, unknown>;
   uploads?: Record<string, UploadedFile[]>;
   errors?: FieldErrors;
@@ -102,6 +105,13 @@ export function RequestReview({
           fields: cat,
         });
       }
+      if (documentFields && documentFields.length > 0) {
+        result.push({
+          title: "Documents",
+          stepIndex: 2,
+          fields: documentFields,
+        });
+      }
       return result;
     }
 
@@ -121,7 +131,7 @@ export function RequestReview({
     }
 
     return [];
-  }, [commonFields, categoryFields, fields, requestType]);
+  }, [commonFields, categoryFields, documentFields, fields, requestType]);
 
   function handleFileClick(file: UploadedFile | DropzoneFile) {
     if (onPreviewFile) {

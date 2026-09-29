@@ -210,32 +210,47 @@ export function useRequestWizard(
   const [hasMigratedNotice, setHasMigratedNotice] = useState(false);
   const [confirmingChangeCategory, setConfirmingChangeCategory] = useState(false);
 
-  // 1. Partition dynamic fields into Step 1 (Common) and Step 2 (Category-Specific)
-  const commonFields: FieldConfig[] = useMemo(() => {
-    if (dynamicFields && dynamicFields.length > 0) {
-      const comm = dynamicFields.filter((f) => f.source === "common");
-      if (comm.length > 0) return comm.map(applyCommonFieldRules);
-    }
+  // 1. Partition dynamic fields into Step 1 (Common), Step 2 (Category-Specific)
+  // and Step 3 (Documents). A field's `source` picks Common vs Category; its
+  // `type` then pulls any file field out of either into the Documents step,
+  // so every upload the resident owes shows up together in one place.
+  //
+  // The live category form always has `source` on every field. The only
+  // path that doesn't is the legacy hardcoded RequestType shape (no dynamic
+  // fields, no `fields` array) — there, common/category/documents are
+  // already three separate lists, so they're combined and re-split by
+  // `source`/type below the same way for a single, consistent code path.
+  const sourcedFields: FieldConfig[] = useMemo(() => {
+    if (dynamicFields && dynamicFields.length > 0) return dynamicFields;
     if ("fields" in categoryOrType && Array.isArray(categoryOrType.fields)) {
-      const comm = (categoryOrType.fields as CategoryFormField[]).filter((f) => f.source === "common");
-      if (comm.length > 0) return comm.map(applyCommonFieldRules);
+      return categoryOrType.fields as CategoryFormField[];
     }
-    return [...baseProjectInfoFields, ...((categoryOrType as RequestType).additionalFields || [])];
+    const rt = categoryOrType as RequestType;
+    return [
+      ...baseProjectInfoFields.map((f) => ({ ...f, source: "common" as const })),
+      ...(rt.additionalFields || []).map((f) => ({ ...f, source: "category" as const })),
+      ...(rt.documentFields || []).map((f) => ({ ...f, source: "category" as const })),
+    ];
   }, [categoryOrType, dynamicFields]);
 
-  const categoryFields: FieldConfig[] = useMemo(() => {
-    if (dynamicFields && dynamicFields.length > 0) {
-      return dynamicFields.filter((f) => f.source === "category");
-    }
-    if ("fields" in categoryOrType && Array.isArray(categoryOrType.fields)) {
-      return (categoryOrType.fields as CategoryFormField[]).filter((f) => f.source === "category");
-    }
-    return (categoryOrType as RequestType).documentFields || [];
-  }, [categoryOrType, dynamicFields]);
+  const commonFields: FieldConfig[] = useMemo(
+    () => sourcedFields.filter((f) => f.source === "common" && f.type !== "file").map(applyCommonFieldRules),
+    [sourcedFields]
+  );
+
+  const categoryFields: FieldConfig[] = useMemo(
+    () => sourcedFields.filter((f) => f.source === "category" && f.type !== "file"),
+    [sourcedFields]
+  );
+
+  const documentFields: FieldConfig[] = useMemo(
+    () => sourcedFields.filter((f) => f.type === "file"),
+    [sourcedFields]
+  );
 
   const allFields = useMemo(
-    () => [...commonFields, ...categoryFields],
-    [commonFields, categoryFields]
+    () => [...commonFields, ...categoryFields, ...documentFields],
+    [commonFields, categoryFields, documentFields]
   );
 
   const steps: WizardStep[] = useMemo(
@@ -249,11 +264,17 @@ export function useRequestWizard(
       {
         id: "category-details",
         title: "Category Details",
-        description: "Provide the category-specific information and required documents.",
+        description: "Provide the category-specific information.",
         fields: categoryFields,
       },
+      {
+        id: "documents",
+        title: "Documents",
+        description: "Upload the required documents and photos.",
+        fields: documentFields,
+      },
     ],
-    [commonFields, categoryFields]
+    [commonFields, categoryFields, documentFields]
   );
 
   const schema = useMemo(() => buildCategoryFormSchema(allFields), [allFields]);
@@ -850,6 +871,7 @@ export function useRequestWizard(
 
       const inCommon = commonFields.some((f) => errorFieldIds.includes(f.id));
       const inCategory = categoryFields.some((f) => errorFieldIds.includes(f.id));
+      const inDocuments = documentFields.some((f) => errorFieldIds.includes(f.id));
 
       if (inCommon && stepIndex !== 0) {
         setStepIndex(0);
@@ -859,6 +881,11 @@ export function useRequestWizard(
       if (inCategory && stepIndex !== 1) {
         setStepIndex(1);
         toast.error("Validation error", "Please complete the required category details.");
+        return;
+      }
+      if (inDocuments && stepIndex !== 2) {
+        setStepIndex(2);
+        toast.error("Validation error", "Please upload the required documents.");
         return;
       }
       toast.error("Validation error", "Please resolve the highlighted errors before submitting.");
@@ -1032,6 +1059,7 @@ export function useRequestWizard(
     stepperSteps,
     commonFields,
     categoryFields,
+    documentFields,
     allFields,
     reviewReady,
     isPending,

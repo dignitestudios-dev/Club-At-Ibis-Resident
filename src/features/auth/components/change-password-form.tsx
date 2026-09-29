@@ -112,7 +112,7 @@ export function ChangePasswordForm() {
                       <PasswordInput
                         id="confirmNewPassword"
                         autoComplete="new-password"
-                        placeholder="Confirm new password"
+                        placeholder="Re-enter new password"
                         maxLength={128}
                         disabled={isPending}
                         aria-invalid={!!errors.confirmNewPassword}
