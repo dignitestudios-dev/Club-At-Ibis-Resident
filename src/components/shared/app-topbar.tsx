@@ -32,7 +32,7 @@ export function AppTopbar() {
       </Sheet>
 
       <div className="lg:hidden">
-        <Logo variant="navy" size={22} />
+        <Logo variant="navy" size={30} />
       </div>
 
       <div className="ml-auto flex items-center gap-1.5">
