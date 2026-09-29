@@ -45,6 +45,7 @@ interface RequestType {
 type RequestStatus =
   | "draft"
   | "submitted"
+  | "assigned"
   | "under_review"
   | "changes_required"
   | "resubmitted"

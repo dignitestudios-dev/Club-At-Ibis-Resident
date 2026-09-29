@@ -1,4 +1,5 @@
 import { memo } from "react";
+import Link from "next/link";
 import { ArrowDown, ArrowUp, type LucideIcon } from "lucide-react";
 import { cn } from "@/utils/cn";
 
@@ -46,6 +47,7 @@ export const StatCard = memo(function StatCard({
   icon: Icon,
   accent = "slate",
   trend,
+  href,
   className,
 }: {
   label: string;
@@ -53,19 +55,22 @@ export const StatCard = memo(function StatCard({
   icon: LucideIcon;
   accent?: keyof typeof ACCENT_CLASSES;
   trend?: { value: string; direction: "up" | "down"; positive?: boolean };
+  /** Makes the whole card a link (e.g. into a pre-filtered request list). */
+  href?: string;
   className?: string;
 }) {
   const accentStyle = ACCENT_CLASSES[accent] ?? ACCENT_CLASSES.slate;
 
-  return (
-    <div
-      className={cn(
-        "group relative flex flex-col justify-between gap-3.5 overflow-hidden rounded-2xl border border-border/80 bg-card p-5 shadow-2xs transition-all duration-300",
-        "hover:-translate-y-1 hover:shadow-md",
-        accentStyle.glow,
-        className
-      )}
-    >
+  const classes = cn(
+    "group relative flex flex-col justify-between gap-3.5 overflow-hidden rounded-2xl border border-border/80 bg-card p-5 shadow-2xs transition-all duration-300",
+    "hover:-translate-y-1 hover:shadow-md",
+    accentStyle.glow,
+    href && "cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+    className
+  );
+
+  const body = (
+    <>
       {/* Top accent line */}
       <span
         className={cn(
@@ -110,6 +115,16 @@ export const StatCard = memo(function StatCard({
           </span>
         )}
       </div>
-    </div>
+    </>
   );
+
+  if (href) {
+    return (
+      <Link href={href} className={classes} aria-label={`${label}: ${value}`}>
+        {body}
+      </Link>
+    );
+  }
+
+  return <div className={classes}>{body}</div>;
 });

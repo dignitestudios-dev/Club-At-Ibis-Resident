@@ -14,7 +14,7 @@ import { StatCard } from "@/components/shared/stat-card";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RequestListItem } from "@/features/requests/components/request-list-item";
+import { DashboardRequestCard } from "@/features/requests/components/dashboard-request-card";
 import { useDashboard } from "@/features/requests/hooks/use-dashboard";
 
 export default function DashboardOverview() {
@@ -81,6 +81,7 @@ export default function DashboardOverview() {
           value={stats.total}
           icon={FileText}
           accent="navy"
+          href="/requests"
           className="animate-in fade-in slide-in-from-bottom-3 duration-500 fill-mode-both"
         />
         <StatCard
@@ -88,6 +89,7 @@ export default function DashboardOverview() {
           value={stats.pending}
           icon={Clock}
           accent="blue"
+          href="/requests"
           className="animate-in fade-in slide-in-from-bottom-3 duration-500 delay-100 fill-mode-both"
         />
         <StatCard
@@ -95,6 +97,7 @@ export default function DashboardOverview() {
           value={stats.needsAction}
           icon={AlertCircle}
           accent="amber"
+          href="/requests?status=changes_required"
           className="animate-in fade-in slide-in-from-bottom-3 duration-500 delay-200 fill-mode-both"
         />
         <StatCard
@@ -102,6 +105,7 @@ export default function DashboardOverview() {
           value={stats.approved}
           icon={CheckCircle2}
           accent="emerald"
+          href="/requests?status=approved"
           className="animate-in fade-in slide-in-from-bottom-3 duration-500 delay-300 fill-mode-both"
         />
       </div>
@@ -148,7 +152,7 @@ export default function DashboardOverview() {
         {!isLoading && recentRequests.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4.5">
             {recentRequests.map((request, idx) => (
-              <RequestListItem
+              <DashboardRequestCard
                 key={request.id}
                 request={request}
                 className={`animate-in fade-in slide-in-from-bottom-2 duration-400 fill-mode-both ${

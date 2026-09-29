@@ -25,25 +25,38 @@ export function FileDropzone({
   const [dragOver, setDragOver] = useState(false);
   const [previewFile, setPreviewFile] = useState<PreviewableFile | null>(null);
 
+  // Allowed submission types per the backend's own v1 scope: PNG, JPG/JPEG, PDF, DOCX only
+  // (no WEBP, no legacy .doc) — see club-at-ibis-backend AGENTS.md.
+  const ALLOWED_EXTENSIONS = [".png", ".jpg", ".jpeg", ".pdf", ".docx"];
+  const ALLOWED_MIME_TYPES = [
+    "image/png",
+    "image/jpeg",
+    "application/pdf",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ];
+
   function formatAcceptDisplay(acceptStr?: string): string {
-    if (!acceptStr) return "Images (PNG, JPG, JPEG, WEBP), PDF, Word (.doc, .docx)";
-    const hasImages = acceptStr.includes("image") || acceptStr.includes(".png") || acceptStr.includes(".jpg") || acceptStr.includes(".webp");
+    if (!acceptStr) return "Images (PNG, JPG, JPEG), PDF, Word (.docx)";
+    const hasImages = acceptStr.includes("image") || acceptStr.includes(".png") || acceptStr.includes(".jpg");
     const hasPdf = acceptStr.includes("pdf") || acceptStr.includes(".pdf");
-    const hasWord = acceptStr.includes("word") || acceptStr.includes(".doc");
+    const hasWord = acceptStr.includes("word") || acceptStr.includes(".docx");
 
     const parts: string[] = [];
-    if (hasImages) parts.push("Images (PNG, JPG, JPEG, WEBP)");
+    if (hasImages) parts.push("Images (PNG, JPG, JPEG)");
     if (hasPdf) parts.push("PDF (.pdf)");
-    if (hasWord) parts.push("Word (.doc, .docx)");
+    if (hasWord) parts.push("Word (.docx)");
 
     return parts.length > 0 ? parts.join(", ") : acceptStr.replaceAll(",", ", ");
   }
 
   function isFileAllowed(file: File): boolean {
     const name = file.name.toLowerCase();
-    const allowedExtensions = [".png", ".jpg", ".jpeg", ".webp", ".pdf", ".doc", ".docx"];
     const ext = name.substring(name.lastIndexOf("."));
-    if (!allowedExtensions.includes(ext)) return false;
+    if (!ALLOWED_EXTENSIONS.includes(ext)) return false;
+    // The extension alone can be spoofed (e.g. a video renamed to ".pdf"), so also
+    // require the browser-reported MIME type to match one of the allowed types
+    // when it reports one at all (some OS/browser combinations leave it blank).
+    if (file.type && !ALLOWED_MIME_TYPES.includes(file.type.toLowerCase())) return false;
 
     if (!accept) return true;
     const acceptLower = accept.toLowerCase();
@@ -65,7 +78,7 @@ export function FileDropzone({
             detail: {
               variant: "error",
               title: "Invalid file type",
-              description: "Only Images (PNG, JPG, JPEG, WEBP), PDF, and Word documents (.doc, .docx) are allowed.",
+              description: "Only Images (PNG, JPG, JPEG), PDF, and Word documents (.docx) are allowed.",
             },
           })
         );

@@ -49,15 +49,17 @@ export function DynamicField({
   }, [field.options]);
 
   const normalizedAccept = useMemo(() => {
+    // Allowed submission types per the backend's own v1 scope: PNG, JPG/JPEG, PDF,
+    // DOCX only (no WEBP, no legacy .doc) — see club-at-ibis-backend AGENTS.md.
     const mapGroup = (a: string) => {
-      if (a === "images") return ".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp";
+      if (a === "images") return ".png,.jpg,.jpeg,image/png,image/jpeg";
       if (a === "pdf") return ".pdf,application/pdf";
-      if (a === "word") return ".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+      if (a === "word") return ".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
       return a;
     };
 
     if (!field.accept || (Array.isArray(field.accept) && field.accept.length === 0)) {
-      return ".png,.jpg,.jpeg,.webp,.pdf,.doc,.docx,image/png,image/jpeg,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+      return ".png,.jpg,.jpeg,.pdf,.docx,image/png,image/jpeg,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
     }
     if (Array.isArray(field.accept)) {
       return field.accept.map(mapGroup).join(",");

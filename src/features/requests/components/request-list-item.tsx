@@ -13,6 +13,7 @@ import { cn } from "@/utils/cn";
 const STATUS_TOP_ACCENT: Record<RequestStatus, string> = {
   draft: "bg-slate-300 dark:bg-slate-600",
   submitted: "bg-primary",
+  assigned: "bg-indigo-500",
   under_review: "bg-sky-500",
   changes_required: "bg-amber-500",
   resubmitted: "bg-purple-500",
