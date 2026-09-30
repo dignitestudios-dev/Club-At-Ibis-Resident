@@ -157,6 +157,14 @@ function extractCurrentRevision(err: any): number | null {
   return null;
 }
 
+function extractCurrentMediaRevision(err: any): number | null {
+  const details = err?.responseData?.details || err?.response?.data?.details;
+  if (details && typeof details.currentMediaRevision === "number") {
+    return details.currentMediaRevision;
+  }
+  return null;
+}
+
 export function useRequestWizard(
   categoryOrType: ActiveCategory | RequestType,
   onChangeType: () => void,
@@ -176,6 +184,12 @@ export function useRequestWizard(
   const [draftRevision, setDraftRevision] = useState<number>(() => {
     if (initialDraft && "draftRevision" in initialDraft && typeof initialDraft.draftRevision === "number") {
       return initialDraft.draftRevision;
+    }
+    return 0;
+  });
+  const [mediaRevision, setMediaRevision] = useState<number>(() => {
+    if (initialDraft && "mediaRevision" in initialDraft && typeof initialDraft.mediaRevision === "number") {
+      return initialDraft.mediaRevision;
     }
     return 0;
   });
@@ -290,12 +304,19 @@ export function useRequestWizard(
 
       if (initialDraft.uploads) {
         for (const [key, files] of Object.entries(initialDraft.uploads)) {
-          merged[key] = (files || []).map((f) => ({
-            id: f.id,
-            name: f.name,
-            size: f.size,
-            url: f.url,
-          }));
+          merged[key] = (files || [])
+            .filter((f) => f.status !== "deleted")
+            .map((f) => ({
+              id: f.id,
+              name: f.name,
+              size: f.size,
+              url: f.url,
+              status: (f.status === "failed" ? "failed" : "ready") as DropzoneFileStatus,
+              failureCode: f.failureCode ?? undefined,
+              fileId: f.id,
+              version: f.version,
+              logicalFileId: f.logicalFileId,
+            }));
         }
       }
       return merged;
@@ -416,6 +437,14 @@ export function useRequestWizard(
   const draftRevisionRef = useRef(draftRevision);
   draftRevisionRef.current = draftRevision;
 
+  const mediaRevisionRef = useRef(mediaRevision);
+  mediaRevisionRef.current = mediaRevision;
+
+  const handleMediaRevisionChange = useCallback((next: number) => {
+    setMediaRevision(next);
+    mediaRevisionRef.current = next;
+  }, []);
+
   const isSavingRef = useRef(false);
   const lastSavedSignatureRef = useRef<string>("");
 
@@ -437,6 +466,8 @@ export function useRequestWizard(
           currentDraftIdRef.current = record.id;
           setDraftRevision(record.draftRevision ?? 0);
           draftRevisionRef.current = record.draftRevision ?? 0;
+          setMediaRevision(record.mediaRevision ?? 0);
+          mediaRevisionRef.current = record.mediaRevision ?? 0;
           setReference(record.reference || record.code || null);
         })
         .catch((err: unknown) => {
@@ -459,6 +490,10 @@ export function useRequestWizard(
         setDraftRevision(initialDraft.draftRevision);
         draftRevisionRef.current = initialDraft.draftRevision;
       }
+      if ("mediaRevision" in initialDraft && typeof initialDraft.mediaRevision === "number") {
+        setMediaRevision(initialDraft.mediaRevision);
+        mediaRevisionRef.current = initialDraft.mediaRevision;
+      }
       if ("reference" in initialDraft && initialDraft.reference) {
         setReference(initialDraft.reference);
       } else if ("code" in initialDraft && initialDraft.code) {
@@ -473,12 +508,19 @@ export function useRequestWizard(
 
       if (initialDraft.uploads) {
         for (const [key, files] of Object.entries(initialDraft.uploads)) {
-          merged[key] = (files || []).map((f) => ({
-            id: f.id,
-            name: f.name,
-            size: f.size,
-            url: f.url,
-          }));
+          merged[key] = (files || [])
+            .filter((f) => f.status !== "deleted")
+            .map((f) => ({
+              id: f.id,
+              name: f.name,
+              size: f.size,
+              url: f.url,
+              status: (f.status === "failed" ? "failed" : "ready") as DropzoneFileStatus,
+              failureCode: f.failureCode ?? undefined,
+              fileId: f.id,
+              version: f.version,
+              logicalFileId: f.logicalFileId,
+            }));
         }
       }
       form.reset(merged);
@@ -898,6 +940,16 @@ export function useRequestWizard(
       return;
     }
 
+    const unfinishedUpload = documentFields.some((field) => {
+      const rows = (values[field.id] as DropzoneFile[]) ?? [];
+      return rows.some((f) => f.status === "uploading" || f.status === "verifying" || f.status === "failed");
+    });
+    if (unfinishedUpload) {
+      setStepIndex(2);
+      toast.error("Documents not ready", "Wait for every upload to finish, or remove/retry a failed one, before submitting.");
+      return;
+    }
+
     const draftId = currentDraftIdRef.current;
     if (!draftId) {
       toast.error("Draft is initializing, please try again in a moment.");
@@ -976,6 +1028,7 @@ export function useRequestWizard(
           id: draftId,
           payload: {
             expectedDraftRevision: rev,
+            expectedMediaRevision: mediaRevisionRef.current,
             hoaConfirmed: true,
             hoaApproved: true,
           },
@@ -1005,6 +1058,13 @@ export function useRequestWizard(
               setDraftRevision(remoteRev);
               // Auto-retry once with the remote revision
               performSubmit(remoteRev);
+              return;
+            }
+            const remoteMediaRev = extractCurrentMediaRevision(err);
+            if (remoteMediaRev !== null && remoteMediaRev !== mediaRevisionRef.current) {
+              mediaRevisionRef.current = remoteMediaRev;
+              setMediaRevision(remoteMediaRev);
+              performSubmit(rev);
               return;
             }
             isSubmittingRef.current = false;
@@ -1074,6 +1134,8 @@ export function useRequestWizard(
     dismissMigratedNotice: () => setHasMigratedNotice(false),
     reference,
     currentDraftId,
+    mediaRevision,
+    onMediaRevisionChange: handleMediaRevisionChange,
     handleMigrateForm,
     handleSaveDraft,
     handleNext,

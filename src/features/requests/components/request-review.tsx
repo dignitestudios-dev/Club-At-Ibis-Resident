@@ -12,6 +12,7 @@ import {
 } from "@/components/shared/file-preview-dialog";
 import { formatFileSize } from "@/utils/format";
 import { formatUsPhone } from "@/features/requests/schemas/request-step.schema";
+import { getFileDownloadUrl } from "@/features/requests/api/requests.service";
 
 export function formatFieldValue(
   field: FieldConfig,
@@ -65,6 +66,7 @@ export function RequestReview({
   disabled,
   onNavigateToStep,
   onPreviewFile,
+  requestId,
 }: {
   requestType?: RequestType | null;
   fields?: FieldConfig[];
@@ -78,6 +80,8 @@ export function RequestReview({
   disabled?: boolean;
   onNavigateToStep?: (stepIndex: number) => void;
   onPreviewFile?: (file: PreviewableFile) => void;
+  /** Used by the internal preview dialog (when `onPreviewFile` isn't given) to fetch a fresh SAS URL for an already-submitted file. */
+  requestId?: string;
 }) {
   const [internalPreviewFile, setInternalPreviewFile] =
     useState<PreviewableFile | null>(null);
@@ -282,6 +286,9 @@ export function RequestReview({
         file={internalPreviewFile}
         open={!!internalPreviewFile}
         onOpenChange={(open) => !open && setInternalPreviewFile(null)}
+        onRequestDownloadUrl={
+          requestId ? (fileId, disposition) => getFileDownloadUrl(requestId, fileId, disposition).then((r) => r.url) : undefined
+        }
       />
     </div>
   );

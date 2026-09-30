@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Controller } from "react-hook-form";
+import { Controller, useWatch } from "react-hook-form";
 import {
   ArrowLeft,
   ArrowRight,
@@ -630,6 +630,8 @@ function CategoryFormWizard({
     dismissMigratedNotice,
     reference,
     currentDraftId,
+    mediaRevision,
+    onMediaRevisionChange,
     handleMigrateForm,
     handleSaveDraft,
     handleNext,
@@ -646,6 +648,12 @@ function CategoryFormWizard({
   const toast = useToast();
   const [confirmingDiscard, setConfirmingDiscard] = useState(false);
   const { mutate: deleteDraftMutate, isPending: isDeletingDraft } = useDeleteDraftMutation();
+
+  const documentFieldIds = documentFields.map((f) => f.id);
+  const watchedDocuments = useWatch({ control: form.control, name: documentFieldIds });
+  const documentsUploading = watchedDocuments.some(
+    (rows: any) => Array.isArray(rows) && rows.some((r: any) => r?.status === "uploading" || r?.status === "verifying")
+  );
 
   const staleAlertRef = useRef<HTMLDivElement | null>(null);
   const upgradeBtnRef = useRef<HTMLButtonElement | null>(null);
@@ -821,6 +829,9 @@ function CategoryFormWizard({
                         control={form.control}
                         errors={form.formState.errors}
                         disabled={isPending || isStaleForm}
+                        requestId={currentDraftId ?? undefined}
+                        mediaRevision={mediaRevision}
+                        onMediaRevisionChange={onMediaRevisionChange}
                       />
                     </div>
                   ))}
@@ -864,6 +875,7 @@ function CategoryFormWizard({
                 values={form.getValues()}
                 errors={form.formState.errors}
                 disabled={isStaleForm}
+                requestId={currentDraftId ?? undefined}
                 onNavigateToStep={
                   isStaleForm
                     ? undefined
@@ -900,7 +912,12 @@ function CategoryFormWizard({
 
               <div className="flex items-center gap-2.5">
                 {!isReviewStep ? (
-                  <Button type="button" onClick={handleNext}>
+                  <Button
+                    type="button"
+                    onClick={handleNext}
+                    disabled={documentsUploading}
+                    title={documentsUploading ? "Wait for the document upload to finish before continuing." : undefined}
+                  >
                     Next
                     <ArrowRight className="size-4 ml-1" />
                   </Button>
@@ -916,18 +933,8 @@ function CategoryFormWizard({
                       type="submit"
                       disabled={isPending || isSavingDraft || !reviewReady}
                     >
-                      {isPending ? (
-                        <Spinner className="size-4 mr-1" />
-                      ) : isSavingDraft ? (
-                        <Spinner className="size-4 mr-1" />
-                      ) : (
-                        <Send className="size-4 mr-1" />
-                      )}
-                      {isSavingDraft
-                        ? "Saving Draft..."
-                        : isPending
-                        ? "Submitting..."
-                        : "Submit Request"}
+                      {isPending ? <Spinner className="size-4 mr-1" /> : <Send className="size-4 mr-1" />}
+                      {isPending ? "Submitting..." : "Submit Request"}
                     </Button>
                   </div>
                 )}

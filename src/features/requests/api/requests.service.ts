@@ -111,6 +111,7 @@ function toRequestRecord(raw: any): RequestRecord {
     lotNo: propLotNo,
     status: raw.status || "draft",
     draftRevision: raw.draftRevision ?? 0,
+    mediaRevision: raw.mediaRevision ?? 0,
     workflowVersion: raw.workflowVersion ?? 0,
     revision: raw.revision
       ? {
@@ -246,10 +247,13 @@ export async function submitRequest(
   payload: SubmitRequestPayload,
   idempotencyKey: string
 ): Promise<RequestRecord> {
-  const cleanBody = {
+  const cleanBody: Record<string, any> = {
     expectedDraftRevision: payload.expectedDraftRevision,
     hoaConfirmed: payload.hoaConfirmed ?? payload.hoaApproved ?? true,
   };
+  if (typeof payload.expectedMediaRevision === "number") {
+    cleanBody.expectedMediaRevision = payload.expectedMediaRevision;
+  }
 
   const { data } = await axiosInstance.post(`/requests/${id}/submit`, cleanBody, {
     headers: {
@@ -257,6 +261,56 @@ export async function submitRequest(
     },
   });
   return toRequestRecord(data.data.request);
+}
+
+/**
+ * Request permission to upload one file: creates pending file metadata and
+ * returns a short-lived write SAS URL for a direct browser -> Azure PUT.
+ * Retry with the same clientUploadId while the intent is still pending to
+ * get a fresh SAS URL without creating duplicate metadata.
+ */
+export async function createUploadIntent(
+  requestId: string,
+  payload: CreateUploadIntentPayload
+): Promise<UploadIntentResult> {
+  const { data } = await axiosInstance.post(`/requests/${requestId}/files/upload-intents`, payload);
+  return data.data;
+}
+
+/**
+ * Ask the backend to verify the uploaded blob (size/signature/content-type)
+ * and mark the file ready. Safe to retry after a successful call.
+ */
+export async function completeUpload(requestId: string, fileId: string): Promise<CompleteUploadResult> {
+  const { data } = await axiosInstance.post(`/requests/${requestId}/files/${fileId}/complete`, {});
+  return data.data;
+}
+
+/**
+ * Remove an unsubmitted (pending/failed/ready) file. Submitted files return
+ * SUBMITTED_FILE_IMMUTABLE and must go through the replacesFileId flow instead.
+ */
+export async function deleteRequestFile(
+  requestId: string,
+  fileId: string,
+  expectedMediaRevision: number
+): Promise<{ mediaRevision: number }> {
+  const { data } = await axiosInstance.delete(`/requests/${requestId}/files/${fileId}`, {
+    data: { expectedMediaRevision },
+  });
+  return data.data;
+}
+
+/** Get a fresh short-lived (10 minute) read-only SAS URL for one file. Never persist it. */
+export async function getFileDownloadUrl(
+  requestId: string,
+  fileId: string,
+  disposition?: "inline" | "attachment"
+): Promise<DownloadUrlResult> {
+  const { data } = await axiosInstance.get(`/requests/${requestId}/files/${fileId}/download`, {
+    params: disposition ? { disposition } : undefined,
+  });
+  return data.data.download;
 }
 
 /**

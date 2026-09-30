@@ -3,10 +3,18 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { Controller } from "react-hook-form";
-import { AlertCircle, RotateCw } from "lucide-react";
+import { AlertCircle, RotateCw, ShieldOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/shared/password-input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   Field,
   FieldContent,
@@ -25,6 +33,8 @@ export default function LoginForm() {
     onInvalid,
     isPending,
     unverifiedEmail,
+    accountDisabled,
+    dismissAccountDisabled,
     handleResendVerification,
     isResendingVerification,
     resendCountdown,
@@ -185,6 +195,26 @@ export default function LoginForm() {
           </div>
         </FieldGroup>
       </form>
+
+      <Dialog open={accountDisabled} onOpenChange={(open) => !open && dismissAccountDisabled()}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="mb-1 flex size-11 items-center justify-center rounded-xl border border-destructive/30 bg-destructive/10 text-destructive">
+              <ShieldOff className="size-5" aria-hidden="true" />
+            </div>
+            <DialogTitle className="font-heading text-xl font-medium">Your Account Has Been Deactivated</DialogTitle>
+            <DialogDescription>
+              Your account access has been disabled by the ARB office. Please contact the ARB office for more
+              information about this decision and to request account recovery.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={dismissAccountDisabled} className="w-full sm:w-auto">
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

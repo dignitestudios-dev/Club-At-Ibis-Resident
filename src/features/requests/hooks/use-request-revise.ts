@@ -13,9 +13,9 @@ import { updateRequestRevision, resubmitRequestRevision } from "@/features/reque
 
 /** Comparable, order/type-insensitive form of a field value — mirrors the backend's own `JSON.stringify(...) === JSON.stringify(...)` unchanged-check in review.service.js. */
 function normalizeForComparison(value: unknown): string {
-  if (Array.isArray(value)) return JSON.stringify(value.map(String));
+  if (Array.isArray(value)) return JSON.stringify(value.map((v) => String(v).trim()));
   if (value === undefined || value === null) return "";
-  return String(value);
+  return String(value).trim();
 }
 
 export interface RevisionWizardStep {
@@ -75,11 +75,27 @@ export function useRequestRevise(request: RequestRecord) {
     () => allFields.filter((field) => flagsByField.has(field.id)),
     [allFields, flagsByField]
   );
-  // The backend has no file-correction workflow yet (FILE_WORKFLOW_DEFERRED),
-  // so a flagged file field can be shown with its flag but never made editable.
+  // Text/select/etc. flagged fields go through the field-value correction
+  // endpoint (PATCH .../revision); flagged file fields are corrected by
+  // uploading a replacement (POST .../files/upload-intents with
+  // replacesFileId), never through fieldValues.
   const editableFlaggedFields = useMemo(
     () => flaggedFields.filter((f) => f.type !== "file"),
     [flaggedFields]
+  );
+  const flaggedFileFields = useMemo(
+    () => flaggedFields.filter((f) => f.type === "file"),
+    [flaggedFields]
+  );
+  /** fieldId -> the currently-submitted fileId to pass as `replacesFileId` when the resident uploads a correction. */
+  const replacesFileIdByField = useMemo(
+    () =>
+      new Map(
+        (request.revision?.items ?? [])
+          .filter((item) => item.kind === "file" && item.fileId)
+          .map((item) => [item.fieldId, item.fileId as string])
+      ),
+    [request.revision]
   );
 
   const steps: RevisionWizardStep[] = useMemo(
@@ -99,45 +115,49 @@ export function useRequestRevise(request: RequestRecord) {
       {
         id: "documents",
         title: "Documents",
-        description: "Document corrections aren't supported yet — contact the ARB office if a flagged file needs to be replaced.",
+        description: "Only the documents flagged by the ARB below can be replaced.",
         fields: documentFields,
       },
     ],
     [commonFields, categoryFields, documentFields]
   );
 
-  // The reviewer flagged these fields specifically because they need to
-  // change — the backend rejects a resubmit if a flagged field's value still
-  // matches the original submission (FLAGGED_FIELD_UNCHANGED). Checking it
-  // here too means the resident sees the error inline, before ever hitting
-  // Next/Resubmit, instead of only after a round trip to the server.
-  const schema = useMemo(() => {
-    const base = buildStepSchema(editableFlaggedFields);
-    return base.superRefine((values, ctx) => {
-      for (const field of editableFlaggedFields) {
-        const current = normalizeForComparison(values[field.id]);
-        const original = normalizeForComparison(request.fieldValues[field.id]);
-        if (current === original) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: [field.id],
-            message: `${field.label} must be corrected before resubmitting.`,
-          });
-        }
+  // The baseline values from the previous submission before any draft corrections were made.
+  // We extract them from the latest submission in `request.submissions`, or freeze initial `request.fieldValues`.
+  const initialFieldValuesRef = useRef<Record<string, FieldValue>>({ ...request.fieldValues });
+  const originalSubmittedValues = useMemo(() => {
+    if (request.submissions && request.submissions.length > 0) {
+      const lastSub = request.submissions[request.submissions.length - 1];
+      if (lastSub?.fieldValues) {
+        return lastSub.fieldValues;
       }
-    });
-  }, [editableFlaggedFields, request.fieldValues]);
+    }
+    return initialFieldValuesRef.current;
+  }, [request.submissions]);
+
+  // Schema validates syntax, required state, and format rules for flagged fields.
+  // Per-step unchanged checks are performed dynamically in handleNext/handleSubmit
+  // so steps are not blocked by flagged fields belonging to subsequent steps.
+  const schema = useMemo(() => {
+    return buildStepSchema(editableFlaggedFields);
+  }, [editableFlaggedFields]);
 
   const defaultValues = useMemo(() => {
     const values: Record<string, unknown> = {};
     for (const field of allFields) {
       if (field.type === "file") {
-        values[field.id] = (request.uploads?.[field.id] ?? []).map((f) => ({
-          id: f.id,
-          name: f.name,
-          size: f.size,
-          url: f.url,
-        }));
+        values[field.id] = (request.uploads?.[field.id] ?? [])
+          .filter((f) => f.status !== "deleted")
+          .map((f) => ({
+            id: f.id,
+            name: f.name,
+            size: f.size,
+            url: f.url,
+            status: "ready" as DropzoneFileStatus,
+            fileId: f.id,
+            version: f.version,
+            logicalFileId: f.logicalFileId,
+          }));
       } else if (field.type === "checkbox") {
         values[field.id] = request.fieldValues[field.id] ?? [];
       } else {
@@ -185,10 +205,17 @@ export function useRequestRevise(request: RequestRecord) {
 
   const [workflowVersion, setWorkflowVersion] = useState(request.workflowVersion ?? 0);
   const [revisionVersion, setRevisionVersion] = useState(request.revision?.revisionVersion ?? 0);
+  const [mediaRevision, setMediaRevision] = useState(request.mediaRevision ?? 0);
   const workflowVersionRef = useRef(workflowVersion);
   workflowVersionRef.current = workflowVersion;
   const revisionVersionRef = useRef(revisionVersion);
   revisionVersionRef.current = revisionVersion;
+  const mediaRevisionRef = useRef(mediaRevision);
+  mediaRevisionRef.current = mediaRevision;
+  const handleMediaRevisionChange = useCallback((next: number) => {
+    setMediaRevision(next);
+    mediaRevisionRef.current = next;
+  }, []);
 
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
@@ -280,24 +307,103 @@ export function useRequestRevise(request: RequestRecord) {
 
   async function handleNext() {
     if (isReviewStep) return;
-    const fieldIds = currentStep.fields.map((f) => f.id);
-    const valid = fieldIds.length === 0 ? true : await form.trigger(fieldIds);
-    if (valid) {
-      setStepIndex((i) => i + 1);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      triggerAutosave();
+    const currentStepFieldIds = currentStep.fields.map((f) => f.id);
+    const valid = currentStepFieldIds.length === 0 ? true : await form.trigger(currentStepFieldIds);
+    if (!valid) {
+      const stepErrors = currentStepFieldIds
+        .map((id) => form.formState.errors[id]?.message)
+        .filter((msg): msg is string => typeof msg === "string");
+      toast.error("Validation error", stepErrors[0] || "Please resolve the highlighted errors before continuing.");
       return;
     }
-    const stepErrors = fieldIds
-      .map((id) => form.formState.errors[id]?.message)
-      .filter((msg): msg is string => typeof msg === "string");
-    const stillUnchanged = stepErrors.some((msg) => msg.includes("must be corrected before resubmitting"));
-    toast.error(
-      stillUnchanged ? "Update the flagged field(s) to continue" : "Validation error",
-      stillUnchanged
-        ? "One or more flagged fields on this step still match your original answer. Change the value before continuing."
-        : stepErrors[0] || "Please resolve the highlighted errors before continuing."
+
+    const values = form.getValues();
+
+    // 1. Check if any file fields on this step are currently uploading or failed
+    const fileFieldsOnStep = currentStep.fields.filter((f) => f.type === "file");
+    const uploadingOrFailed = fileFieldsOnStep.some((field) => {
+      const rows = (values[field.id] as DropzoneFile[]) ?? [];
+      return rows.some((f) => f.status === "uploading" || f.status === "verifying" || f.status === "failed");
+    });
+    if (uploadingOrFailed) {
+      toast.error("Documents not ready", "Wait for the document upload to finish, or retry a failed one, before continuing.");
+      return;
+    }
+
+    // 2. Check that flagged text/choice fields ON THIS CURRENT STEP have been changed from their original values
+    const currentStepFlagged = currentStep.fields.filter(
+      (f) => flagsByField.has(f.id) && f.type !== "file"
     );
+    let hasUnchanged = false;
+    let firstUnchangedLabel = "";
+
+    for (const field of currentStepFlagged) {
+      const current = normalizeForComparison(values[field.id]);
+      const original = normalizeForComparison(originalSubmittedValues[field.id]);
+      if (current === original) {
+        form.setError(field.id as any, {
+          type: "custom",
+          message: `${field.label} must be corrected before continuing.`,
+        });
+        if (!hasUnchanged) firstUnchangedLabel = field.label;
+        hasUnchanged = true;
+      } else {
+        if (form.formState.errors[field.id]?.message?.includes("must be corrected")) {
+          form.clearErrors(field.id as any);
+        }
+      }
+    }
+
+    if (hasUnchanged) {
+      toast.error(
+        "Update the flagged field(s) to continue",
+        firstUnchangedLabel
+          ? `${firstUnchangedLabel} must be corrected before continuing.`
+          : "One or more flagged fields on this step still match your original answer. Change the value before continuing."
+      );
+      return;
+    }
+
+    // 3. Check that flagged document fields ON THIS CURRENT STEP have been replaced
+    const currentStepFlaggedFiles = currentStep.fields.filter(
+      (f) => flagsByField.has(f.id) && f.type === "file"
+    );
+    let hasUnchangedDoc = false;
+    let firstUnchangedDocLabel = "";
+
+    for (const field of currentStepFlaggedFiles) {
+      const flaggedOriginalFileId = replacesFileIdByField.get(field.id);
+      const rows = (values[field.id] as DropzoneFile[]) ?? [];
+      const hasReplacement = rows.some(
+        (f) => f.status === "ready" && f.fileId && (!flaggedOriginalFileId || f.fileId !== flaggedOriginalFileId)
+      );
+      if (!hasReplacement) {
+        form.setError(field.id as any, {
+          type: "custom",
+          message: `${field.label} must be replaced before continuing.`,
+        });
+        if (!hasUnchangedDoc) firstUnchangedDocLabel = field.label;
+        hasUnchangedDoc = true;
+      } else {
+        if (form.formState.errors[field.id]?.message?.includes("must be replaced")) {
+          form.clearErrors(field.id as any);
+        }
+      }
+    }
+
+    if (hasUnchangedDoc) {
+      toast.error(
+        "Replace the flagged document(s) to continue",
+        firstUnchangedDocLabel
+          ? `${firstUnchangedDocLabel} must be replaced before continuing.`
+          : "Please upload replacement files for all flagged documents before continuing."
+      );
+      return;
+    }
+
+    setStepIndex((i) => i + 1);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    triggerAutosave();
   }
 
   function handleBack() {
@@ -317,6 +423,7 @@ export function useRequestRevise(request: RequestRecord) {
       const errorFieldIds = Object.keys(form.formState.errors);
       const inCommon = commonFields.some((f) => errorFieldIds.includes(f.id));
       const inCategory = categoryFields.some((f) => errorFieldIds.includes(f.id));
+      const inDocs = documentFields.some((f) => errorFieldIds.includes(f.id));
       if (inCommon && stepIndex !== 0) {
         setStepIndex(0);
         toast.error("Validation error", "Please complete the required corrections.");
@@ -327,7 +434,77 @@ export function useRequestRevise(request: RequestRecord) {
         toast.error("Validation error", "Please complete the required corrections.");
         return;
       }
+      if (inDocs && stepIndex !== 2) {
+        setStepIndex(2);
+        toast.error("Validation error", "Please replace the required documents.");
+        return;
+      }
       toast.error("Validation error", "Please resolve the highlighted errors before resubmitting.");
+      return;
+    }
+
+    // Verify all flagged text/choice fields have actually changed
+    const values = form.getValues();
+    let hasUnchanged = false;
+    let unchangedField: FieldConfig | null = null;
+    for (const field of editableFlaggedFields) {
+      const current = normalizeForComparison(values[field.id]);
+      const original = normalizeForComparison(originalSubmittedValues[field.id]);
+      if (current === original) {
+        form.setError(field.id as any, {
+          type: "custom",
+          message: `${field.label} must be corrected before resubmitting.`,
+        });
+        if (!hasUnchanged) unchangedField = field;
+        hasUnchanged = true;
+      }
+    }
+
+    if (hasUnchanged && unchangedField) {
+      const targetStep = unchangedField.source === "common" ? 0 : 1;
+      setStepIndex(targetStep);
+      toast.error(
+        "Update flagged fields before resubmitting",
+        `${unchangedField.label} must be corrected before you can resubmit.`
+      );
+      return;
+    }
+
+    const unfinishedUpload = flaggedFileFields.some((field) => {
+      const rows = (values[field.id] as DropzoneFile[]) ?? [];
+      return rows.some((f) => f.status === "uploading" || f.status === "verifying" || f.status === "failed");
+    });
+    if (unfinishedUpload) {
+      setStepIndex(2);
+      toast.error("Documents not ready", "Wait for the replacement upload to finish, or retry a failed one, before resubmitting.");
+      return;
+    }
+
+    // Verify all flagged document fields have actually been replaced
+    let hasUnchangedDoc = false;
+    let unchangedDocField: FieldConfig | null = null;
+    for (const field of flaggedFileFields) {
+      const flaggedOriginalFileId = replacesFileIdByField.get(field.id);
+      const rows = (values[field.id] as DropzoneFile[]) ?? [];
+      const hasReplacement = rows.some(
+        (f) => f.status === "ready" && f.fileId && (!flaggedOriginalFileId || f.fileId !== flaggedOriginalFileId)
+      );
+      if (!hasReplacement) {
+        form.setError(field.id as any, {
+          type: "custom",
+          message: `${field.label} must be replaced before resubmitting.`,
+        });
+        if (!hasUnchangedDoc) unchangedDocField = field;
+        hasUnchangedDoc = true;
+      }
+    }
+
+    if (hasUnchangedDoc && unchangedDocField) {
+      setStepIndex(2);
+      toast.error(
+        "Replace flagged document before resubmitting",
+        `${unchangedDocField.label} must be replaced before you can resubmit.`
+      );
       return;
     }
 
@@ -348,14 +525,15 @@ export function useRequestRevise(request: RequestRecord) {
       }
 
       const idempotencyKey = `resubmit-${request.id}-${Date.now()}`;
-      const performResubmit = async (wv: number, rv: number): Promise<RequestRecord> => {
+      const performResubmit = async (wv: number, rv: number, mr: number): Promise<RequestRecord> => {
         try {
           return await resubmitRequestRevision(
             request.id,
-            { expectedWorkflowVersion: wv, expectedRevisionVersion: rv },
+            { expectedWorkflowVersion: wv, expectedRevisionVersion: rv, expectedMediaRevision: mr },
             idempotencyKey
           );
         } catch (err: any) {
+          const code = err?.code || err?.responseData?.code;
           if (isConcurrencyError(err)) {
             const { workflowVersion: nwv, revisionVersion: nrv } = extractConcurrencyVersions(err);
             const retryWv = nwv ?? wv;
@@ -363,14 +541,21 @@ export function useRequestRevise(request: RequestRecord) {
             if (retryWv !== wv || retryRv !== rv) {
               setWorkflowVersion(retryWv);
               setRevisionVersion(retryRv);
-              return performResubmit(retryWv, retryRv);
+              return performResubmit(retryWv, retryRv, mr);
+            }
+          }
+          if (code === "STALE_MEDIA_REVISION") {
+            const current = err?.responseData?.details?.currentMediaRevision;
+            if (typeof current === "number" && current !== mr) {
+              handleMediaRevisionChange(current);
+              return performResubmit(wv, rv, current);
             }
           }
           throw err;
         }
       };
 
-      const saved = await performResubmit(workflowVersionRef.current, revisionVersionRef.current);
+      const saved = await performResubmit(workflowVersionRef.current, revisionVersionRef.current, mediaRevisionRef.current);
       applyUpdatedRecord(saved);
       queryClient.invalidateQueries({ queryKey: ["requests"] });
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
@@ -385,6 +570,8 @@ export function useRequestRevise(request: RequestRecord) {
         const field = editableFlaggedFields.find((f) => f.id === fieldId);
         const fieldStep = field?.source === "common" ? 0 : 1;
         setStepIndex(fieldStep);
+      } else if (code === "FLAGGED_FILE_UNCHANGED") {
+        setStepIndex(2);
       }
       setSubmissionErrors([message]);
       toast.error("Resubmission failed", message);
@@ -406,7 +593,11 @@ export function useRequestRevise(request: RequestRecord) {
     documentFields,
     allFields,
     flaggedFields,
+    flaggedFileFields,
     flagsByField,
+    replacesFileIdByField,
+    mediaRevision,
+    onMediaRevisionChange: handleMediaRevisionChange,
     isSavingDraft,
     lastSavedAt,
     hasUnsavedChanges,

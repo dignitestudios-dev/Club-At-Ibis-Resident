@@ -24,6 +24,7 @@ export function useLogin() {
   const { mutate: login, isPending } = useLoginMutation();
   const { mutate: resendVerification, isPending: isResendingVerification } = useResendEmailVerificationMutation();
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
+  const [accountDisabled, setAccountDisabled] = useState(false);
 
   const {
     countdown: resendCountdown,
@@ -51,6 +52,7 @@ export function useLogin() {
     if (isSubmittingRef.current || isPending) return;
     isSubmittingRef.current = true;
     setUnverifiedEmail(null);
+    setAccountDisabled(false);
     login(data, {
       onSuccess: ({ token, user }) => {
         resetResendTimer();
@@ -67,12 +69,20 @@ export function useLogin() {
         if (error.code === "EMAIL_VERIFICATION_REQUIRED" || error.message?.toLowerCase().includes("verification")) {
           setUnverifiedEmail(data.email);
         }
+        if (error.code === "ACCOUNT_DISABLED") {
+          setAccountDisabled(true);
+          return;
+        }
         toast.error(error.message || "Unable to sign in.");
       },
       onSettled: () => {
         isSubmittingRef.current = false;
       },
     });
+  }
+
+  function dismissAccountDisabled() {
+    setAccountDisabled(false);
   }
 
   function handleResendVerification() {
@@ -95,6 +105,8 @@ export function useLogin() {
     onInvalid,
     isPending,
     unverifiedEmail,
+    accountDisabled,
+    dismissAccountDisabled,
     handleResendVerification,
     isResendingVerification,
     resendCountdown,

@@ -20,6 +20,7 @@ import { RequestDetailSidebar } from "@/features/requests/components/detail/requ
 import { RequestDocumentsTab } from "@/features/requests/components/detail/request-documents-tab";
 import { useRequestDetail } from "@/features/requests/hooks/use-request-detail";
 import { earlierSubmissions } from "@/features/requests/utils/submissions";
+import { getFileDownloadUrl } from "@/features/requests/api/requests.service";
 
 const FilePreviewDialog = dynamic(
   () => import("@/components/shared/file-preview-dialog").then((m) => m.FilePreviewDialog),
@@ -142,6 +143,7 @@ export default function RequestDetailPage({ id }: { id: string }) {
                     </CardHeader>
                     <CardContent className="pt-4">
                       <RequestDocumentsTab
+                        requestId={request.id}
                         uploadEntries={uploadEntries}
                         allFields={formFields}
                         onPreviewFile={(f) => setPreviewFile(f)}
@@ -173,6 +175,7 @@ export default function RequestDetailPage({ id }: { id: string }) {
         file={previewFile}
         open={!!previewFile}
         onOpenChange={(open) => !open && setPreviewFile(null)}
+        onRequestDownloadUrl={(fileId, disposition) => getFileDownloadUrl(request.id, fileId, disposition).then((r) => r.url)}
       />
     </div>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useWatch } from "react-hook-form";
 import { ArrowLeft, ArrowRight, AlertTriangle, CheckCircle2, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -21,6 +22,9 @@ export function RequestReviseWizard({ request }: { request: RequestRecord }) {
     stepperSteps,
     flaggedFields,
     flagsByField,
+    replacesFileIdByField,
+    mediaRevision,
+    onMediaRevisionChange,
     isSavingDraft,
     lastSavedAt,
     hasUnsavedChanges,
@@ -33,6 +37,12 @@ export function RequestReviseWizard({ request }: { request: RequestRecord }) {
   } = useRequestRevise(request);
 
   const flaggedIds = new Set(flaggedFields.map((f) => f.id));
+
+  const flaggedFileFieldIds = flaggedFields.filter((f) => f.type === "file").map((f) => f.id);
+  const watchedDocuments = useWatch({ control: form.control, name: flaggedFileFieldIds });
+  const documentsUploading = watchedDocuments.some(
+    (rows: any) => Array.isArray(rows) && rows.some((r: any) => r?.status === "uploading" || r?.status === "verifying")
+  );
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 animate-in fade-in duration-300">
@@ -91,7 +101,11 @@ export function RequestReviseWizard({ request }: { request: RequestRecord }) {
                           field={field}
                           control={form.control}
                           errors={form.formState.errors}
-                          disabled={!isFlagged || isFileFlag || isSubmitting}
+                          disabled={!isFlagged || isSubmitting}
+                          requestId={request.id}
+                          mediaRevision={mediaRevision}
+                          onMediaRevisionChange={onMediaRevisionChange}
+                          replacesFileId={isFileFlag ? replacesFileIdByField.get(field.id) : undefined}
                         />
                         {isFlagged && reason && (
                           <div
@@ -103,12 +117,6 @@ export function RequestReviseWizard({ request }: { request: RequestRecord }) {
                               <div>
                                 <span className="font-semibold">Reviewer Flag: </span>
                                 <span className="text-amber-800 dark:text-amber-300">{reason}</span>
-                                {isFileFlag && (
-                                  <p className="mt-1 text-amber-800/90 dark:text-amber-300/90">
-                                    File corrections aren&apos;t supported yet — please contact the ARB office to
-                                    replace this file.
-                                  </p>
-                                )}
                               </div>
                             </div>
                           </div>
@@ -155,6 +163,7 @@ export function RequestReviseWizard({ request }: { request: RequestRecord }) {
                   documentFields={flaggedFields.filter((f) => f.type === "file")}
                   values={form.getValues()}
                   errors={form.formState.errors}
+                  requestId={request.id}
                 />
               )}
             </div>
@@ -178,14 +187,19 @@ export function RequestReviseWizard({ request }: { request: RequestRecord }) {
 
               <div className="flex items-center gap-2.5">
                 {!isReviewStep ? (
-                  <Button type="button" onClick={handleNext}>
+                  <Button
+                    type="button"
+                    onClick={handleNext}
+                    disabled={documentsUploading}
+                    title={documentsUploading ? "Wait for the document upload to finish before continuing." : undefined}
+                  >
                     Next
                     <ArrowRight className="size-4 ml-1" />
                   </Button>
                 ) : (
                   <Button type="submit" disabled={isSubmitting || isSavingDraft || !reviewReady}>
-                    {isSubmitting || isSavingDraft ? <Spinner className="size-4 mr-1" /> : <Send className="size-4 mr-1" />}
-                    {isSavingDraft ? "Saving..." : isSubmitting ? "Resubmitting..." : "Resubmit for Review"}
+                    {isSubmitting ? <Spinner className="size-4 mr-1" /> : <Send className="size-4 mr-1" />}
+                    {isSubmitting ? "Resubmitting..." : "Resubmit for Review"}
                   </Button>
                 )}
               </div>

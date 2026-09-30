@@ -57,13 +57,27 @@ type RequestStatus =
 
 type FieldValue = string | number | boolean | string[] | null;
 
+type RequestFileStatus = "pending" | "ready" | "failed" | "deleted";
+
 interface UploadedFile {
   id: string;
   name: string;
   size: number;
   uploadedAt: string;
   url?: string;
+  fieldId?: string;
+  logicalFileId?: string;
+  version?: number;
+  mimeType?: string;
+  fileGroup?: string;
+  status?: RequestFileStatus;
+  failureCode?: string | null;
+  replacesFileId?: string | null;
+  isCurrent?: boolean;
 }
+
+/** Client-side upload-pipeline state for one file row in a `FileDropzone`. */
+type DropzoneFileStatus = "idle" | "uploading" | "verifying" | "ready" | "failed";
 
 interface DropzoneFile {
   id: string;
@@ -71,6 +85,15 @@ interface DropzoneFile {
   size: number;
   file?: File;
   url?: string;
+  /** Upload-pipeline state; absent/"ready" means an already-submitted file loaded from the server. */
+  status?: DropzoneFileStatus;
+  failureCode?: string;
+  /** The real backend fileId, set once the upload intent is created. */
+  fileId?: string;
+  version?: number;
+  logicalFileId?: string;
+  /** Set when this row is replacing a specific reviewer-flagged file (revise wizard). */
+  replacesFileId?: string;
 }
 
 interface ActivityEntry {
@@ -106,6 +129,8 @@ interface RevisionItem {
   fieldId: string;
   label: string;
   reason: string;
+  /** Set when kind === "file": the currently-submitted file id to pass as `replacesFileId`. */
+  fileId?: string;
 }
 
 /** Only present while `status === "changes_required"`. `revisionVersion` guards PATCH .../revision and POST .../resubmit against concurrent edits. */
@@ -190,6 +215,8 @@ interface RequestRecord {
   lotNo?: string;
   status: RequestStatus;
   draftRevision?: number;
+  /** Optimistic-concurrency guard for creating/completing/deleting request files. */
+  mediaRevision?: number;
   /** Optimistic-concurrency guard for reviewer-assignment/review actions; also required by PATCH .../revision and POST .../resubmit. */
   workflowVersion?: number;
   /** Only present while status is "changes_required". */
@@ -246,8 +273,40 @@ interface AutosaveDraftPayload {
 
 interface SubmitRequestPayload {
   expectedDraftRevision: number;
+  expectedMediaRevision?: number;
   hoaApproved?: boolean;
   hoaConfirmed?: boolean;
+}
+
+interface CreateUploadIntentPayload {
+  fieldId: string;
+  clientUploadId: string;
+  originalName: string;
+  size: number;
+  declaredMimeType: string;
+  expectedMediaRevision: number;
+  replacesFileId?: string;
+}
+
+interface UploadIntentResult {
+  file: UploadedFile;
+  mediaRevision: number;
+  upload: {
+    method: string;
+    url: string;
+    expiresAt: string;
+    requiredHeaders: Record<string, string>;
+  };
+}
+
+interface CompleteUploadResult {
+  file: UploadedFile;
+  mediaRevision: number;
+}
+
+interface DownloadUrlResult {
+  url: string;
+  expiresAt: string;
 }
 
 interface MigrateDraftPayload {
@@ -273,6 +332,7 @@ interface UpdateRevisionPayload {
 interface ResubmitRevisionPayload {
   expectedWorkflowVersion: number;
   expectedRevisionVersion: number;
+  expectedMediaRevision?: number;
 }
 
 interface ResidentRequestsResult {

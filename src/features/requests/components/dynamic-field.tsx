@@ -30,12 +30,22 @@ export function DynamicField({
   control,
   errors,
   disabled = false,
+  requestId,
+  mediaRevision,
+  onMediaRevisionChange,
+  replacesFileId,
 }: {
   field: FieldConfig;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   control: Control<any>;
   errors: FieldErrors;
   disabled?: boolean;
+  /** Only needed for file-type fields, to talk to the upload-intent endpoints. */
+  requestId?: string;
+  mediaRevision?: number;
+  onMediaRevisionChange?: (next: number) => void;
+  /** Set when this field's current file is being replaced (revise wizard, reviewer-flagged file). */
+  replacesFileId?: string;
 }) {
   const error = errors[field.id];
   const hasError = !disabled && !!error;
@@ -436,6 +446,11 @@ export function DynamicField({
                     multiple={field.multiple}
                     disabled={disabled}
                     invalid={hasError}
+                    requestId={requestId}
+                    fieldId={field.id}
+                    mediaRevision={mediaRevision ?? 0}
+                    onMediaRevisionChange={onMediaRevisionChange}
+                    replacesFileId={replacesFileId}
                   />
                   {hasError && (
                     <FieldError id={errorId} errors={error ? [error as { message?: string }] : []} />

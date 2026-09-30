@@ -1,10 +1,31 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Upload, X, FileText, Eye, Lock } from "lucide-react";
+import { Upload, X, FileText, Eye, RotateCw, Loader2 } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { formatFileSize } from "@/utils/format";
 import { FilePreviewDialog, type PreviewableFile } from "@/components/shared/file-preview-dialog";
+import {
+  createUploadIntent,
+  completeUpload,
+  deleteRequestFile,
+  getFileDownloadUrl,
+} from "@/features/requests/api/requests.service";
+import { putFileToBlob } from "@/features/requests/api/blob-upload";
+
+const FAILURE_MESSAGES: Record<string, string> = {
+  FILE_SIZE_MISMATCH: "The uploaded file didn't match the expected size. Please try again.",
+  FILE_SIGNATURE_MISMATCH: "This file's content doesn't match its extension.",
+  BLOB_CONTENT_TYPE_MISMATCH: "The uploaded file type could not be verified.",
+  FILE_TYPE_NOT_ACCEPTED: "This file type isn't accepted for this field.",
+  FILE_COUNT_LIMIT_EXCEEDED: "You've reached the maximum number of files for this field.",
+  UPLOAD_NOT_FOUND: "The upload didn't complete. Please try again.",
+};
+
+function failureMessage(err: any): string {
+  const code = err?.code || err?.responseData?.code || err?.response?.data?.code;
+  return FAILURE_MESSAGES[code] || err?.message || "Upload failed. Please try again.";
+}
 
 export function FileDropzone({
   value = [],
@@ -13,6 +34,11 @@ export function FileDropzone({
   multiple = false,
   invalid = false,
   disabled = false,
+  requestId,
+  fieldId,
+  mediaRevision = 0,
+  onMediaRevisionChange,
+  replacesFileId,
 }: {
   value?: DropzoneFile[];
   onChange: (files: DropzoneFile[]) => void;
@@ -20,10 +46,17 @@ export function FileDropzone({
   multiple?: boolean;
   invalid?: boolean;
   disabled?: boolean;
+  requestId?: string;
+  fieldId?: string;
+  mediaRevision?: number;
+  onMediaRevisionChange?: (next: number) => void;
+  replacesFileId?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [previewFile, setPreviewFile] = useState<PreviewableFile | null>(null);
+  const valueRef = useRef(value);
+  valueRef.current = value;
 
   // Allowed submission types per the backend's own v1 scope: PNG, JPG/JPEG, PDF, DOCX only
   // (no WEBP, no legacy .doc) — see club-at-ibis-backend AGENTS.md.
@@ -66,25 +99,65 @@ export function FileDropzone({
     return false;
   }
 
+  function toastError(title: string, description: string) {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(
+      new CustomEvent("app:toast", { detail: { variant: "error", title, description } })
+    );
+  }
+
+  function patchRow(id: string, patch: Partial<DropzoneFile>) {
+    onChange(valueRef.current.map((f) => (f.id === id ? { ...f, ...patch } : f)));
+  }
+
+  async function runUploadPipeline(row: DropzoneFile, file: File) {
+    if (!requestId || !fieldId) {
+      patchRow(row.id, { status: "failed", failureCode: "REQUEST_NOT_READY" });
+      toastError("Not ready yet", "Please wait a moment and try again.");
+      return;
+    }
+    try {
+      const intent = await createUploadIntent(requestId, {
+        fieldId,
+        clientUploadId: row.id,
+        originalName: file.name,
+        size: file.size,
+        declaredMimeType: file.type || "application/octet-stream",
+        expectedMediaRevision: mediaRevision,
+        ...(replacesFileId ? { replacesFileId } : {}),
+      });
+      onMediaRevisionChange?.(intent.mediaRevision);
+      patchRow(row.id, { status: "verifying", fileId: intent.file.id });
+
+      await putFileToBlob(intent.upload.url, file, intent.upload.requiredHeaders);
+
+      const completed = await completeUpload(requestId, intent.file.id);
+      onMediaRevisionChange?.(completed.mediaRevision);
+      patchRow(row.id, {
+        status: "ready",
+        fileId: completed.file.id,
+        version: completed.file.version,
+        logicalFileId: completed.file.logicalFileId,
+      });
+    } catch (err: any) {
+      const code = err?.code || err?.responseData?.code || err?.response?.data?.code;
+      if (code === "STALE_MEDIA_REVISION") {
+        const current = err?.responseData?.details?.currentMediaRevision ?? err?.response?.data?.details?.currentMediaRevision;
+        if (typeof current === "number") onMediaRevisionChange?.(current);
+      }
+      patchRow(row.id, { status: "failed", failureCode: code });
+      toastError("Upload failed", failureMessage(err));
+    }
+  }
+
   function addFiles(fileList: FileList | null) {
     if (disabled || !fileList || fileList.length === 0) return;
     const allFiles = Array.from(fileList);
     const validFiles = allFiles.filter(isFileAllowed);
 
     if (validFiles.length < allFiles.length) {
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(
-          new CustomEvent("app:toast", {
-            detail: {
-              variant: "error",
-              title: "Invalid file type",
-              description: "Only Images (PNG, JPG, JPEG), PDF, and Word documents (.docx) are allowed.",
-            },
-          })
-        );
-      }
+      toastError("Invalid file type", "Only Images (PNG, JPG, JPEG), PDF, and Word documents (.docx) are allowed.");
     }
-
     if (validFiles.length === 0) return;
 
     const incoming: DropzoneFile[] = validFiles.map((file) => ({
@@ -92,13 +165,44 @@ export function FileDropzone({
       name: file.name,
       size: file.size,
       file,
+      status: "uploading",
     }));
-    onChange(multiple ? [...value, ...incoming] : incoming.slice(0, 1));
+    const next = multiple ? [...value, ...incoming] : incoming.slice(0, 1);
+    onChange(next);
+    for (const row of multiple ? incoming : incoming.slice(0, 1)) {
+      void runUploadPipeline(row, row.file!);
+    }
   }
 
-  function removeFile(id: string) {
+  async function removeFile(row: DropzoneFile) {
     if (disabled) return;
-    onChange(value.filter((f) => f.id !== id));
+    if (!row.fileId || !requestId) {
+      onChange(value.filter((f) => f.id !== row.id));
+      return;
+    }
+    patchRow(row.id, { status: "verifying" });
+    try {
+      const result = await deleteRequestFile(requestId, row.fileId, mediaRevision);
+      onMediaRevisionChange?.(result.mediaRevision);
+      onChange(valueRef.current.filter((f) => f.id !== row.id));
+    } catch (err: any) {
+      patchRow(row.id, { status: "ready" });
+      toastError("Could not remove file", err?.message || "Please try again.");
+    }
+  }
+
+  function retry(row: DropzoneFile) {
+    if (!row.file) return;
+    patchRow(row.id, { status: "uploading", failureCode: undefined });
+    void runUploadPipeline(row, row.file);
+  }
+
+  function openPreview(row: DropzoneFile) {
+    setPreviewFile({
+      ...row,
+      id: row.fileId || row.id,
+      fileId: row.fileId,
+    });
   }
 
   return (
@@ -159,45 +263,74 @@ export function FileDropzone({
 
       {value.length > 0 && (
         <ul className="space-y-1.5">
-          {value.map((f) => (
-            <li
-              key={f.id}
-              className={cn(
-                "flex items-center gap-2.5 rounded-lg border px-3 py-2 text-sm shadow-2xs transition-all",
-                disabled
-                  ? "border-border/80 bg-muted/20 text-muted-foreground"
-                  : "border-border bg-white dark:bg-card text-foreground"
-              )}
-            >
-              <FileText className="size-4 shrink-0 text-primary/70" />
-              <span className="min-w-0 flex-1 truncate font-medium">
-                {f.name}
-              </span>
-              <span className="shrink-0 text-xs text-muted-foreground">
-                {formatFileSize(f.size)}
-              </span>
-              <button
-                type="button"
-                onClick={() => setPreviewFile(f)}
-                className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-primary"
-                aria-label={`Preview ${f.name}`}
-                title="View file"
+          {value.map((f) => {
+            const busy = f.status === "uploading" || f.status === "verifying";
+            const failed = f.status === "failed";
+            return (
+              <li
+                key={f.id}
+                className={cn(
+                  "flex items-center gap-2.5 rounded-lg border px-3 py-2 text-sm shadow-2xs transition-all",
+                  failed
+                    ? "border-destructive/40 bg-destructive/5 text-foreground"
+                    : disabled
+                    ? "border-border/80 bg-muted/20 text-muted-foreground"
+                    : "border-border bg-white dark:bg-card text-foreground"
+                )}
               >
-                <Eye className="size-4" />
-              </button>
-              {!disabled && (
-                <button
-                  type="button"
-                  onClick={() => removeFile(f.id)}
-                  className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                  aria-label={`Remove ${f.name}`}
-                  title="Remove file"
-                >
-                  <X className="size-4" />
-                </button>
-              )}
-            </li>
-          ))}
+                {busy ? (
+                  <Loader2 className="size-4 shrink-0 animate-spin text-primary/70" />
+                ) : (
+                  <FileText className={cn("size-4 shrink-0", failed ? "text-destructive" : "text-primary/70")} />
+                )}
+                <span className="min-w-0 flex-1 truncate font-medium">
+                  {f.name}
+                  {busy && <span className="ml-1.5 text-xs font-normal text-muted-foreground">Uploading…</span>}
+                  {failed && (
+                    <span className="ml-1.5 text-xs font-normal text-destructive">
+                      {FAILURE_MESSAGES[f.failureCode || ""] || "Upload failed"}
+                    </span>
+                  )}
+                </span>
+                <span className="shrink-0 text-xs text-muted-foreground">
+                  {formatFileSize(f.size)}
+                </span>
+                {failed && !disabled && (
+                  <button
+                    type="button"
+                    onClick={() => retry(f)}
+                    className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-primary"
+                    aria-label={`Retry uploading ${f.name}`}
+                    title="Retry"
+                  >
+                    <RotateCw className="size-4" />
+                  </button>
+                )}
+                {!busy && (
+                  <button
+                    type="button"
+                    onClick={() => openPreview(f)}
+                    className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-primary"
+                    aria-label={`Preview ${f.name}`}
+                    title="View file"
+                  >
+                    <Eye className="size-4" />
+                  </button>
+                )}
+                {!disabled && !busy && (
+                  <button
+                    type="button"
+                    onClick={() => removeFile(f)}
+                    className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                    aria-label={`Remove ${f.name}`}
+                    title="Remove file"
+                  >
+                    <X className="size-4" />
+                  </button>
+                )}
+              </li>
+            );
+          })}
         </ul>
       )}
 
@@ -205,6 +338,11 @@ export function FileDropzone({
         file={previewFile}
         open={!!previewFile}
         onOpenChange={(open) => !open && setPreviewFile(null)}
+        onRequestDownloadUrl={
+          requestId
+            ? (fileId, disposition) => getFileDownloadUrl(requestId, fileId, disposition).then((r) => r.url)
+            : undefined
+        }
       />
     </div>
   );

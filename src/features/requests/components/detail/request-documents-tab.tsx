@@ -5,20 +5,38 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/shared/empty-state";
 import { type PreviewableFile } from "@/components/shared/file-preview-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { getFileDownloadUrl } from "@/features/requests/api/requests.service";
 import { formatDate, formatFileSize } from "@/utils/format";
 
 interface RequestDocumentsTabProps {
+  requestId: string;
   uploadEntries: [string, UploadedFile[]][];
   allFields: FieldConfig[];
   onPreviewFile: (file: PreviewableFile) => void;
 }
 
 export function RequestDocumentsTab({
+  requestId,
   uploadEntries,
   allFields,
   onPreviewFile,
 }: RequestDocumentsTabProps) {
   const toast = useToast();
+
+  async function handleDownload(file: UploadedFile) {
+    try {
+      const { url } = await getFileDownloadUrl(requestId, file.id);
+      toast.success("Download started", `Downloading ${file.name}`);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = file.name;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.click();
+    } catch {
+      toast.error("Could not download file", "Please try again in a moment.");
+    }
+  }
 
   if (uploadEntries.length === 0) {
     return (
@@ -72,9 +90,7 @@ export function RequestDocumentsTab({
                     <Button
                       variant="ghost"
                       size="xs"
-                      onClick={() => {
-                        toast.success("Download started", `Downloading ${file.name}`);
-                      }}
+                      onClick={() => handleDownload(file)}
                       className="gap-1 text-muted-foreground hover:text-foreground"
                       aria-label={`Download ${file.name}`}
                     >
