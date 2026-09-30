@@ -287,7 +287,7 @@ export function RequestReview({
         open={!!internalPreviewFile}
         onOpenChange={(open) => !open && setInternalPreviewFile(null)}
         onRequestDownloadUrl={
-          requestId ? (fileId, disposition) => getFileDownloadUrl(requestId, fileId, disposition).then((r) => r.url) : undefined
+          requestId ? (fileId) => getFileDownloadUrl(requestId, fileId).then((r) => r.url) : undefined
         }
       />
     </div>

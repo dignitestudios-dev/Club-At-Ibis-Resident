@@ -175,7 +175,7 @@ export default function RequestDetailPage({ id }: { id: string }) {
         file={previewFile}
         open={!!previewFile}
         onOpenChange={(open) => !open && setPreviewFile(null)}
-        onRequestDownloadUrl={(fileId, disposition) => getFileDownloadUrl(request.id, fileId, disposition).then((r) => r.url)}
+        onRequestDownloadUrl={(fileId) => getFileDownloadUrl(request.id, fileId).then((r) => r.url)}
       />
     </div>
   );

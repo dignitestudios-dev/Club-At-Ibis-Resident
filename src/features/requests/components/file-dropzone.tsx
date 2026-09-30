@@ -340,7 +340,7 @@ export function FileDropzone({
         onOpenChange={(open) => !open && setPreviewFile(null)}
         onRequestDownloadUrl={
           requestId
-            ? (fileId, disposition) => getFileDownloadUrl(requestId, fileId, disposition).then((r) => r.url)
+            ? (fileId) => getFileDownloadUrl(requestId, fileId).then((r) => r.url)
             : undefined
         }
       />

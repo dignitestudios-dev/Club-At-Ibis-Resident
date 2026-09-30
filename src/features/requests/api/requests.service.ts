@@ -302,14 +302,8 @@ export async function deleteRequestFile(
 }
 
 /** Get a fresh short-lived (10 minute) read-only SAS URL for one file. Never persist it. */
-export async function getFileDownloadUrl(
-  requestId: string,
-  fileId: string,
-  disposition?: "inline" | "attachment"
-): Promise<DownloadUrlResult> {
-  const { data } = await axiosInstance.get(`/requests/${requestId}/files/${fileId}/download`, {
-    params: disposition ? { disposition } : undefined,
-  });
+export async function getFileDownloadUrl(requestId: string, fileId: string): Promise<DownloadUrlResult> {
+  const { data } = await axiosInstance.get(`/requests/${requestId}/files/${fileId}/download`);
   return data.data.download;
 }
 
