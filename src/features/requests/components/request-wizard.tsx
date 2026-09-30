@@ -18,6 +18,7 @@ import {
   Lock,
   FileCheck2,
   Trash2,
+  Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -948,17 +949,25 @@ function CategoryFormWizard({
               You have entered information in this request. Would you like to save it to your drafts before leaving?
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2 pt-3">
-            <AlertDialogCancel onClick={cancelChangeCategory}>
-              Keep Editing
+          <AlertDialogFooter className="flex flex-row items-center justify-end gap-2 pt-3">
+            <AlertDialogCancel
+              size="icon"
+              title="Keep Editing"
+              aria-label="Keep Editing"
+              onClick={cancelChangeCategory}
+            >
+              <Pencil className="size-4" />
             </AlertDialogCancel>
             <Button
               type="button"
               variant="outline"
+              size="icon"
+              title="Discard Changes"
+              aria-label="Discard Changes"
               className="text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
               onClick={confirmChangeCategory}
             >
-              Discard Changes
+              <Trash2 className="size-4" />
             </Button>
             <AlertDialogAction onClick={saveDraftAndExit}>
               Save Draft &amp; Exit

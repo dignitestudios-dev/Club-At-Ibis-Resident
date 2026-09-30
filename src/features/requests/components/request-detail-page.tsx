@@ -7,7 +7,7 @@ import dynamic from "next/dynamic";
 import { FileText, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/shared/empty-state";
 import { type PreviewableFile } from "@/components/shared/file-preview-dialog";
@@ -71,6 +71,9 @@ export default function RequestDetailPage({ id }: { id: string }) {
       : request.form?.fields && request.form.fields.length > 0
       ? request.form.fields
       : [];
+  // Documents get their own card within Details (matching the admin/reviewer
+  // detail pages), not mixed into the answer list and not a separate tab.
+  const nonFileFields = formFields.filter((f) => f.type !== "file");
 
   const isDraft = request.status === "draft";
   const earlierRounds = earlierSubmissions(request);
@@ -114,34 +117,41 @@ export default function RequestDetailPage({ id }: { id: string }) {
               <Tabs defaultValue="details">
                 <TabsList aria-label="Request sections">
                   <TabsTrigger value="details">Details</TabsTrigger>
-                  <TabsTrigger value="documents">
-                    Documents{uploadEntries.length > 0 ? ` (${uploadEntries.length})` : ""}
+                  <TabsTrigger value="feedback">
+                    Feedback{request.comments.length > 0 ? ` (${request.comments.length})` : ""}
                   </TabsTrigger>
                   {earlierRounds.length > 0 && (
                     <TabsTrigger value="submissionHistory">
                       Submission History ({earlierRounds.length})
                     </TabsTrigger>
                   )}
-                  <TabsTrigger value="feedback">
-                    Feedback{request.comments.length > 0 ? ` (${request.comments.length})` : ""}
-                  </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="details" className="pt-4">
+                <TabsContent value="details" className="space-y-5 pt-4">
                   <RequestReview
-                    fields={formFields.length > 0 ? formFields : undefined}
+                    fields={nonFileFields.length > 0 ? nonFileFields : undefined}
                     values={request.fieldValues}
-                    uploads={request.uploads}
                     onPreviewFile={(f) => setPreviewFile(f)}
                   />
+
+                  <Card className="rounded-xl border border-border/70 bg-transparent shadow-none ring-0">
+                    <CardHeader className="border-b border-border/70 pb-3">
+                      <CardTitle className="font-heading text-lg font-medium">
+                        Documents{uploadEntries.length > 0 ? ` (${uploadEntries.length})` : ""}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                      <RequestDocumentsTab
+                        uploadEntries={uploadEntries}
+                        allFields={formFields}
+                        onPreviewFile={(f) => setPreviewFile(f)}
+                      />
+                    </CardContent>
+                  </Card>
                 </TabsContent>
 
-                <TabsContent value="documents" className="pt-4">
-                  <RequestDocumentsTab
-                    uploadEntries={uploadEntries}
-                    allFields={formFields}
-                    onPreviewFile={(f) => setPreviewFile(f)}
-                  />
+                <TabsContent value="feedback" className="pt-4">
+                  <CommentFeed comments={request.comments} />
                 </TabsContent>
 
                 {earlierRounds.length > 0 && (
@@ -149,10 +159,6 @@ export default function RequestDetailPage({ id }: { id: string }) {
                     <EarlierSubmissions request={request} onPreview={(f) => setPreviewFile(f)} />
                   </TabsContent>
                 )}
-
-                <TabsContent value="feedback" className="pt-4">
-                  <CommentFeed comments={request.comments} />
-                </TabsContent>
               </Tabs>
             </CardContent>
           </Card>
