@@ -33,11 +33,10 @@ export default function RequestDetailPage({ id }: { id: string }) {
   const [previewFile, setPreviewFile] = useState<PreviewableFile | null>(null);
 
   const handleBack = () => {
-    if (typeof window !== "undefined" && window.history.length > 1) {
-      router.back();
-    } else {
-      router.push("/requests");
-    }
+    // Always land on the requests list, not wherever browser history happens
+    // to point (a notification link, a deep link, another page entirely) —
+    // this page's back action should be deterministic.
+    router.push("/requests");
   };
 
   if (isLoading) {

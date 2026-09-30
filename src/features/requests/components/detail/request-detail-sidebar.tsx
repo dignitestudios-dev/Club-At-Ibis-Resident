@@ -9,7 +9,7 @@ import {
   ReceiptText,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Timeline } from "@/features/requests/components/timeline";
+import { HistoryTimeline } from "@/features/requests/components/history-timeline";
 import { formatDate, formatRelative } from "@/utils/format";
 
 interface RequestDetailSidebarProps {
@@ -36,7 +36,7 @@ export function RequestDetailSidebar({ request }: RequestDetailSidebarProps) {
           </div>
         </CardHeader>
         <CardContent className="pt-4">
-          <Timeline entries={request.activity} />
+          <HistoryTimeline events={request.history} />
         </CardContent>
       </Card>
 

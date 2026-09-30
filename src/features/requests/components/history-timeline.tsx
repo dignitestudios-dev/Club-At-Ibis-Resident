@@ -1,0 +1,122 @@
+import {
+  Ban,
+  Banknote,
+  CheckCheck,
+  CheckCircle2,
+  ClipboardCheck,
+  FileCheck2,
+  FileEdit,
+  Flag,
+  Mail,
+  Minus,
+  PlayCircle,
+  ReceiptText,
+  Repeat2,
+  Send,
+  UserCheck,
+  UserCog,
+  XCircle,
+  Clock,
+  type LucideIcon,
+} from "lucide-react";
+import { cn } from "@/utils/cn";
+import { formatDateTime, formatRelative } from "@/utils/format";
+
+const EVENT_CONFIG: Record<HistoryEventType, { icon: LucideIcon; label: string; node: string }> = {
+  submitted: { icon: Send, label: "Submitted", node: "bg-primary text-primary-foreground" },
+  assigned: { icon: UserCheck, label: "Assigned", node: "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200" },
+  reassigned: { icon: UserCog, label: "Reassigned", node: "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200" },
+  review_started: { icon: PlayCircle, label: "Review Started", node: "bg-sky-600 text-white" },
+  item_accepted: { icon: CheckCheck, label: "Item accepted", node: "bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300" },
+  item_flagged: { icon: Flag, label: "Flagged", node: "bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-300" },
+  revision_requested: { icon: FileEdit, label: "Revision requested", node: "bg-amber-500 text-white" },
+  resubmitted: { icon: Repeat2, label: "Resubmitted", node: "bg-purple-600 text-white" },
+  approved: { icon: CheckCircle2, label: "Approved", node: "bg-emerald-600 text-white" },
+  rejected: { icon: XCircle, label: "Rejected", node: "bg-rose-600 text-white" },
+  deposit_required: { icon: Banknote, label: "Deposit required", node: "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200" },
+  receipt_recorded: { icon: ReceiptText, label: "Receipt recorded", node: "bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300" },
+  letter_uploaded: { icon: FileCheck2, label: "Final letter uploaded", node: "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200" },
+  completed: { icon: ClipboardCheck, label: "Completed", node: "bg-teal-600 text-white" },
+  letter_email: { icon: Mail, label: "Letter email", node: "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200" },
+  withdrawn: { icon: Ban, label: "Withdrawn", node: "bg-slate-300 dark:bg-slate-700 text-slate-800 dark:text-slate-100" },
+  refunded: { icon: Banknote, label: "Refunded", node: "bg-emerald-600 text-white" },
+  no_refund: { icon: Minus, label: "No Refund", node: "bg-slate-300 dark:bg-slate-700 text-slate-800 dark:text-slate-100" },
+};
+
+export function HistoryTimeline({ events }: { events: HistoryEvent[] }) {
+  const list = events ?? [];
+
+  return (
+    <ol className="space-y-0">
+      {list.map((event, index) => {
+        const cfg = EVENT_CONFIG[event.type] || { icon: Send, label: event.type?.replace(/_/g, " ") || "Update", node: "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200" };
+        const Icon = cfg.icon;
+        const isLatest = index === 0;
+        const isLast = index === list.length - 1;
+        const actorName = event.actor?.name || "User";
+
+        return (
+          <li key={event.id} className="group relative flex gap-4">
+            <div className="flex flex-col items-center">
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "flex size-8 shrink-0 items-center justify-center rounded-full border-2 border-card shadow-2xs transition-transform duration-200 group-hover:scale-110",
+                  cfg.node,
+                  isLatest && "ring-4 ring-primary/20"
+                )}
+              >
+                <Icon className="size-4" />
+              </span>
+              {!isLast && <span className="my-1.5 w-[2px] flex-1 bg-border" aria-hidden="true" />}
+            </div>
+
+            <div className={cn("min-w-0 flex-1 space-y-1.5", isLast ? "pb-1" : "pb-6")}>
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-semibold text-foreground">{cfg.label}</span>
+                  {isLatest && (
+                    <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-bold tracking-wider text-primary uppercase dark:bg-primary/20 dark:text-amber-300">
+                      LATEST
+                    </span>
+                  )}
+                </div>
+                <time
+                  dateTime={event.createdAt}
+                  title={formatDateTime(event.createdAt)}
+                  className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"
+                >
+                  <Clock className="size-3.5 text-slate-400" aria-hidden="true" />
+                  {formatRelative(event.createdAt)}
+                </time>
+              </div>
+
+              <p className="text-sm leading-relaxed text-foreground/85 break-words [overflow-wrap:anywhere]">{event.message}</p>
+
+              {event.type === "revision_requested" && event.flaggedItems && event.flaggedItems.length > 0 && (
+                <div className="rounded-lg border border-amber-300/80 bg-amber-50/90 px-3 py-2 text-xs leading-relaxed text-amber-950 dark:border-amber-800/80 dark:bg-amber-950/40 dark:text-amber-200">
+                  <span className="mb-1 block font-semibold text-amber-800 dark:text-amber-300">Fields flagged for correction:</span>
+                  <ul className="space-y-0.5">
+                    {event.flaggedItems.map((item, i) => (
+                      <li key={i} className="break-words [overflow-wrap:anywhere]">
+                        <span className="font-medium">{item.label}:</span> {item.reason}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-1.5 text-xs text-muted-foreground">
+                <span>
+                  By <span className="font-semibold text-foreground">{actorName}</span>
+                </span>
+                <span>{formatDateTime(event.createdAt)}</span>
+              </div>
+            </div>
+          </li>
+        );
+      })}
+      {list.length === 0 && <p className="text-sm text-muted-foreground">No history recorded.</p>}
+    </ol>
+  );
+}
