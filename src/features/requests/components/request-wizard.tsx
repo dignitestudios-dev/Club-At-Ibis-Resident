@@ -18,7 +18,6 @@ import {
   Lock,
   FileCheck2,
   Trash2,
-  Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -943,6 +942,16 @@ function CategoryFormWizard({
         onOpenChange={(open) => !open && cancelChangeCategory()}
       >
         <AlertDialogContent>
+          <AlertDialogCancel
+            variant="ghost"
+            size="icon-sm"
+            className="absolute top-3 right-3"
+            title="Keep Editing"
+            aria-label="Keep Editing"
+            onClick={cancelChangeCategory}
+          >
+            <X className="size-4" />
+          </AlertDialogCancel>
           <AlertDialogHeader>
             <AlertDialogTitle>Save in-progress request?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -950,14 +959,6 @@ function CategoryFormWizard({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex flex-row items-center justify-end gap-2 pt-3">
-            <AlertDialogCancel
-              size="icon"
-              title="Keep Editing"
-              aria-label="Keep Editing"
-              onClick={cancelChangeCategory}
-            >
-              <Pencil className="size-4" />
-            </AlertDialogCancel>
             <Button
               type="button"
               variant="outline"
