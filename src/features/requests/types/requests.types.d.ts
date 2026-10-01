@@ -177,6 +177,8 @@ interface HistoryEvent {
   createdAt: string;
   /** Set on a "revision-requested" event: the exact fields flagged for that review round, with the reviewer's reason. `submissions[]` never carries per-round item reviews, so this is the only place a past round's flagged items are reconstructable from. */
   flaggedItems?: { fieldId: string; label: string; reason: string }[];
+  /** Set on a "revision-requested" event once the reviewer's general feedback field exists on the backend — the overall note for that round, separate from each flagged item's own reason. */
+  feedback?: string;
   /** The submission round this event applies to. */
   submissionNumber?: number;
 }

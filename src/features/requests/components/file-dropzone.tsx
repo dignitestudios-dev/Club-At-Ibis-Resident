@@ -61,6 +61,9 @@ export function FileDropzone({
   // Allowed submission types per the backend's own v1 scope: PNG, JPG/JPEG, PDF, DOCX only
   // (no WEBP, no legacy .doc) — see club-at-ibis-backend AGENTS.md.
   const ALLOWED_EXTENSIONS = [".png", ".jpg", ".jpeg", ".pdf", ".docx"];
+  // Backend accepts up to 50MB, but documents are capped tighter here so
+  // residents get a fast, clear rejection instead of a long failed upload.
+  const MAX_FILE_SIZE_BYTES = 30 * 1024 * 1024;
   const ALLOWED_MIME_TYPES = [
     "image/png",
     "image/jpeg",
@@ -153,10 +156,20 @@ export function FileDropzone({
   function addFiles(fileList: FileList | null) {
     if (disabled || !fileList || fileList.length === 0) return;
     const allFiles = Array.from(fileList);
-    const validFiles = allFiles.filter(isFileAllowed);
+    const typeValid = allFiles.filter(isFileAllowed);
+    const oversized = typeValid.filter((f) => f.size > MAX_FILE_SIZE_BYTES);
+    const validFiles = typeValid.filter((f) => f.size <= MAX_FILE_SIZE_BYTES);
 
-    if (validFiles.length < allFiles.length) {
+    if (typeValid.length < allFiles.length) {
       toastError("Invalid file type", "Only Images (PNG, JPG, JPEG), PDF, and Word documents (.docx) are allowed.");
+    }
+    if (oversized.length > 0) {
+      toastError(
+        "File too large",
+        oversized.length === 1
+          ? `"${oversized[0].name}" is ${formatFileSize(oversized[0].size)}. The maximum file size is 30MB.`
+          : `${oversized.length} files exceed the 30MB maximum file size.`
+      );
     }
     if (validFiles.length === 0) return;
 
@@ -240,7 +253,7 @@ export function FileDropzone({
               <span className="text-primary hover:underline">Click to upload</span> or drag and drop
             </p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              {formatAcceptDisplay(accept)}
+              {formatAcceptDisplay(accept)} · max 30MB per file
             </p>
           </div>
           <input

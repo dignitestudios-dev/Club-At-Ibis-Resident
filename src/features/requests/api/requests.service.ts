@@ -66,6 +66,7 @@ function toRequestRecord(raw: any): RequestRecord {
         message: h.message || "",
         createdAt: h.occurredAt || h.createdAt || new Date().toISOString(),
         flaggedItems: Array.isArray(h.details?.flaggedItems) ? h.details.flaggedItems : undefined,
+        feedback: h.details?.feedback || undefined,
         submissionNumber: typeof h.details?.submissionNumber === "number" ? h.details.submissionNumber : undefined,
       }))
     : [];
@@ -137,7 +138,10 @@ function toRequestRecord(raw: any): RequestRecord {
     depositAmount: raw.depositAmount,
     depositReceived: raw.depositReceived,
     rejectionReason: decision?.rejectionReason ?? raw.rejectionReason,
-    feedback: raw.feedback || undefined,
+    // The reviewer's general feedback for the current changes_required round
+    // lives under `revision.feedback`, not a top-level `feedback` — there's
+    // no such top-level field on the real response.
+    feedback: raw.revision?.feedback || raw.feedback || undefined,
     decision,
     approvalLetterAvailable: raw.approvalLetterAvailable,
     approvalLetter: raw.approvalLetter,

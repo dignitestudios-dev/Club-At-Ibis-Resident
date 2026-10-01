@@ -78,6 +78,21 @@ export default function RequestDetailPage({ id }: { id: string }) {
   const isDraft = request.status === "draft";
   const earlierRounds = earlierSubmissions(request);
 
+  // The reviewer's general feedback lives on each "revision_requested"
+  // history event (one per changes-required round), not in `comments` —
+  // fold it into the same feed shape so the Feedback tab shows every
+  // round's note, not just the latest one surfaced in the banner above.
+  const feedbackEntries: CommentEntry[] = request.history
+    .filter((h) => h.type === "revision_requested" && h.feedback)
+    .map((h) => ({
+      id: h.id,
+      author: h.actor?.name || "ARB Reviewer",
+      authorRole: "arb" as const,
+      message: h.feedback!,
+      createdAt: h.createdAt,
+    }));
+  const feedbackFeed = [...request.comments, ...feedbackEntries];
+
   return (
     <div className="space-y-6">
       <RequestDetailHeader
@@ -118,7 +133,7 @@ export default function RequestDetailPage({ id }: { id: string }) {
                 <TabsList aria-label="Request sections">
                   <TabsTrigger value="details">Details</TabsTrigger>
                   <TabsTrigger value="feedback">
-                    Feedback{request.comments.length > 0 ? ` (${request.comments.length})` : ""}
+                    Feedback{feedbackFeed.length > 0 ? ` (${feedbackFeed.length})` : ""}
                   </TabsTrigger>
                   {earlierRounds.length > 0 && (
                     <TabsTrigger value="submissionHistory">
@@ -152,7 +167,7 @@ export default function RequestDetailPage({ id }: { id: string }) {
                 </TabsContent>
 
                 <TabsContent value="feedback" className="pt-4">
-                  <CommentFeed comments={request.comments} />
+                  <CommentFeed comments={feedbackFeed} />
                 </TabsContent>
 
                 {earlierRounds.length > 0 && (
