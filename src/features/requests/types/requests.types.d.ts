@@ -241,6 +241,7 @@ interface RequestRecord {
   depositAmount?: number;
   depositReceived?: boolean;
   rejectionReason?: string;
+  feedback?: string;
   /** The full `decision` object from GET /requests/:id — who decided and when, beyond just the reason text. */
   decision?: RequestDecisionInfo | null;
   approvalLetterAvailable?: boolean;

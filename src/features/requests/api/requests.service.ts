@@ -137,6 +137,7 @@ function toRequestRecord(raw: any): RequestRecord {
     depositAmount: raw.depositAmount,
     depositReceived: raw.depositReceived,
     rejectionReason: decision?.rejectionReason ?? raw.rejectionReason,
+    feedback: raw.feedback || undefined,
     decision,
     approvalLetterAvailable: raw.approvalLetterAvailable,
     approvalLetter: raw.approvalLetter,

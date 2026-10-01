@@ -61,20 +61,22 @@ export function RequestDetailAlerts({
             </Button>
           </div>
 
-          {/* Latest Reviewer Directives & Comment */}
-          {latestComment && (
+          {/* Latest Reviewer Directives & Feedback */}
+          {(request.feedback || latestComment) && (
             <div className="rounded-xl border border-amber-200/90 dark:border-amber-800/60 bg-white/90 dark:bg-card/90 p-4 text-xs text-amber-950 dark:text-amber-200 space-y-1.5 shadow-2xs">
               <div className="flex items-center justify-between font-semibold text-[11px] text-amber-900 dark:text-amber-300 uppercase tracking-wider">
                 <span className="flex items-center gap-1.5">
                   <MessageSquare className="size-3.5 text-amber-700 dark:text-amber-400" aria-hidden="true" />
-                  Reviewer Directive
+                  Reviewer Directive &amp; Feedback
                 </span>
-                <span className="font-normal text-muted-foreground break-words [overflow-wrap:anywhere]">
-                  {latestComment.author} · {formatRelative(latestComment.createdAt)}
-                </span>
+                {latestComment && (
+                  <span className="font-normal text-muted-foreground break-words [overflow-wrap:anywhere]">
+                    {latestComment.author} · {formatRelative(latestComment.createdAt)}
+                  </span>
+                )}
               </div>
               <p className="font-medium italic text-slate-800 dark:text-slate-200 leading-relaxed text-sm break-words [overflow-wrap:anywhere] whitespace-pre-wrap">
-                &ldquo;{latestComment.message}&rdquo;
+                &ldquo;{request.feedback || latestComment?.message}&rdquo;
               </p>
             </div>
           )}

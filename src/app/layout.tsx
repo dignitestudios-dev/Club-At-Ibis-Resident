@@ -20,6 +20,14 @@ const playfairDisplay = Playfair_Display({
 export const metadata: Metadata = {
   title: "Club At Ibis",
   description: "Architectural Review Board portal for Club At Ibis residents.",
+  icons: {
+    icon: [
+      { url: "/brand/club-at-ibis-logo.png", type: "image/png" },
+      { url: "/brand/ibis-mark-navy.png", sizes: "32x32", type: "image/png" },
+    ],
+    shortcut: "/brand/club-at-ibis-logo.png",
+    apple: "/brand/club-at-ibis-logo.png",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
