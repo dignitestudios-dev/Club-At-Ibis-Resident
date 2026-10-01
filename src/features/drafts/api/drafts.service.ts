@@ -23,6 +23,7 @@ export function toDraft(r: RequestRecord): RequestDraft {
     uploads: r.uploads,
     stepIndex: r.currentStep ? Math.max(0, r.currentStep - 1) : 0,
     draftRevision: r.draftRevision ?? 0,
+    mediaRevision: r.mediaRevision ?? 0,
     hoaApproved: r.hoaApproved,
     commonFormVersion: r.commonFormVersion,
     categoryFormVersion: r.categoryFormVersion,

@@ -14,6 +14,8 @@ interface RequestDraft {
   uploads: Record<string, UploadedFile[]>;
   stepIndex: number;
   draftRevision?: number;
+  /** Optimistic-concurrency guard for file upload/delete — required on every upload-intent/delete call for this draft's documents. */
+  mediaRevision?: number;
   hoaApproved?: boolean;
   commonFormVersion?: number;
   categoryFormVersion?: number;

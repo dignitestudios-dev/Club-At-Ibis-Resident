@@ -116,7 +116,7 @@ export function FileDropzone({
     onChange(valueRef.current.map((f) => (f.id === id ? { ...f, ...patch } : f)));
   }
 
-  async function runUploadPipeline(row: DropzoneFile, file: File) {
+  async function runUploadPipeline(row: DropzoneFile, file: File, expectedMediaRevision: number) {
     if (!requestId || !fieldId) {
       patchRow(row.id, { status: "failed", failureCode: "REQUEST_NOT_READY" });
       toastError("Not ready yet", "Please wait a moment and try again.");
@@ -129,7 +129,7 @@ export function FileDropzone({
         originalName: file.name,
         size: file.size,
         declaredMimeType: file.type || "application/octet-stream",
-        expectedMediaRevision: mediaRevision,
+        expectedMediaRevision,
         ...(replacesFileId ? { replacesFileId } : {}),
       });
       onMediaRevisionChange?.(intent.mediaRevision);
@@ -164,7 +164,7 @@ export function FileDropzone({
     }
   }
 
-  function addFiles(fileList: FileList | null) {
+  async function addFiles(fileList: FileList | null) {
     if (disabled || !fileList || fileList.length === 0) return;
     const allFiles = Array.from(fileList);
     const typeValid = allFiles.filter(isFileAllowed);
@@ -184,18 +184,58 @@ export function FileDropzone({
     }
     if (validFiles.length === 0) return;
 
-    const incoming: DropzoneFile[] = validFiles.map((file) => ({
+    if (multiple) {
+      const incoming: DropzoneFile[] = validFiles.map((file) => ({
+        id: crypto.randomUUID(),
+        name: file.name,
+        size: file.size,
+        file,
+        status: "uploading",
+      }));
+      onChange([...value, ...incoming]);
+      for (const row of incoming) {
+        void runUploadPipeline(row, row.file!, mediaRevision);
+      }
+      return;
+    }
+
+    // Single-file field: the backend enforces a hard "max 1 file" per field,
+    // so picking a replacement can't just upload straight away — the old
+    // file (still occupying that one slot) must be deleted first, or the
+    // new upload-intent is rejected with FILE_COUNT_LIMIT_EXCEEDED. A
+    // `replacesFileId` swap (the revise-wizard's flagged-file correction
+    // flow) already handles this atomically server-side, so this only
+    // applies when replacing a file in the plain create/draft wizard.
+    const file = validFiles[0];
+    const row: DropzoneFile = {
       id: crypto.randomUUID(),
       name: file.name,
       size: file.size,
       file,
       status: "uploading",
-    }));
-    const next = multiple ? [...value, ...incoming] : incoming.slice(0, 1);
-    onChange(next);
-    for (const row of multiple ? incoming : incoming.slice(0, 1)) {
-      void runUploadPipeline(row, row.file!);
+    };
+    const existingPersisted = !replacesFileId ? value.filter((f) => f.fileId) : [];
+    // Swap the UI over to the new file immediately so the replace feels
+    // instant — the old row's delete and the new upload both happen behind
+    // this single "Uploading…" row rather than showing two files at once.
+    onChange([row]);
+
+    let expectedMediaRevision = mediaRevision;
+    if (requestId && existingPersisted.length > 0) {
+      try {
+        for (const old of existingPersisted) {
+          const result = await deleteRequestFile(requestId, old.fileId!, expectedMediaRevision);
+          expectedMediaRevision = result.mediaRevision;
+          onMediaRevisionChange?.(expectedMediaRevision);
+        }
+      } catch (err: any) {
+        patchRow(row.id, { status: "failed", failureCode: err?.code || err?.responseData?.code, progress: undefined });
+        toastError("Could not replace file", "The previous file could not be removed. Please try again.");
+        return;
+      }
     }
+
+    void runUploadPipeline(row, file, expectedMediaRevision);
   }
 
   async function removeFile(row: DropzoneFile) {
@@ -218,7 +258,7 @@ export function FileDropzone({
   function retry(row: DropzoneFile) {
     if (!row.file) return;
     patchRow(row.id, { status: "uploading", failureCode: undefined, progress: undefined });
-    void runUploadPipeline(row, row.file);
+    void runUploadPipeline(row, row.file, mediaRevision);
   }
 
   function openPreview(row: DropzoneFile) {

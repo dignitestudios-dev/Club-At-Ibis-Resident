@@ -12,6 +12,7 @@ import { clearWizardState } from "@/features/requests/utils/request-storage";
 import {
   autosaveDraft,
   createDraftRequest,
+  getRequestById,
 } from "@/features/requests/api/requests.service";
 import {
   useMigrateDraftFormMutation,
@@ -801,12 +802,28 @@ export function useRequestWizard(
           expectedMediaRevision: mediaRev,
         },
         {
-          onSuccess: (migrated) => {
+          onSuccess: async (migrated) => {
             const nextRev = migrated.draftRevision ?? rev + 1;
             setDraftRevision(nextRev);
             draftRevisionRef.current = nextRev;
-            setMediaRevision(migrated.mediaRevision ?? mediaRev);
-            mediaRevisionRef.current = migrated.mediaRevision ?? mediaRev;
+            // migrate-form's own response isn't a reliable source for
+            // mediaRevision — it's about migrating fields/form version, not
+            // file state, and testing showed it can come back as a bare 0
+            // regardless of the real value. Re-fetch the canonical record so
+            // a file delete/replace right after migrating sends the actual
+            // current media revision instead of a stale/wrong one that gets
+            // rejected with STALE_MEDIA_REVISION.
+            let resolvedMediaRevision = migrated.mediaRevision ?? mediaRev;
+            try {
+              const fresh = await getRequestById(draftId);
+              if (typeof fresh.mediaRevision === "number") {
+                resolvedMediaRevision = fresh.mediaRevision;
+              }
+            } catch {
+              // Keep the value from the migrate response / prior state if the refetch fails.
+            }
+            setMediaRevision(resolvedMediaRevision);
+            mediaRevisionRef.current = resolvedMediaRevision;
             setIsStaleForm(false);
             setSubmissionErrors([]);
             setHasMigratedNotice(true);
