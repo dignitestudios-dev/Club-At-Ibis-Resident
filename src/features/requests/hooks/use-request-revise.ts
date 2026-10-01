@@ -199,10 +199,15 @@ export function useRequestRevise(request: RequestRecord) {
   // flagged is in Category Details, starting on an all-locked step one
   // click away from the actual work just adds a hop.
   const [stepIndex, setStepIndex] = useState(() => {
-    const firstFlagged = allFields.find((field) => flagsByField.has(field.id));
-    if (!firstFlagged) return 0;
-    if (firstFlagged.type === "file") return 2;
-    return firstFlagged.source === "category" ? 1 : 0;
+    // Form fields take priority over documents whenever both are flagged —
+    // land on whichever field step has a flagged field first in form order,
+    // never on Documents just because a flagged file happens to sort earlier
+    // in `allFields` than a flagged field does. Documents only wins when
+    // nothing else is flagged.
+    const firstFlaggedField = editableFlaggedFields[0];
+    if (firstFlaggedField) return firstFlaggedField.source === "category" ? 1 : 0;
+    if (flaggedFileFields.length > 0) return 2;
+    return 0;
   });
   const isReviewStep = stepIndex === steps.length;
   const currentStep = steps[stepIndex];
