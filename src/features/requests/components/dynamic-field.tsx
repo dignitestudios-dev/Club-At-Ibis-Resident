@@ -34,6 +34,7 @@ export function DynamicField({
   mediaRevision,
   onMediaRevisionChange,
   replacesFileId,
+  onUploadComplete,
 }: {
   field: FieldConfig;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -46,6 +47,8 @@ export function DynamicField({
   onMediaRevisionChange?: (next: number) => void;
   /** Set when this field's current file is being replaced (revise wizard, reviewer-flagged file). */
   replacesFileId?: string;
+  /** Called after a file finishes uploading (revise wizard: refreshes the request so a follow-up replacement targets the new current file). */
+  onUploadComplete?: () => void;
 }) {
   const error = errors[field.id];
   const hasError = !disabled && !!error;
@@ -451,6 +454,7 @@ export function DynamicField({
                     mediaRevision={mediaRevision ?? 0}
                     onMediaRevisionChange={onMediaRevisionChange}
                     replacesFileId={replacesFileId}
+                    onUploadComplete={onUploadComplete}
                   />
                   {hasError && (
                     <FieldError id={errorId} errors={error ? [error as { message?: string }] : []} />

@@ -87,16 +87,37 @@ export function useRequestRevise(request: RequestRecord) {
     () => flaggedFields.filter((f) => f.type === "file"),
     [flaggedFields]
   );
-  /** fieldId -> the currently-submitted fileId to pass as `replacesFileId` when the resident uploads a correction. */
+  /**
+   * fieldId -> the live, actionable file id to pass as `replacesFileId`.
+   * This must always be `currentFile.id`, never `fileId`/`flaggedFileId` —
+   * those identify the historical file the reviewer originally flagged and
+   * are kept only for audit purposes. Sending them once a correction has
+   * already replaced v1 with v2 gets rejected by the backend with
+   * FILE_NOT_FOUND, since v1 is no longer the current file.
+   */
   const replacesFileIdByField = useMemo(
     () =>
       new Map(
         (request.revision?.items ?? [])
-          .filter((item) => item.kind === "file" && item.fileId)
-          .map((item) => [item.fieldId, item.fileId as string])
+          .filter((item) => item.kind === "file" && item.currentFile?.id)
+          .map((item) => [item.fieldId, item.currentFile!.id])
       ),
     [request.revision]
   );
+  /** fieldId -> whether the backend already has a correction on file for this flagged document (`replacementSatisfied`). Authoritative, independent of local upload-pipeline state. */
+  const replacementSatisfiedByField = useMemo(
+    () =>
+      new Map(
+        (request.revision?.items ?? [])
+          .filter((item) => item.kind === "file")
+          .map((item) => [item.fieldId, !!item.replacementSatisfied])
+      ),
+    [request.revision]
+  );
+  /** Refresh the request after a file replacement completes so `currentFile`/`replacementStatus`/`mediaRevision` are current before any further replacement is attempted in the same session. */
+  const refreshAfterFileReplaced = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["requests", "detail", request.id] });
+  }, [queryClient, request.id]);
 
   const steps: RevisionWizardStep[] = useMemo(
     () => [
@@ -374,9 +395,9 @@ export function useRequestRevise(request: RequestRecord) {
     for (const field of currentStepFlaggedFiles) {
       const flaggedOriginalFileId = replacesFileIdByField.get(field.id);
       const rows = (values[field.id] as DropzoneFile[]) ?? [];
-      const hasReplacement = rows.some(
-        (f) => f.status === "ready" && f.fileId && (!flaggedOriginalFileId || f.fileId !== flaggedOriginalFileId)
-      );
+      const hasReplacement =
+        replacementSatisfiedByField.get(field.id) === true ||
+        rows.some((f) => f.status === "ready" && f.fileId && (!flaggedOriginalFileId || f.fileId !== flaggedOriginalFileId));
       if (!hasReplacement) {
         form.setError(field.id as any, {
           type: "custom",
@@ -486,9 +507,9 @@ export function useRequestRevise(request: RequestRecord) {
     for (const field of flaggedFileFields) {
       const flaggedOriginalFileId = replacesFileIdByField.get(field.id);
       const rows = (values[field.id] as DropzoneFile[]) ?? [];
-      const hasReplacement = rows.some(
-        (f) => f.status === "ready" && f.fileId && (!flaggedOriginalFileId || f.fileId !== flaggedOriginalFileId)
-      );
+      const hasReplacement =
+        replacementSatisfiedByField.get(field.id) === true ||
+        rows.some((f) => f.status === "ready" && f.fileId && (!flaggedOriginalFileId || f.fileId !== flaggedOriginalFileId));
       if (!hasReplacement) {
         form.setError(field.id as any, {
           type: "custom",
@@ -596,6 +617,8 @@ export function useRequestRevise(request: RequestRecord) {
     flaggedFileFields,
     flagsByField,
     replacesFileIdByField,
+    replacementSatisfiedByField,
+    onFileReplaced: refreshAfterFileReplaced,
     mediaRevision,
     onMediaRevisionChange: handleMediaRevisionChange,
     isSavingDraft,

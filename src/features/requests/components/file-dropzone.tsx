@@ -39,6 +39,7 @@ export function FileDropzone({
   mediaRevision = 0,
   onMediaRevisionChange,
   replacesFileId,
+  onUploadComplete,
 }: {
   value?: DropzoneFile[];
   onChange: (files: DropzoneFile[]) => void;
@@ -51,6 +52,8 @@ export function FileDropzone({
   mediaRevision?: number;
   onMediaRevisionChange?: (next: number) => void;
   replacesFileId?: string;
+  /** Called after a file finishes uploading (e.g. to refresh the request so a `replacesFileId` correction's `currentFile` is current before any further replacement). */
+  onUploadComplete?: () => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -142,6 +145,7 @@ export function FileDropzone({
         version: completed.file.version,
         logicalFileId: completed.file.logicalFileId,
       });
+      onUploadComplete?.();
     } catch (err: any) {
       const code = err?.code || err?.responseData?.code || err?.response?.data?.code;
       if (code === "STALE_MEDIA_REVISION") {

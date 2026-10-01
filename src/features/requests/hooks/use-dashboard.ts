@@ -12,12 +12,14 @@ export function useDashboard() {
     queryFn: getResidentDashboard,
     staleTime: 30_000,
   });
-  const { data: drafts = [], isLoading: isLoadingDrafts } = useResidentDraftsQuery();
+  const { data: draftsData, isLoading: isLoadingDrafts } = useResidentDraftsQuery();
+  const drafts = draftsData?.drafts ?? [];
 
   return {
     user,
     recentRequests: data?.recentRequests ?? [],
     drafts,
+    draftsTotal: draftsData?.pagination?.total ?? drafts.length,
     isLoading: isLoadingDashboard || isLoadingDrafts,
     stats: {
       total: data?.summary.totalRequests ?? 0,

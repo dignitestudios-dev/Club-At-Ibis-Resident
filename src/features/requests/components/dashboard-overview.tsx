@@ -18,7 +18,7 @@ import { DashboardRequestCard } from "@/features/requests/components/dashboard-r
 import { useDashboard } from "@/features/requests/hooks/use-dashboard";
 
 export default function DashboardOverview() {
-  const { user, recentRequests, drafts, isLoading, stats } = useDashboard();
+  const { user, recentRequests, draftsTotal, isLoading, stats } = useDashboard();
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -46,7 +46,7 @@ export default function DashboardOverview() {
       </div>
 
       {/* Draft Notification Banner */}
-      {drafts.length > 0 && (
+      {draftsTotal > 0 && (
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 rounded-2xl border border-amber-300/80 dark:border-amber-800/80 bg-gradient-to-r from-amber-50/90 to-amber-50/40 dark:from-amber-950/40 dark:to-amber-950/20 p-4.5 text-amber-950 dark:text-amber-200 shadow-2xs animate-in fade-in zoom-in-95 duration-400">
           <div className="flex items-center gap-3.5">
             <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-950/70 text-amber-900 dark:text-amber-300 border border-amber-300/70 dark:border-amber-700/60 shadow-2xs">
@@ -54,7 +54,7 @@ export default function DashboardOverview() {
             </span>
             <div>
               <p className="text-sm font-semibold text-amber-950 dark:text-amber-200">
-                You have {drafts.length} saved in-progress draft{drafts.length > 1 ? "s" : ""}
+                You have {draftsTotal} saved in-progress draft{draftsTotal > 1 ? "s" : ""}
               </p>
               <p className="text-xs text-amber-900/80 dark:text-amber-400/80">
                 Your unsaved work is preserved. Resume right where you left off.

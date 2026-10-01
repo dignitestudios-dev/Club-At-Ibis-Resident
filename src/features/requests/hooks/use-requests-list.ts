@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition, useCallback, useMemo } from "react";
+import { useState, useEffect, useTransition, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useResidentRequestsQuery } from "@/features/requests/api/requests.queries";
 import { useResidentDraftsQuery } from "@/features/drafts/api/drafts.queries";
@@ -10,7 +10,7 @@ export type DatePeriod = "all" | "30d" | "90d" | "year";
 
 // Stable references: a fresh `[]` each render re-triggers effects that depend on these lists.
 const EMPTY_REQUESTS: NonNullable<ReturnType<typeof useResidentRequestsQuery>["data"]>["requests"] = [];
-const EMPTY_DRAFTS: NonNullable<ReturnType<typeof useResidentDraftsQuery>["data"]> = [];
+const EMPTY_DRAFTS: NonNullable<ReturnType<typeof useResidentDraftsQuery>["data"]>["drafts"] = [];
 
 export function useRequestsList(activeTab: RequestsTabType = "requests") {
   const searchParams = useSearchParams();
@@ -78,74 +78,47 @@ export function useRequestsList(activeTab: RequestsTabType = "requests") {
 
   const trimmedSearch = search.trim() || undefined;
 
-  // 1. Single baseline query to calculate tab badge counts without refetching on search
-  const { data: baseData, isLoading: isLoadingBase } = useResidentRequestsQuery(
-    { limit: 100 },
-    { enabled: true }
-  );
-
-  const allRecords = baseData?.requests ?? [];
-
-  const activeTotalCount = useMemo(() => {
-    return allRecords.filter(
-      (r) =>
-        r.status === "submitted" ||
-        r.status === "under_review" ||
-        r.status === "changes_required" ||
-        r.status === "approved"
-    ).length;
-  }, [allRecords]);
-
-  const historyTotalCount = useMemo(() => {
-    return allRecords.filter(
-      (r) => r.status === "completed" || r.status === "rejected" || r.status === "cancelled" || (r as any).status === "withdrawn"
-    ).length;
-  }, [allRecords]);
-
-  const draftsTotalCount = useMemo(() => {
-    return allRecords.filter((r) => r.status === "draft").length;
-  }, [allRecords]);
-
-  // 2. Active tab query - ONLY runs when activeTab === "requests"
+  // Every tab's own (correctly filtered) query is always enabled, so its
+  // badge count can come straight from that same response's
+  // `pagination.total` — never a separate, differently-filtered "baseline"
+  // fetch that can drift from what the tab actually shows. The tab that
+  // isn't currently open only needs the total, so it's fetched with
+  // `limit: 1` to keep the background requests cheap.
   const activeStatusQuery =
     status !== "all"
       ? status
       : "submitted,under_review,changes_required,approved";
 
   const isRequestsTab = activeTab === "requests";
-  const { data: activeData, isLoading: isLoadingActive } = useResidentRequestsQuery(
-    {
-      status: activeStatusQuery,
-      search: trimmedSearch,
-    },
-    { enabled: isRequestsTab }
-  );
+  const { data: activeData, isLoading: isLoadingActive } = useResidentRequestsQuery({
+    status: activeStatusQuery,
+    search: trimmedSearch,
+    limit: isRequestsTab ? undefined : 1,
+  });
 
-  // 3. History tab query - ONLY runs when activeTab === "history"
   const historyStatusQuery =
     status !== "all" ? status : "completed,rejected,cancelled";
 
   const isHistoryTab = activeTab === "history";
-  const { data: historyData, isLoading: isLoadingHistory } = useResidentRequestsQuery(
-    {
-      status: historyStatusQuery,
-      search: trimmedSearch,
-    },
-    { enabled: isHistoryTab }
-  );
+  const { data: historyData, isLoading: isLoadingHistory } = useResidentRequestsQuery({
+    status: historyStatusQuery,
+    search: trimmedSearch,
+    limit: isHistoryTab ? undefined : 1,
+  });
 
-  // 4. Drafts tab query - ONLY runs when activeTab === "drafts"
   const isDraftsTab = activeTab === "drafts";
-  const { data: draftsData, isLoading: isLoadingDrafts } = useResidentDraftsQuery(
-    {
-      search: trimmedSearch,
-    },
-    { enabled: isDraftsTab }
-  );
+  const { data: draftsData, isLoading: isLoadingDrafts } = useResidentDraftsQuery({
+    search: trimmedSearch,
+    limit: isDraftsTab ? undefined : 1,
+  });
+
+  const activeTotalCount = activeData?.pagination?.total ?? 0;
+  const historyTotalCount = historyData?.pagination?.total ?? 0;
+  const draftsTotalCount = draftsData?.pagination?.total ?? 0;
 
   const activeRequests = (isRequestsTab && activeData?.requests) || EMPTY_REQUESTS;
   const historyRequests = (isHistoryTab && historyData?.requests) || EMPTY_REQUESTS;
-  const draftRequests = (isDraftsTab && draftsData) || EMPTY_DRAFTS;
+  const draftRequests = (isDraftsTab && draftsData?.drafts) || EMPTY_DRAFTS;
 
   return {
     activeRequests,
@@ -155,7 +128,6 @@ export function useRequestsList(activeTab: RequestsTabType = "requests") {
     draftRequests,
     draftsTotalCount,
     isLoading:
-      isLoadingBase ||
       (isRequestsTab && isLoadingActive) ||
       (isHistoryTab && isLoadingHistory) ||
       (isDraftsTab && isLoadingDrafts),

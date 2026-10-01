@@ -129,8 +129,26 @@ interface RevisionItem {
   fieldId: string;
   label: string;
   reason: string;
-  /** Set when kind === "file": the currently-submitted file id to pass as `replacesFileId`. */
+  /**
+   * Set when kind === "file". `fileId`/`flaggedFileId` identify the historical
+   * (originally reviewed) file and must never be sent as `replacesFileId` —
+   * only `currentFile.id` is the live, actionable replacement target. Before
+   * any correction is uploaded they're the same file; after a correction,
+   * `currentFile` moves to the new version while `fileId`/`flaggedFileId`
+   * keep pointing at the original flagged version for audit purposes.
+   */
   fileId?: string;
+  flaggedFileId?: string;
+  logicalFileId?: string;
+  currentFile?: {
+    id: string;
+    version: number;
+    name: string;
+    status: string;
+  };
+  replacementStatus?: string;
+  /** True once a correction has actually been uploaded for this flagged file — the authoritative "already replaced" signal, independent of local upload-pipeline state. */
+  replacementSatisfied?: boolean;
 }
 
 /** Only present while `status === "changes_required"`. `revisionVersion` guards PATCH .../revision and POST .../resubmit against concurrent edits. */

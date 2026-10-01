@@ -44,7 +44,7 @@ export default function DraftsListPage() {
     [searchParams, router]
   );
 
-  const { drafts, isLoading, isDeleting, deletingId, deleteDraft, deleteDrafts } = useDrafts({ search });
+  const { drafts, total, isLoading, isDeleting, deletingId, deleteDraft, deleteDrafts } = useDrafts({ search });
 
   useEffect(() => {
     setSelectedDraftIds((prev) => prev.filter((id) => drafts.some((d) => d.id === id)));
@@ -101,7 +101,7 @@ export default function DraftsListPage() {
         </div>
         {hasSearch && (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span>{drafts.length} draft{drafts.length !== 1 ? "s" : ""} found</span>
+            <span>{total} draft{total !== 1 ? "s" : ""} found</span>
             <Button
               variant="ghost"
               size="sm"

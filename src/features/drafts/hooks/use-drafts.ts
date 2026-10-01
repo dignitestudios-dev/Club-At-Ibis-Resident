@@ -9,11 +9,13 @@ import { useToast } from "@/hooks/use-toast";
 export function useDrafts(params?: { search?: string; page?: number; limit?: number }) {
   const toast = useToast();
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const { data: drafts = [], isLoading } = useResidentDraftsQuery({
+  const { data, isLoading } = useResidentDraftsQuery({
     search: params?.search?.trim() || undefined,
     page: params?.page,
     limit: params?.limit,
   });
+  const drafts = data?.drafts ?? [];
+  const total = data?.pagination?.total ?? drafts.length;
   const { mutate: deleteDraftMutate, isPending } = useDeleteDraftMutation();
 
   const deleteDraft = useCallback(
@@ -54,6 +56,7 @@ export function useDrafts(params?: { search?: string; page?: number; limit?: num
 
   return {
     drafts,
+    total,
     isLoading,
     isDeleting: isPending,
     deletingId,

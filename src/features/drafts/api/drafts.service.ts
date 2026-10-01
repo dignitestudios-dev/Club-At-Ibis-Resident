@@ -38,14 +38,17 @@ export async function getDraftsForResident(params?: {
   search?: string;
   page?: number;
   limit?: number;
-}): Promise<RequestDraft[]> {
+}): Promise<ResidentDraftsResult> {
   const res = await getResidentRequests({
     status: "draft",
     search: params?.search,
     page: params?.page,
     limit: params?.limit,
   });
-  return res.requests.map(toDraft);
+  return {
+    drafts: res.requests.map(toDraft),
+    pagination: res.pagination,
+  };
 }
 
 export async function getDraftById(id: string): Promise<RequestDraft | undefined> {

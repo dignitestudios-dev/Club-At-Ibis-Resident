@@ -26,6 +26,11 @@ interface RequestDraft {
   updatedAt: string;
 }
 
+interface ResidentDraftsResult {
+  drafts: RequestDraft[];
+  pagination?: ApiPagination;
+}
+
 interface SaveDraftPayload {
   id?: string;
   residentId: string;
