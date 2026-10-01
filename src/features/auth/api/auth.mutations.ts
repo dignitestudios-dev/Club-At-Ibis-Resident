@@ -69,8 +69,12 @@ export function useDeleteAccountMutation() {
 }
 
 export function useConfirmEmailVerificationMutation() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: { token: string }) => confirmEmailVerification(payload),
+    onSuccess: ({ user }) => {
+      queryClient.setQueryData(authKeys.currentUser, user);
+    },
   });
 }
 

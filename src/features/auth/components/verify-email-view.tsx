@@ -15,6 +15,9 @@ import { RequiredMark } from "@/components/shared/required-mark";
 import { useInspectEmailVerificationQuery } from "@/features/auth/api/auth.queries";
 import { useConfirmEmailVerificationMutation, useResendEmailVerificationMutation } from "@/features/auth/api/auth.mutations";
 import { useToast } from "@/hooks/use-toast";
+import { useAppDispatch } from "@/store";
+import { setUser } from "@/store/slices/auth.slice";
+import { DEFAULT_REDIRECT } from "@/config/routes";
 
 const resendSchema = z.object({
   email: z.string().trim().toLowerCase().min(1, "Email is required.").email("Enter a valid email address."),
@@ -23,6 +26,7 @@ const resendSchema = z.object({
 export default function VerifyEmailView({ token }: { token: string }) {
   const router = useRouter();
   const toast = useToast();
+  const dispatch = useAppDispatch();
   const [confirmed, setConfirmed] = useState(false);
   const [resendSubmitted, setResendSubmitted] = useState(false);
 
@@ -54,9 +58,18 @@ export default function VerifyEmailView({ token }: { token: string }) {
       confirmEmail(
         { token },
         {
-          onSuccess: () => {
+          onSuccess: ({ token: authToken, user }) => {
             setConfirmed(true);
-            toast.success("Email verified", "Your resident account is now active.");
+            // The backend logs the resident straight in on verification — carry
+            // that session forward exactly like a normal login, no separate
+            // sign-in step required.
+            localStorage.removeItem("cai.logged-out");
+            localStorage.setItem("auth-token", authToken);
+            localStorage.setItem("auth-user", JSON.stringify(user));
+            document.cookie = `auth-token=${authToken}; path=/; max-age=1209600; SameSite=Lax`;
+            dispatch(setUser(user));
+            toast.success("Email verified", `Welcome, ${user.firstName}.`);
+            window.location.href = DEFAULT_REDIRECT;
           },
           onError: (err: Error) => {
             toast.error(err.message || "Failed to confirm email verification.");
@@ -64,7 +77,7 @@ export default function VerifyEmailView({ token }: { token: string }) {
         }
       );
     }
-  }, [token, isInspecting, isInspectionError, confirmed, isConfirming, confirmEmail, toast]);
+  }, [token, isInspecting, isInspectionError, confirmed, isConfirming, confirmEmail, toast, dispatch]);
 
   if (!token || isInspectionError) {
     if (resendSubmitted) {
@@ -170,12 +183,13 @@ export default function VerifyEmailView({ token }: { token: string }) {
       <div className="space-y-2">
         <h1 className="font-heading text-2xl font-medium text-foreground">Email Verified!</h1>
         <p className="text-sm text-muted-foreground">
-          Your resident account has been verified successfully. You can now sign in to access your portal.
+          Your resident account is now active. Taking you to your dashboard…
         </p>
       </div>
       <div className="pt-2">
-        <Button onClick={() => router.push("/auth/login")} className="w-full">
-          Sign In to Your Account
+        <Button onClick={() => router.push("/dashboard")} className="w-full">
+          <Spinner className="size-4 mr-1.5" />
+          Continue to Dashboard
         </Button>
       </div>
     </div>

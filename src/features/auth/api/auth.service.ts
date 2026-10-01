@@ -179,12 +179,12 @@ export async function inspectEmailVerification(token: string): Promise<TokenInsp
   return data.data;
 }
 
-/** Confirm email verification with the single-use token. */
-export async function confirmEmailVerification({ token }: { token: string }): Promise<{ user: PublicResident }> {
+/** Confirm email verification with the single-use token. Logs the resident straight in: the backend returns a bearer token with the response, same as /auth/login. */
+export async function confirmEmailVerification({ token }: { token: string }): Promise<{ token: string; user: PublicResident }> {
   const { data } = await axiosInstance.post("/auth/email-verifications/confirm", {
     token,
   });
-  return { user: toPublicResident(data.data.user) };
+  return { token: data.data.token, user: toPublicResident(data.data.user) };
 }
 
 /** Request another verification email to be sent. */
