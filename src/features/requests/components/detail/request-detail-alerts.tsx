@@ -63,10 +63,10 @@ export function RequestDetailAlerts({
 
           {/* Latest Reviewer Directives & Feedback */}
           {(request.feedback || latestComment) && (
-            <div className="rounded-xl border border-amber-200/90 dark:border-amber-800/60 bg-white/90 dark:bg-card/90 p-4 text-xs text-amber-950 dark:text-amber-200 space-y-1.5 shadow-2xs">
+            <div className="rounded-xl border border-amber-200/90 dark:border-amber-800/60 bg-white/90 dark:bg-card/90 p-4 text-xs text-amber-950 dark:text-amber-200 space-y-1.5 shadow-2xs min-w-0 break-words [overflow-wrap:anywhere]">
               <div className="flex items-center justify-between font-semibold text-[11px] text-amber-900 dark:text-amber-300 uppercase tracking-wider">
                 <span className="flex items-center gap-1.5">
-                  <MessageSquare className="size-3.5 text-amber-700 dark:text-amber-400" aria-hidden="true" />
+                  <MessageSquare className="size-3.5 text-amber-700 dark:text-amber-400 shrink-0" aria-hidden="true" />
                   Reviewer Directive &amp; Feedback
                 </span>
                 {latestComment && (
@@ -75,7 +75,7 @@ export function RequestDetailAlerts({
                   </span>
                 )}
               </div>
-              <p className="font-medium italic text-slate-800 dark:text-slate-200 leading-relaxed text-sm break-words [overflow-wrap:anywhere] whitespace-pre-wrap">
+              <p className="font-medium italic text-slate-800 dark:text-slate-200 leading-relaxed text-sm break-words [overflow-wrap:anywhere] [word-break:break-word] whitespace-pre-wrap">
                 &ldquo;{request.feedback || latestComment?.message}&rdquo;
               </p>
             </div>
@@ -84,35 +84,35 @@ export function RequestDetailAlerts({
       )}
 
       {(request.status === "submitted" || request.status === "under_review") && (
-        <Alert className="border-sky-200 dark:border-sky-800/60 bg-sky-50/80 dark:bg-sky-950/40">
-          <Info className="size-4 text-sky-700 dark:text-sky-400" aria-hidden="true" />
+        <Alert className="border-sky-200 dark:border-sky-800/60 bg-sky-50/80 dark:bg-sky-950/40 min-w-0 break-words [overflow-wrap:anywhere]">
+          <Info className="size-4 text-sky-700 dark:text-sky-400 shrink-0" aria-hidden="true" />
           <AlertTitle className="text-sky-900 dark:text-sky-200">
             {request.status === "submitted" ? "Request Submitted" : "Under ARB Review"}
           </AlertTitle>
-          <AlertDescription className="text-sky-800 dark:text-sky-300">
+          <AlertDescription className="text-sky-800 dark:text-sky-300 break-words [overflow-wrap:anywhere]">
             This request is currently under review by the Architectural Review Board. Submissions are locked and cannot be edited while in review unless changes are specifically requested by a reviewer.
           </AlertDescription>
         </Alert>
       )}
 
       {request.status === "resubmitted" && (
-        <Alert className="border-purple-200 dark:border-purple-800/60 bg-purple-50/80 dark:bg-purple-950/40">
-          <Info className="size-4 text-purple-700 dark:text-purple-400" aria-hidden="true" />
+        <Alert className="border-purple-200 dark:purple-800/60 bg-purple-50/80 dark:bg-purple-950/40 min-w-0 break-words [overflow-wrap:anywhere]">
+          <Info className="size-4 text-purple-700 dark:text-purple-400 shrink-0" aria-hidden="true" />
           <AlertTitle className="text-purple-900 dark:text-purple-200">Resubmission Under Review</AlertTitle>
-          <AlertDescription className="text-purple-800 dark:text-purple-300">
+          <AlertDescription className="text-purple-800 dark:text-purple-300 break-words [overflow-wrap:anywhere]">
             Your revised submission has been received and is currently under ARB follow-up review. Submissions cannot be edited while in review unless additional changes are requested.
           </AlertDescription>
         </Alert>
       )}
 
       {request.status === "rejected" && request.rejectionReason && (
-        <Alert variant="destructive">
-          <AlertTriangle className="size-4" aria-hidden="true" />
+        <Alert variant="destructive" className="min-w-0 break-words [overflow-wrap:anywhere]">
+          <AlertTriangle className="size-4 shrink-0" aria-hidden="true" />
           <AlertTitle>Request Rejected</AlertTitle>
-          <AlertDescription className="space-y-1.5">
-            <p className="break-words [overflow-wrap:anywhere] whitespace-pre-wrap">{request.rejectionReason}</p>
+          <AlertDescription className="space-y-1.5 min-w-0">
+            <p className="break-words [overflow-wrap:anywhere] [word-break:break-word] whitespace-pre-wrap">{request.rejectionReason}</p>
             {(request.decision?.decidedBy || request.decidedAt) && (
-              <p className="text-xs opacity-80">
+              <p className="text-xs opacity-80 break-words [overflow-wrap:anywhere]">
                 {request.decision?.decidedBy ? `Decided by ${request.decision.decidedBy.displayName}` : "Decided"}
                 {request.decidedAt ? ` · ${formatDateTime(request.decidedAt)}` : ""}
               </p>

@@ -112,13 +112,13 @@ export function RequestReviseWizard({ request }: { request: RequestRecord }) {
                         {isFlagged && reason && (
                           <div
                             role="note"
-                            className="mt-2 rounded-lg border border-amber-200/90 dark:border-amber-800/60 bg-amber-50/90 dark:bg-amber-950/30 p-3 text-xs shadow-2xs"
+                            className="mt-2 rounded-lg border border-amber-200/90 dark:border-amber-800/60 bg-amber-50/90 dark:bg-amber-950/30 p-3 text-xs shadow-2xs min-w-0 break-words [overflow-wrap:anywhere]"
                           >
-                            <div className="flex items-start gap-2 text-amber-900 dark:text-amber-200">
+                            <div className="flex items-start gap-2 text-amber-900 dark:text-amber-200 min-w-0">
                               <AlertTriangle className="size-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" aria-hidden="true" />
-                              <div>
+                              <div className="min-w-0 flex-1 break-words [overflow-wrap:anywhere]">
                                 <span className="font-semibold">Reviewer Flag: </span>
-                                <span className="text-amber-800 dark:text-amber-300">{reason}</span>
+                                <span className="text-amber-800 dark:text-amber-300 break-words [overflow-wrap:anywhere] [word-break:break-word] whitespace-pre-wrap">{reason}</span>
                               </div>
                             </div>
                           </div>

@@ -38,8 +38,15 @@ export function useAutosaveDraftMutation() {
 export function useMigrateDraftFormMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, expectedDraftRevision }: { id: string; expectedDraftRevision: number }) =>
-      migrateDraftForm(id, expectedDraftRevision),
+    mutationFn: ({
+      id,
+      expectedDraftRevision,
+      expectedMediaRevision,
+    }: {
+      id: string;
+      expectedDraftRevision: number;
+      expectedMediaRevision: number;
+    }) => migrateDraftForm(id, expectedDraftRevision, expectedMediaRevision),
     onSuccess: (record) => {
       queryClient.setQueryData(["requests", "detail", record.id], record);
       queryClient.setQueryData(["drafts", "detail", record.id], toDraft(record));

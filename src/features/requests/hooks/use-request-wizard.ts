@@ -793,17 +793,20 @@ export function useRequestWizard(
       autosaveTimerRef.current = null;
     }
 
-    const performMigrate = (rev: number) => {
+    const performMigrate = (rev: number, mediaRev: number) => {
       migrateDraftMutate.mutate(
         {
           id: draftId,
           expectedDraftRevision: rev,
+          expectedMediaRevision: mediaRev,
         },
         {
           onSuccess: (migrated) => {
             const nextRev = migrated.draftRevision ?? rev + 1;
             setDraftRevision(nextRev);
             draftRevisionRef.current = nextRev;
+            setMediaRevision(migrated.mediaRevision ?? mediaRev);
+            mediaRevisionRef.current = migrated.mediaRevision ?? mediaRev;
             setIsStaleForm(false);
             setSubmissionErrors([]);
             setHasMigratedNotice(true);
@@ -873,10 +876,15 @@ export function useRequestWizard(
               return;
             }
             const remoteRev = extractCurrentRevision(err);
-            if (remoteRev !== null && remoteRev !== rev) {
-              draftRevisionRef.current = remoteRev;
-              setDraftRevision(remoteRev);
-              performMigrate(remoteRev);
+            const remoteMediaRev = extractCurrentMediaRevision(err);
+            if ((remoteRev !== null && remoteRev !== rev) || (remoteMediaRev !== null && remoteMediaRev !== mediaRev)) {
+              const nextRev = remoteRev ?? rev;
+              const nextMediaRev = remoteMediaRev ?? mediaRev;
+              draftRevisionRef.current = nextRev;
+              setDraftRevision(nextRev);
+              mediaRevisionRef.current = nextMediaRev;
+              setMediaRevision(nextMediaRev);
+              performMigrate(nextRev, nextMediaRev);
               return;
             }
             toast.error("Failed to upgrade form", err?.message || "Please try again.");
@@ -885,7 +893,7 @@ export function useRequestWizard(
       );
     };
 
-    performMigrate(draftRevisionRef.current);
+    performMigrate(draftRevisionRef.current, mediaRevisionRef.current);
   }
 
   function confirmChangeCategory() {

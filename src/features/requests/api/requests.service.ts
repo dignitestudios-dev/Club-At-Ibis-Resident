@@ -35,9 +35,15 @@ function toRequestRecord(raw: any): RequestRecord {
       else if (t.includes("completed")) actType = "completed";
       else if (t.includes("withdrawn")) actType = "withdrawn";
 
+      // A staff account invited without a last name has it stored as a copy
+      // of the first name (backend requires lastName non-empty on create),
+      // so skip appending it here too rather than showing e.g. "Riley Riley".
+      const actorFirstName = h.actor?.firstName?.trim();
+      const actorLastName = h.actor?.lastName?.trim();
+      const actorHasDistinctLastName = !!actorLastName && actorLastName.toLowerCase() !== actorFirstName?.toLowerCase();
       const actorName =
         h.actor?.displayName ||
-        (h.actor?.firstName ? `${h.actor.firstName} ${h.actor.lastName || ""}`.trim() : null) ||
+        (actorFirstName ? (actorHasDistinctLastName ? `${actorFirstName} ${actorLastName}` : actorFirstName) : null) ||
         h.actor?.role ||
         "System";
 
@@ -233,10 +239,12 @@ export async function autosaveDraft(
  */
 export async function migrateDraftForm(
   id: string,
-  expectedDraftRevision: number
+  expectedDraftRevision: number,
+  expectedMediaRevision: number
 ): Promise<RequestRecord> {
   const { data } = await axiosInstance.post(`/requests/${id}/migrate-form`, {
     expectedDraftRevision,
+    expectedMediaRevision,
   });
   return toRequestRecord(data.data.request);
 }

@@ -98,8 +98,9 @@ export function HistoryTimeline({ events }: { events: HistoryEvent[] }) {
                   <span className="mb-1 block font-semibold text-amber-800 dark:text-amber-300">Fields flagged for correction:</span>
                   <ul className="space-y-0.5">
                     {event.flaggedItems.map((item, i) => (
-                      <li key={i} className="break-words [overflow-wrap:anywhere]">
-                        <span className="font-medium">{item.label}:</span> {item.reason}
+                      <li key={i} className="min-w-0 break-words [overflow-wrap:anywhere]">
+                        <span className="font-medium">{item.label}:</span>{" "}
+                        <span className="break-words [overflow-wrap:anywhere] [word-break:break-word]">{item.reason}</span>
                       </li>
                     ))}
                   </ul>

@@ -133,9 +133,16 @@ export function FileDropzone({
         ...(replacesFileId ? { replacesFileId } : {}),
       });
       onMediaRevisionChange?.(intent.mediaRevision);
-      patchRow(row.id, { status: "verifying", fileId: intent.file.id });
+      patchRow(row.id, { fileId: intent.file.id, progress: 0 });
 
-      await putFileToBlob(intent.upload.url, file, intent.upload.requiredHeaders);
+      await putFileToBlob(intent.upload.url, file, intent.upload.requiredHeaders, (percent) => {
+        patchRow(row.id, { progress: percent });
+      });
+
+      // The byte transfer is done; backend-side verification (size/signature/
+      // content-type) has no progress of its own, so "verifying" takes over
+      // from the progress bar rather than sitting at 100% uploading.
+      patchRow(row.id, { status: "verifying", progress: undefined });
 
       const completed = await completeUpload(requestId, intent.file.id);
       onMediaRevisionChange?.(completed.mediaRevision);
@@ -152,7 +159,7 @@ export function FileDropzone({
         const current = err?.responseData?.details?.currentMediaRevision ?? err?.response?.data?.details?.currentMediaRevision;
         if (typeof current === "number") onMediaRevisionChange?.(current);
       }
-      patchRow(row.id, { status: "failed", failureCode: code });
+      patchRow(row.id, { status: "failed", failureCode: code, progress: undefined });
       toastError("Upload failed", failureMessage(err));
     }
   }
@@ -210,7 +217,7 @@ export function FileDropzone({
 
   function retry(row: DropzoneFile) {
     if (!row.file) return;
-    patchRow(row.id, { status: "uploading", failureCode: undefined });
+    patchRow(row.id, { status: "uploading", failureCode: undefined, progress: undefined });
     void runUploadPipeline(row, row.file);
   }
 
@@ -283,11 +290,12 @@ export function FileDropzone({
           {value.map((f) => {
             const busy = f.status === "uploading" || f.status === "verifying";
             const failed = f.status === "failed";
+            const showProgressBar = f.status === "uploading" && typeof f.progress === "number";
             return (
               <li
                 key={f.id}
                 className={cn(
-                  "flex items-center gap-2.5 rounded-lg border px-3 py-2 text-sm shadow-2xs transition-all",
+                  "flex flex-col gap-1.5 rounded-lg border px-3 py-2 text-sm shadow-2xs transition-all",
                   failed
                     ? "border-destructive/40 bg-destructive/5 text-foreground"
                     : disabled
@@ -295,6 +303,7 @@ export function FileDropzone({
                     : "border-border bg-white dark:bg-card text-foreground"
                 )}
               >
+                <div className="flex items-center gap-2.5">
                 {busy ? (
                   <Loader2 className="size-4 shrink-0 animate-spin text-primary/70" />
                 ) : (
@@ -302,7 +311,14 @@ export function FileDropzone({
                 )}
                 <span className="min-w-0 flex-1 truncate font-medium">
                   {f.name}
-                  {busy && <span className="ml-1.5 text-xs font-normal text-muted-foreground">Uploading…</span>}
+                  {f.status === "uploading" && (
+                    <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+                      Uploading{showProgressBar ? ` ${f.progress}%` : "…"}
+                    </span>
+                  )}
+                  {f.status === "verifying" && (
+                    <span className="ml-1.5 text-xs font-normal text-muted-foreground">Verifying…</span>
+                  )}
                   {failed && (
                     <span className="ml-1.5 text-xs font-normal text-destructive">
                       {FAILURE_MESSAGES[f.failureCode || ""] || "Upload failed"}
@@ -344,6 +360,22 @@ export function FileDropzone({
                   >
                     <X className="size-4" />
                   </button>
+                )}
+                </div>
+                {showProgressBar && (
+                  <div
+                    className="h-1.5 w-full overflow-hidden rounded-full bg-muted"
+                    role="progressbar"
+                    aria-valuenow={f.progress}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label={`Uploading ${f.name}`}
+                  >
+                    <div
+                      className="h-full rounded-full bg-primary transition-[width] duration-150 ease-out"
+                      style={{ width: `${f.progress}%` }}
+                    />
+                  </div>
                 )}
               </li>
             );

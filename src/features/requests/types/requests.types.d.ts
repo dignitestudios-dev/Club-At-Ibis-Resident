@@ -94,6 +94,8 @@ interface DropzoneFile {
   logicalFileId?: string;
   /** Set when this row is replacing a specific reviewer-flagged file (revise wizard). */
   replacesFileId?: string;
+  /** 0-100, only meaningful while status === "uploading" — the actual bytes-sent fraction of the PUT to blob storage, not a simulated/elapsed-time estimate. */
+  progress?: number;
 }
 
 interface ActivityEntry {
