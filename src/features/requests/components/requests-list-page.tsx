@@ -25,16 +25,18 @@ const VIEW_MODE_STORAGE_KEY = "ib_requests_view_mode";
 const ACTIVE_STATUS_OPTIONS: { label: string; value: RequestStatus | "all" }[] = [
   { label: "All Active Statuses", value: "all" },
   { label: "Submitted", value: "submitted" },
+  { label: "Assigned", value: "assigned" },
   { label: "Under Review", value: "under_review" },
   { label: "Changes Required", value: "changes_required" },
+  { label: "Resubmitted", value: "resubmitted" },
   { label: "Approved", value: "approved" },
 ];
 
 const HISTORY_STATUS_OPTIONS: { label: string; value: RequestStatus | "all" }[] = [
   { label: "All History Records", value: "all" },
-  { label: "Completed & Closed", value: "completed" },
   { label: "Rejected", value: "rejected" },
-  { label: "Cancelled", value: "cancelled" },
+  { label: "Completed & Closed", value: "completed" },
+  { label: "Withdrawn", value: "withdrawn" },
 ];
 
 export default function RequestsListPage() {

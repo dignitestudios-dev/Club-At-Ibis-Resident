@@ -87,7 +87,7 @@ export function useRequestsList(activeTab: RequestsTabType = "requests") {
   const activeStatusQuery =
     status !== "all"
       ? status
-      : "submitted,under_review,changes_required,approved";
+      : "submitted,assigned,under_review,changes_required,resubmitted,approved";
 
   const isRequestsTab = activeTab === "requests";
   const { data: activeData, isLoading: isLoadingActive } = useResidentRequestsQuery({
@@ -97,7 +97,7 @@ export function useRequestsList(activeTab: RequestsTabType = "requests") {
   });
 
   const historyStatusQuery =
-    status !== "all" ? status : "completed,rejected,cancelled";
+    status !== "all" ? status : "rejected,completed,withdrawn";
 
   const isHistoryTab = activeTab === "history";
   const { data: historyData, isLoading: isLoadingHistory } = useResidentRequestsQuery({
