@@ -66,7 +66,7 @@ const EVENT_CONFIG: Record<
   },
   rejected: {
     icon: XCircle,
-    label: "Not Approved",
+    label: "Rejected",
     nodeBg: "bg-rose-600 text-white ring-rose-200 dark:ring-rose-900",
     badgeBg: "bg-rose-50 dark:bg-rose-950/50 text-rose-950 dark:text-rose-300 border-rose-200/80 dark:border-rose-800/80",
   },

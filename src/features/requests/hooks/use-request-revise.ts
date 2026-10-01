@@ -312,8 +312,16 @@ export function useRequestRevise(request: RequestRecord) {
   }, [applyUpdatedRecord, editableFlaggedFields.length, extractFlaggedValues, request.id, toast]);
 
   // Debounced autosave on field changes, mirroring the create-request wizard.
+  // File fields are deliberately excluded: a document replacement is already
+  // persisted the moment its upload completes (its own pipeline, no draft
+  // step), so watching it here only set `hasUnsavedChanges` without any
+  // autosave ever able to clear it back — `triggerAutosave` only covers
+  // `editableFlaggedFields` (text/choice), and its signature-unchanged guard
+  // silently no-ops when the only real change was a file upload, leaving the
+  // "Unsaved changes" badge stuck until the next full page reload.
   useEffect(() => {
-    const subscription = form.watch(() => {
+    const subscription = form.watch((_value, { name }) => {
+      if (!name || !editableFlaggedFields.some((f) => f.id === name)) return;
       setHasUnsavedChanges(true);
       if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
       autosaveTimerRef.current = setTimeout(() => {
@@ -324,7 +332,7 @@ export function useRequestRevise(request: RequestRecord) {
       subscription.unsubscribe();
       if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
     };
-  }, [form, triggerAutosave]);
+  }, [form, triggerAutosave, editableFlaggedFields]);
 
   async function handleNext() {
     if (isReviewStep) return;
@@ -578,6 +586,7 @@ export function useRequestRevise(request: RequestRecord) {
 
       const saved = await performResubmit(workflowVersionRef.current, revisionVersionRef.current, mediaRevisionRef.current);
       applyUpdatedRecord(saved);
+      setHasUnsavedChanges(false);
       queryClient.invalidateQueries({ queryKey: ["requests"] });
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
       toast.success("Revised request resubmitted for ARB review.", `Reference ${saved.reference || saved.code}`);

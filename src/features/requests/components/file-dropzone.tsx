@@ -288,9 +288,11 @@ export function FileDropzone({
       {value.length > 0 && (
         <ul className="space-y-1.5">
           {value.map((f) => {
-            const busy = f.status === "uploading" || f.status === "verifying";
+            const uploading = f.status === "uploading";
+            const verifying = f.status === "verifying";
+            const busy = uploading || verifying;
             const failed = f.status === "failed";
-            const showProgressBar = f.status === "uploading" && typeof f.progress === "number";
+            const progress = f.progress ?? 0;
             return (
               <li
                 key={f.id}
@@ -304,19 +306,19 @@ export function FileDropzone({
                 )}
               >
                 <div className="flex items-center gap-2.5">
-                {busy ? (
+                {verifying ? (
                   <Loader2 className="size-4 shrink-0 animate-spin text-primary/70" />
                 ) : (
                   <FileText className={cn("size-4 shrink-0", failed ? "text-destructive" : "text-primary/70")} />
                 )}
                 <span className="min-w-0 flex-1 truncate font-medium">
                   {f.name}
-                  {f.status === "uploading" && (
+                  {uploading && (
                     <span className="ml-1.5 text-xs font-normal text-muted-foreground">
-                      Uploading{showProgressBar ? ` ${f.progress}%` : "…"}
+                      Uploading {progress}%
                     </span>
                   )}
-                  {f.status === "verifying" && (
+                  {verifying && (
                     <span className="ml-1.5 text-xs font-normal text-muted-foreground">Verifying…</span>
                   )}
                   {failed && (
@@ -350,7 +352,10 @@ export function FileDropzone({
                     <Eye className="size-4" />
                   </button>
                 )}
-                {!disabled && !busy && (
+                {/* In a flagged-file replacement (replacesFileId set), removal is
+                    never a valid action — only uploading a new file in its place
+                    is, and the backend rejects deleting a submitted file anyway. */}
+                {!disabled && !busy && !replacesFileId && (
                   <button
                     type="button"
                     onClick={() => removeFile(f)}
@@ -362,18 +367,18 @@ export function FileDropzone({
                   </button>
                 )}
                 </div>
-                {showProgressBar && (
+                {uploading && (
                   <div
-                    className="h-1.5 w-full overflow-hidden rounded-full bg-muted"
+                    className="h-2 w-full overflow-hidden rounded-full bg-muted"
                     role="progressbar"
-                    aria-valuenow={f.progress}
+                    aria-valuenow={progress}
                     aria-valuemin={0}
                     aria-valuemax={100}
                     aria-label={`Uploading ${f.name}`}
                   >
                     <div
                       className="h-full rounded-full bg-primary transition-[width] duration-150 ease-out"
-                      style={{ width: `${f.progress}%` }}
+                      style={{ width: `${progress}%` }}
                     />
                   </div>
                 )}

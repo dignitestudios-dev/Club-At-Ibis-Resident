@@ -56,7 +56,7 @@ function getNotificationVisuals(type: NotificationType) {
         icon: <XCircle className="size-4.5 text-rose-600 dark:text-rose-400" aria-hidden="true" />,
         badgeClass: "bg-rose-50 dark:bg-rose-950/40 text-rose-950 dark:text-rose-300 border-rose-200/80 dark:border-rose-800/60",
         avatarBg: "bg-rose-50/50 dark:bg-rose-950/30 border-rose-200/60 dark:border-rose-800/40",
-        label: "Not Approved",
+        label: "Rejected",
       };
     case "withdrawn":
       return {

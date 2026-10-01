@@ -44,7 +44,7 @@ const STATUS_CONFIG: Record<
     dotClass: "bg-emerald-600 dark:bg-emerald-400",
   },
   rejected: {
-    label: "Not Approved",
+    label: "Rejected",
     className: "bg-rose-50 dark:bg-rose-950/50 text-rose-950 dark:text-rose-200 border-rose-200 dark:border-rose-800",
     dotClass: "bg-rose-600 dark:bg-rose-400",
   },
