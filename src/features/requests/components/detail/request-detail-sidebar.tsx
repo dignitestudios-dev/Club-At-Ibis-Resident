@@ -41,7 +41,7 @@ export function RequestDetailSidebar({ request }: RequestDetailSidebarProps) {
       </Card>
 
       {/* Financial & Decision Summary Card */}
-      {(request.depositRequired || request.decidedAt) && (
+      {(request.deposit?.required || request.depositRequired || request.decidedAt) && (
         <Card className="border-slate-200/90 dark:border-slate-800 shadow-2xs overflow-hidden bg-white dark:bg-card">
           <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800/80">
             <div className="flex items-center gap-2.5">
@@ -58,7 +58,7 @@ export function RequestDetailSidebar({ request }: RequestDetailSidebarProps) {
             </div>
           </CardHeader>
           <CardContent className="space-y-3 pt-4">
-            {request.depositRequired && (
+            {(request.deposit?.required ?? request.depositRequired) && (
               <div className="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50 p-3.5 space-y-2.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -73,13 +73,13 @@ export function RequestDetailSidebar({ request }: RequestDetailSidebarProps) {
                     </span>
                   </div>
                   <span className="font-mono text-base font-bold text-slate-900 dark:text-slate-100">
-                    ${request.depositAmount?.toLocaleString() ?? "—"}
+                    ${request.deposit?.amount ? Number(request.deposit.amount).toLocaleString() : request.depositAmount ? Number(request.depositAmount).toLocaleString() : "—"}
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between pt-2 border-t border-slate-200/70 dark:border-slate-800 text-xs">
                   <span className="text-muted-foreground font-medium">Deposit Status</span>
-                  {request.depositReceived ? (
+                  {(request.deposit?.status === "received" || request.depositReceived) ? (
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300/80 dark:border-emerald-800/60 px-2.5 py-0.5 font-semibold text-emerald-800 dark:text-emerald-400 shadow-2xs">
                       <CheckCircle2 className="size-3 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
                       Received
@@ -118,7 +118,7 @@ export function RequestDetailSidebar({ request }: RequestDetailSidebarProps) {
       )}
 
       {/* Security Deposit Refund Card */}
-      {request.depositReceived && (
+      {(request.deposit?.status === "received" || request.depositReceived) && (
         <Card className="border-slate-200/90 dark:border-slate-800 shadow-2xs overflow-hidden bg-white dark:bg-card">
           <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800/80">
             <div className="flex items-center gap-2.5">
@@ -135,7 +135,7 @@ export function RequestDetailSidebar({ request }: RequestDetailSidebarProps) {
             </div>
           </CardHeader>
           <CardContent className="space-y-3 pt-4">
-            {request.refundStatus === "refunded" ? (
+            {(request.refund?.outcome === "refunded" || request.refundStatus === "refunded") ? (
               <div className="rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-gradient-to-br from-emerald-50/90 via-white to-emerald-50/40 dark:from-emerald-950/40 dark:via-slate-900/80 dark:to-emerald-950/20 p-4 space-y-3 shadow-2xs">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -149,26 +149,28 @@ export function RequestDetailSidebar({ request }: RequestDetailSidebarProps) {
                       Refund Processed
                     </span>
                   </div>
-                  {request.depositAmount && (
+                  {(request.deposit?.amount || request.depositAmount) && (
                     <span className="font-mono text-base font-bold text-emerald-900 dark:text-emerald-300">
-                      ${request.depositAmount.toLocaleString()}
+                      ${request.deposit?.amount ? Number(request.deposit.amount).toLocaleString() : Number(request.depositAmount).toLocaleString()}
                     </span>
                   )}
                 </div>
-                {request.refundDate && (
+                {(request.refund?.refundDate || request.refundDate) && (
                   <div className="flex items-center justify-between text-xs text-emerald-900/80 dark:text-emerald-300/80 pt-2 border-t border-emerald-200/60 dark:border-emerald-800/50">
                     <span className="flex items-center gap-1">
                       <CalendarCheck className="size-3 text-emerald-700 dark:text-emerald-400" aria-hidden="true" />
                       Disbursement Date
                     </span>
-                    <span className="font-semibold text-emerald-950 dark:text-emerald-200">{formatDate(request.refundDate)}</span>
+                    <span className="font-semibold text-emerald-950 dark:text-emerald-200">
+                      {formatDate(request.refund?.refundDate || request.refundDate!)}
+                    </span>
                   </div>
                 )}
                 <p className="text-xs text-emerald-900/85 dark:text-emerald-300/85 leading-relaxed pt-1">
                   Your security deposit has been refunded to your original payment method.
                 </p>
               </div>
-            ) : request.refundStatus === "awaiting" ? (
+            ) : (request.refund?.outcome === "awaiting_refund_action" || request.refundStatus === "awaiting") ? (
               <div className="rounded-xl border border-amber-200 dark:border-amber-800/60 bg-gradient-to-br from-amber-50/90 via-white to-amber-50/40 dark:from-amber-950/40 dark:via-slate-900/80 dark:to-amber-950/20 p-4 space-y-2.5 shadow-2xs">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -182,9 +184,9 @@ export function RequestDetailSidebar({ request }: RequestDetailSidebarProps) {
                       Pending Closeout
                     </span>
                   </div>
-                  {request.depositAmount && (
+                  {(request.deposit?.amount || request.depositAmount) && (
                     <span className="font-mono text-base font-bold text-amber-900 dark:text-amber-300">
-                      ${request.depositAmount.toLocaleString()}
+                      ${request.deposit?.amount ? Number(request.deposit.amount).toLocaleString() : Number(request.depositAmount).toLocaleString()}
                     </span>
                   )}
                 </div>
@@ -192,7 +194,7 @@ export function RequestDetailSidebar({ request }: RequestDetailSidebarProps) {
                   Your deposit refund is queued and will be disbursed following final project inspection and completion sign-off.
                 </p>
               </div>
-            ) : request.refundStatus === "no_refund" ? (
+            ) : (request.refund?.outcome === "no_refund" || request.refundStatus === "no_refund") ? (
               <div className="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50 p-3.5 space-y-2">
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-medium text-slate-600 dark:text-slate-400">Refund Status</span>

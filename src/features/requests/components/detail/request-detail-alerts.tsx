@@ -126,7 +126,11 @@ export function RequestDetailAlerts({
           <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
           <AlertTitle className="text-emerald-900 dark:text-emerald-200">Request Approved</AlertTitle>
           <AlertDescription className="space-y-1.5 text-emerald-800 dark:text-emerald-300">
-            <p>Final processing (deposit, if applicable, and the approval letter) is in progress. You will be notified once this request is marked completed.</p>
+            <p>
+              {request.deposit?.required
+                ? `A security deposit of $${request.deposit.amount ? Number(request.deposit.amount).toLocaleString() : "—"} is required. Once the deposit and final approval documentation are recorded, you will be notified.`
+                : "Final processing (final approval letter) is in progress. You will be notified once this request is marked completed."}
+            </p>
             {(request.decision?.decidedBy || request.decidedAt) && (
               <p className="text-xs opacity-80">
                 {request.decision?.decidedBy ? `Decided by ${request.decision.decidedBy.displayName}` : "Decided"}
@@ -137,41 +141,81 @@ export function RequestDetailAlerts({
         </Alert>
       )}
 
-      {request.status === "completed" && request.approvalLetterAvailable && (
+      {request.status === "completed" && (
         <Alert className="border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/40">
           <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
           <AlertTitle className="text-emerald-900 dark:text-emerald-200">Request Completed</AlertTitle>
           <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <span className="text-emerald-800 dark:text-emerald-300">Your final approval letter is ready to download.</span>
-            <Button
-              size="sm"
-              variant="outline"
-              className="shrink-0 bg-card gap-1.5"
-              onClick={() => {
-                const doc = request.approvalLetter ?? {
-                  name: `${request.code}-approval-letter.pdf`,
-                  size: 245000,
-                  uploadedAt: new Date().toISOString(),
-                };
-                onPreviewLetter(doc);
-              }}
-              aria-label="Download or view approval letter"
-            >
-              <Download className="size-3.5" aria-hidden="true" />
-              Download Letter
-            </Button>
+            {(request.completion?.finalApprovalLetter || request.approvalLetter || request.approvalLetterAvailable) && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="shrink-0 bg-card gap-1.5"
+                onClick={() => {
+                  const doc = request.completion?.finalApprovalLetter ?? request.approvalLetter ?? {
+                    id: "final-approval-letter",
+                    name: `${request.code}-approval-letter.pdf`,
+                    size: 245000,
+                    uploadedAt: request.completedAt ?? new Date().toISOString(),
+                  };
+                  onPreviewLetter(doc as PreviewableFile);
+                }}
+                aria-label="Download or view approval letter"
+              >
+                <Download className="size-3.5" aria-hidden="true" />
+                Download Letter
+              </Button>
+            )}
           </AlertDescription>
         </Alert>
       )}
 
       {request.status === "withdrawn" && (
-        <Alert>
-          <UserX className="size-4 text-muted-foreground" aria-hidden="true" />
-          <AlertTitle>Request Withdrawn</AlertTitle>
-          <AlertDescription>
-            This request was withdrawn on {formatDate(request.withdrawnAt ?? request.updatedAt)}. Further review and approval processing has stopped.
-          </AlertDescription>
-        </Alert>
+        <div className="space-y-3">
+          <Alert>
+            <UserX className="size-4 text-muted-foreground" aria-hidden="true" />
+            <AlertTitle>Request Withdrawn</AlertTitle>
+            <AlertDescription className="space-y-1">
+              <p>
+                This request was withdrawn on {formatDate(request.withdrawal?.withdrawnAt ?? request.withdrawnAt ?? request.updatedAt)}. Further review and approval processing has stopped.
+              </p>
+              {(request.deposit?.status === "received" || request.depositReceived) && (
+                <p className="text-xs text-muted-foreground pt-1">
+                  {request.refund?.outcome === "refunded" || request.refundStatus === "refunded"
+                    ? `Deposit refund was processed on ${request.refund?.refundDate || request.refundDate ? formatDate(request.refund?.refundDate || request.refundDate!) : "—"}.`
+                    : request.refund?.outcome === "no_refund" || request.refundStatus === "no_refund"
+                    ? "Deposit refund status: No refund applicable (-)."
+                    : "Deposit refund is awaiting administrative processing."}
+                </p>
+              )}
+            </AlertDescription>
+          </Alert>
+
+          {request.completion?.finalApprovalLetter && (
+            <Alert className="border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/40">
+              <CheckCircle2 className="size-4 text-primary" aria-hidden="true" />
+              <AlertTitle>Issued Final Approval Letter</AlertTitle>
+              <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <span className="text-muted-foreground text-xs">
+                  A final approval letter was issued prior to request withdrawal and remains accessible.
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="shrink-0 bg-card gap-1.5"
+                  onClick={() => {
+                    onPreviewLetter(request.completion!.finalApprovalLetter! as PreviewableFile);
+                  }}
+                  aria-label="Download or view issued approval letter"
+                >
+                  <Download className="size-3.5" aria-hidden="true" />
+                  Download Letter
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
       )}
 
       {/* Reviewer feedback banner for non-changes-required statuses */}

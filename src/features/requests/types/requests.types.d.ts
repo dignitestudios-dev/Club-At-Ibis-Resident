@@ -210,7 +210,7 @@ interface RequestDecisionInfo {
   decidedBy: { actorId?: string; role?: string; displayName: string } | null;
 }
 
-type RefundStatus = "awaiting" | "refunded" | "no_refund";
+type RefundStatus = "awaiting" | "awaiting_refund_action" | "refunded" | "no_refund";
 
 interface ApiPagination {
   page: number;
@@ -222,6 +222,29 @@ interface ApiPagination {
 interface SubmissionReadiness {
   ready: boolean;
   issues: string[];
+}
+
+interface ResidentDepositRecord {
+  required: boolean;
+  amount: string | null;
+  status: "not_required" | "pending" | "received";
+}
+
+interface ResidentCompletionRecord {
+  completedAt: string | null;
+  finalApprovalLetter?: UploadedFile | null;
+}
+
+interface ResidentWithdrawalRecord {
+  withdrawnAt: string | null;
+  withdrawnFrom?: RequestStatus | null;
+}
+
+interface ResidentRefundRecord {
+  outcome: RefundStatus | null;
+  refundDate?: string | null;
+  displayValue?: string | null;
+  explanation?: string | null;
 }
 
 interface RequestRecord {
@@ -260,16 +283,20 @@ interface RequestRecord {
   hoaApproved: boolean;
   hoaConfirmedAt?: string;
   depositRequired?: boolean;
-  depositAmount?: number;
+  depositAmount?: number | string | null;
   depositReceived?: boolean;
+  deposit?: ResidentDepositRecord | null;
+  completion?: ResidentCompletionRecord | null;
+  withdrawal?: ResidentWithdrawalRecord | null;
+  refund?: ResidentRefundRecord | null;
   rejectionReason?: string;
   feedback?: string;
   /** The full `decision` object from GET /requests/:id — who decided and when, beyond just the reason text. */
   decision?: RequestDecisionInfo | null;
   approvalLetterAvailable?: boolean;
-  approvalLetter?: UploadedFile;
-  refundStatus?: RefundStatus;
-  refundDate?: string;
+  approvalLetter?: UploadedFile | null;
+  refundStatus?: RefundStatus | null;
+  refundDate?: string | null;
   withdrawnAt?: string;
   createdAt: string;
   updatedAt: string;

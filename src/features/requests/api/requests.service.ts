@@ -140,25 +140,53 @@ function toRequestRecord(raw: any): RequestRecord {
     submissionReadiness: raw.submissionReadiness,
     hoaApproved: !!(raw.hoaConfirmed ?? raw.hoaApproved),
     hoaConfirmedAt: raw.hoaConfirmedAt || raw.hoaApprovedAt,
-    depositRequired: raw.depositRequired,
-    depositAmount: raw.depositAmount,
-    depositReceived: raw.depositReceived,
+    depositRequired: raw.deposit?.required ?? raw.depositRequired,
+    depositAmount: raw.deposit?.amount ?? raw.depositAmount,
+    depositReceived: (raw.deposit?.status === "received") || raw.depositReceived,
+    deposit: raw.deposit ? {
+      required: !!raw.deposit.required,
+      amount: raw.deposit.amount != null ? String(raw.deposit.amount) : null,
+      status: raw.deposit.status || (raw.deposit.required ? "pending" : "not_required"),
+    } : (raw.depositRequired !== undefined ? {
+      required: !!raw.depositRequired,
+      amount: raw.depositAmount != null ? String(raw.depositAmount) : null,
+      status: raw.depositReceived ? "received" : raw.depositRequired ? "pending" : "not_required",
+    } : null),
+    completion: raw.completion || (raw.completedAt || raw.approvalLetter ? {
+      completedAt: raw.completedAt || null,
+      finalApprovalLetter: raw.approvalLetter || null,
+    } : null),
+    withdrawal: raw.withdrawal || (raw.withdrawnAt ? {
+      withdrawnAt: raw.withdrawnAt,
+      withdrawnFrom: raw.withdrawnFrom || null,
+    } : null),
+    refund: raw.refund ? {
+      outcome: raw.refund.outcome,
+      refundDate: raw.refund.refundDate || raw.refund.date || null,
+      displayValue: raw.refund.displayValue || (raw.refund.outcome === "no_refund" ? "-" : raw.refund.refundDate),
+      explanation: raw.refund.explanation || (raw.refund.outcome === "no_refund" ? "A No Refund decision was recorded." : null),
+    } : (raw.refundStatus ? {
+      outcome: raw.refundStatus,
+      refundDate: raw.refundDate || null,
+      displayValue: raw.refundStatus === "no_refund" ? "-" : raw.refundDate,
+      explanation: raw.refundStatus === "no_refund" ? "A No Refund decision was recorded." : null,
+    } : null),
     rejectionReason: decision?.rejectionReason ?? raw.rejectionReason,
     // The reviewer's general feedback for the current changes_required round
     // lives under `revision.feedback`, not a top-level `feedback` — there's
     // no such top-level field on the real response.
     feedback: raw.revision?.feedback || raw.feedback || undefined,
     decision,
-    approvalLetterAvailable: raw.approvalLetterAvailable,
-    approvalLetter: raw.approvalLetter,
-    refundStatus: raw.refundStatus,
-    refundDate: raw.refundDate,
-    withdrawnAt: raw.withdrawnAt,
+    approvalLetterAvailable: !!(raw.approvalLetterAvailable || raw.completion?.finalApprovalLetter || raw.approvalLetter),
+    approvalLetter: raw.completion?.finalApprovalLetter || raw.approvalLetter || null,
+    refundStatus: raw.refund?.outcome || raw.refundStatus || null,
+    refundDate: raw.refund?.refundDate || raw.refundDate || null,
+    withdrawnAt: raw.withdrawal?.withdrawnAt || raw.withdrawnAt,
     createdAt: raw.createdAt || new Date().toISOString(),
     updatedAt: raw.updatedAt || new Date().toISOString(),
     submittedAt: raw.submittedAt,
     decidedAt: decision?.decidedAt ?? raw.decidedAt,
-    completedAt: raw.completedAt,
+    completedAt: raw.completion?.completedAt || raw.completedAt,
   };
 }
 
@@ -315,10 +343,20 @@ export async function deleteRequestFile(
 }
 
 /** Get a fresh short-lived (10 minute) read-only SAS URL for one file. Never persist it. */
-export async function getFileDownloadUrl(requestId: string, fileId: string): Promise<DownloadUrlResult> {
+export async function getFileDownloadUrl(
+  requestId: string,
+  fileId: string
+): Promise<{ url: string; expiresAt?: string; file?: { id: string; name: string } }> {
   const { data } = await axiosInstance.get(`/requests/${requestId}/files/${fileId}/download`);
-  return data.data.download;
+  const download = data?.data?.download ?? data?.data;
+  return {
+    url: download?.url ?? (typeof download === "string" ? download : ""),
+    expiresAt: download?.expiresAt,
+    file: data?.data?.file,
+  };
 }
+
+export const getResidentFileDownloadUrl = getFileDownloadUrl;
 
 /**
  * Get all requests for the resident (drafts, submitted, active, etc.)
