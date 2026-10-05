@@ -94,7 +94,6 @@ export function DynamicField({
                   {field.required && !disabled && (
                     <span className="text-red-500 font-bold text-sm leading-none" aria-hidden="true">*</span>
                   )}
-                  {!disabled && <FieldHelpTooltip content={field.helpText} />}
                 </FieldLabel>
                 <FieldContent>
                   <Input
@@ -125,7 +124,6 @@ export function DynamicField({
                   {field.required && !disabled && (
                     <span className="text-red-500 font-bold text-sm leading-none" aria-hidden="true">*</span>
                   )}
-                  {!disabled && <FieldHelpTooltip content={field.helpText} />}
                 </FieldLabel>
                 <FieldContent>
                   <Input
@@ -215,7 +213,6 @@ export function DynamicField({
                   {field.required && !disabled && (
                     <span className="text-red-500 font-bold text-sm leading-none" aria-hidden="true">*</span>
                   )}
-                  {!disabled && <FieldHelpTooltip content={field.helpText} />}
                 </FieldLabel>
                 <FieldContent>
                   <Input
@@ -263,7 +260,6 @@ export function DynamicField({
                   {field.required && !disabled && (
                     <span className="text-red-500 font-bold text-sm leading-none" aria-hidden="true">*</span>
                   )}
-                  {!disabled && <FieldHelpTooltip content={field.helpText} />}
                 </FieldLabel>
                 <FieldContent>
                   <Textarea
@@ -312,7 +308,6 @@ export function DynamicField({
                   {field.required && !disabled && (
                     <span className="text-red-500 font-bold text-sm leading-none" aria-hidden="true">*</span>
                   )}
-                  {!disabled && <FieldHelpTooltip content={field.helpText} />}
                 </FieldLabel>
                 <FieldContent>
                   <Select
@@ -471,7 +466,6 @@ export function DynamicField({
                   {field.required && !disabled && (
                     <span className="text-red-500 font-bold text-sm leading-none" aria-hidden="true">*</span>
                   )}
-                  {!disabled && <FieldHelpTooltip content={field.helpText} />}
                 </FieldLabel>
                 <FieldContent>
                   <Input
