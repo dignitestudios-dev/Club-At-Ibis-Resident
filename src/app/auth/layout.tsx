@@ -1,4 +1,6 @@
 import Image from "next/image";
+import Link from "next/link";
+import { Download } from "lucide-react";
 import { Suspense } from "react";
 import { Logo } from "@/components/shared/logo";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
@@ -35,6 +37,13 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <header className="relative z-10 flex shrink-0 items-center max-sm:justify-end justify-between px-6 py-3.5 pt-[calc(0.875rem+env(safe-area-inset-top))] lg:px-10">
         <div className="max-sm:hidden"><Logo variant="ivory" size={42} /></div>
         <div className="flex items-center gap-2">
+          <Link
+            href="/install"
+            className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium text-white backdrop-blur-md transition-colors hover:bg-white/20"
+          >
+            <Download className="size-3.5" aria-hidden="true" />
+            Install app
+          </Link>
           <ThemeToggle className="text-white/80 hover:text-white hover:bg-white/10" />
           <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-0.5 text-xs font-medium text-white backdrop-blur-md">
             <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />

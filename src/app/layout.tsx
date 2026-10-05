@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Raleway, Playfair_Display } from "next/font/google";
 import Providers from "@/providers";
+import { PwaRegister } from "@/components/shared/pwa-register";
 import "./globals.css";
 
 const raleway = Raleway({
@@ -39,11 +40,11 @@ export const metadata: Metadata = {
   formatDetection: { telephone: false },
   icons: {
     icon: [
-      { url: "/brand/club-at-ibis-logo.png", type: "image/png" },
-      { url: "/brand/ibis-mark-navy.png", sizes: "32x32", type: "image/png" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
-    shortcut: "/brand/club-at-ibis-logo.png",
-    apple: "/brand/club-at-ibis-logo.png",
+    shortcut: "/icons/icon-192.png",
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
 };
 
@@ -56,6 +57,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <body className="min-h-full flex flex-col font-sans">
         <Providers>{children}</Providers>
+        <PwaRegister />
       </body>
     </html>
   );
