@@ -7,6 +7,7 @@ import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { scrollToFirstError } from "@/utils/scroll-to-error";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { clearWizardState } from "@/features/requests/utils/request-storage";
 import {
@@ -765,6 +766,8 @@ export function useRequestWizard(
       setStepIndex(nextIndex);
       window.scrollTo({ top: 0, behavior: "smooth" });
       triggerAutosave(nextIndex);
+    } else {
+      scrollToFirstError();
     }
   }
 
@@ -943,25 +946,30 @@ export function useRequestWizard(
       if (inCommon && stepIndex !== 0) {
         setStepIndex(0);
         toast.error("Validation error", "Please complete the required project information.");
+        scrollToFirstError();
         return;
       }
       if (inCategory && stepIndex !== 1) {
         setStepIndex(1);
         toast.error("Validation error", "Please complete the required category details.");
+        scrollToFirstError();
         return;
       }
       if (inDocuments && stepIndex !== 2) {
         setStepIndex(2);
         toast.error("Validation error", "Please upload the required documents.");
+        scrollToFirstError();
         return;
       }
       toast.error("Validation error", "Please resolve the highlighted errors before submitting.");
+      scrollToFirstError(errorFieldIds.includes("hoaApproved") ? "#hoaApproved" : undefined);
       return;
     }
 
     if (values.hoaApproved !== true) {
       form.setError("hoaApproved", { message: "HOA confirmation is required before submission." });
       toast.error("Validation error", "You must confirm HOA approval before submitting.");
+      scrollToFirstError("#hoaApproved");
       return;
     }
 
@@ -972,6 +980,7 @@ export function useRequestWizard(
     if (unfinishedUpload) {
       setStepIndex(2);
       toast.error("Documents not ready", "Wait for every upload to finish, or remove/retry a failed one, before submitting.");
+      scrollToFirstError();
       return;
     }
 
@@ -1171,6 +1180,10 @@ export function useRequestWizard(
     cancelChangeCategory: () => setConfirmingChangeCategory(false),
     guardDialog,
     guardAllowLeave,
-    onSubmit: form.handleSubmit(handleSubmit),
+    // The zod resolver rejects before `handleSubmit` runs, so route invalid submits through it too:
+    // it switches to the step holding the error and scrolls/focuses the offending field.
+    onSubmit: form.handleSubmit(handleSubmit, () => {
+      void handleSubmit(form.getValues());
+    }),
   };
 }

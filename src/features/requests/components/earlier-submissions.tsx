@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ChevronDown, Eye, Flag, FileText, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ExpandableText } from "@/components/shared/expandable-text";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { PreviewableFile } from "@/components/shared/file-preview-dialog";
 import { earlierSubmissions, flaggedItemsForSubmission } from "@/features/requests/utils/submissions";
@@ -69,7 +70,7 @@ function SubmissionRow({
           <p className="text-sm whitespace-pre-line break-words [overflow-wrap:anywhere] text-foreground">{value}</p>
         )}
         {flagged && reason && (
-          <p className="text-xs break-words [overflow-wrap:anywhere] text-amber-900 dark:text-amber-300">Note: {reason}</p>
+          <p className="text-xs break-words [overflow-wrap:anywhere] text-amber-900 dark:text-amber-300">Note: <ExpandableText text={reason} limit={120} /></p>
         )}
       </li>
     );

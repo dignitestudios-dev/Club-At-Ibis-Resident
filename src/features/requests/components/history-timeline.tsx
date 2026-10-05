@@ -20,6 +20,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/utils/cn";
+import { ExpandableText } from "@/components/shared/expandable-text";
 import { formatDateTime, formatRelative } from "@/utils/format";
 
 const EVENT_CONFIG: Record<HistoryEventType, { icon: LucideIcon; label: string; node: string }> = {
@@ -100,7 +101,7 @@ export function HistoryTimeline({ events }: { events: HistoryEvent[] }) {
                     {event.flaggedItems.map((item, i) => (
                       <li key={i} className="min-w-0 break-words [overflow-wrap:anywhere]">
                         <span className="font-medium">{item.label}:</span>{" "}
-                        <span className="break-words [overflow-wrap:anywhere] [word-break:break-word]">{item.reason}</span>
+                        <ExpandableText text={item.reason ?? ""} limit={120} />
                       </li>
                     ))}
                   </ul>

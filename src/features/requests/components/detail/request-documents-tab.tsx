@@ -61,7 +61,7 @@ export function RequestDocumentsTab({
               {files.map((file) => (
                 <li
                   key={file.id}
-                  className="flex items-center gap-3 rounded-lg border border-border/80 bg-white dark:bg-card p-3 shadow-2xs transition-all duration-200 hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-xs"
+                  className="flex flex-wrap items-center gap-x-3 gap-y-2.5 rounded-lg border border-border/80 bg-white dark:bg-card p-3 shadow-2xs transition-all duration-200 hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-xs"
                 >
                   <div
                     className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"
@@ -69,7 +69,7 @@ export function RequestDocumentsTab({
                   >
                     <FileText className="size-4.5" />
                   </div>
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0 flex-1 basis-40">
                     <p className="truncate text-sm font-medium text-foreground">
                       {file.name}
                     </p>
@@ -77,7 +77,7 @@ export function RequestDocumentsTab({
                       {formatFileSize(file.size)} · Uploaded {formatDate(file.uploadedAt)}
                     </p>
                   </div>
-                  <div className="flex shrink-0 items-center gap-1.5">
+                  <div className="flex shrink-0 items-center gap-1.5 max-sm:w-full max-sm:justify-end max-sm:border-t max-sm:border-border/60 max-sm:pt-2.5">
                     <Button
                       variant="outline"
                       size="xs"

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "@/components/shared/logo";
+import { useNotifications } from "@/features/notifications/hooks/use-notifications";
 import { navGroups, type NavItem } from "@/components/shared/nav-items";
 import { cn } from "@/utils/cn";
 
@@ -20,6 +21,7 @@ function findActiveHref(pathname: string, items: NavItem[]): string | null {
 
 export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const { unreadCount } = useNotifications();
   const allItems = navGroups.flatMap((g) => g.items);
   const activeHref = findActiveHref(pathname, allItems);
 
@@ -71,7 +73,15 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
                       )}
                       aria-hidden="true"
                     />
-                    <span>{item.label}</span>
+                    <span className="flex-1">{item.label}</span>
+                    {item.href === "/notifications" && unreadCount > 0 && (
+                      <span
+                        className="min-w-5 rounded-full bg-rose-500 px-1.5 py-px text-center text-[10px] font-bold tabular-nums text-white"
+                        aria-label={`${unreadCount} unread`}
+                      >
+                        {unreadCount > 99 ? "99+" : unreadCount}
+                      </span>
+                    )}
                   </Link>
                 );
               })}

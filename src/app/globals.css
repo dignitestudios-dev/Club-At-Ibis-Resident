@@ -136,16 +136,52 @@
   --sidebar-ring: #a0874a;
 }
 
+/* Mobile-app chrome: height of the fixed bottom tab bar (excludes the device safe-area inset). */
+:root {
+  --bottom-nav-h: 4rem;
+}
+
+/* Device safe-area helpers (notch / home indicator) — only non-zero under `viewport-fit=cover` or when installed as an app. */
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+@utility pb-nav {
+  padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom));
+}
+@utility bottom-nav {
+  bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom));
+}
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
   body {
     @apply bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary transition-colors duration-200;
+    overscroll-behavior-y: contain;
   }
   html {
     @apply font-sans;
     scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+  }
+  /* Taps feel native: no 300ms delay / double-tap-zoom on interactive controls. */
+  button,
+  [role="button"],
+  a,
+  summary,
+  label {
+    touch-action: manipulation;
   }
 
   /* Sleek Custom Scrollbar */
@@ -265,4 +301,13 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
   pointer-events: none;
   position: absolute;
   right: 0;
+}
+
+/* iOS Safari zooms the whole page when a focused field is under 16px. Unlayered on purpose so it
+   outranks the `text-sm` utility baked into our shadcn inputs — phones only, desktop keeps 14px. */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]),
+  textarea {
+    font-size: 16px;
+  }
 }
