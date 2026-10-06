@@ -77,6 +77,15 @@ export function useUnsavedChanges(dirty: boolean) {
     bypass.current = true;
   }, []);
 
+  /** Programmatic navigation that still respects the guard (e.g. an in-page Back button). */
+  const leave = useCallback(
+    (href: string) => {
+      if (dirtyRef.current && !bypass.current) setPending({ type: "href", href });
+      else router.push(href);
+    },
+    [router]
+  );
+
   function confirmLeave() {
     const target = pending;
     setPending(null);
@@ -99,5 +108,5 @@ export function useUnsavedChanges(dirty: boolean) {
     />
   );
 
-  return { dialog, allowLeave };
+  return { dialog, allowLeave, leave };
 }

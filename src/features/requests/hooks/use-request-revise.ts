@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { scrollToFirstError } from "@/utils/scroll-to-error";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -246,6 +248,11 @@ export function useRequestRevise(request: RequestRecord) {
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  // Block link clicks, browser Back, refresh and the in-page Back button while edits are unsaved.
+  const { dialog: guardDialog, allowLeave: guardAllowLeave, leave: guardedLeave } = useUnsavedChanges(
+    hasUnsavedChanges || isSavingDraft
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionErrors, setSubmissionErrors] = useState<string[]>([]);
 
@@ -348,6 +355,7 @@ export function useRequestRevise(request: RequestRecord) {
         .map((id) => form.formState.errors[id]?.message)
         .filter((msg): msg is string => typeof msg === "string");
       toast.error("Validation error", stepErrors[0] || "Please resolve the highlighted errors before continuing.");
+      scrollToFirstError();
       return;
     }
 
@@ -442,7 +450,7 @@ export function useRequestRevise(request: RequestRecord) {
 
   function handleBack() {
     if (stepIndex === 0) {
-      router.push(`/requests/${request.id}`);
+      guardedLeave(`/requests/${request.id}`);
       return;
     }
     setStepIndex((i) => i - 1);
@@ -461,19 +469,23 @@ export function useRequestRevise(request: RequestRecord) {
       if (inCommon && stepIndex !== 0) {
         setStepIndex(0);
         toast.error("Validation error", "Please complete the required corrections.");
+        scrollToFirstError();
         return;
       }
       if (inCategory && stepIndex !== 1) {
         setStepIndex(1);
         toast.error("Validation error", "Please complete the required corrections.");
+        scrollToFirstError();
         return;
       }
       if (inDocs && stepIndex !== 2) {
         setStepIndex(2);
         toast.error("Validation error", "Please replace the required documents.");
+        scrollToFirstError();
         return;
       }
       toast.error("Validation error", "Please resolve the highlighted errors before resubmitting.");
+      scrollToFirstError();
       return;
     }
 
@@ -595,6 +607,7 @@ export function useRequestRevise(request: RequestRecord) {
       queryClient.invalidateQueries({ queryKey: ["requests"] });
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
       toast.success("Revised request resubmitted for ARB review.", `Reference ${saved.reference || saved.code}`);
+      guardAllowLeave();
       router.push(`/requests/${request.id}`);
     } catch (err: any) {
       const code = err?.code || err?.responseData?.code;
@@ -638,11 +651,16 @@ export function useRequestRevise(request: RequestRecord) {
     isSavingDraft,
     lastSavedAt,
     hasUnsavedChanges,
+    guardDialog,
     isSubmitting,
     submissionErrors,
     reviewReady,
     handleNext,
     handleBack,
-    onSubmit: form.handleSubmit(handleSubmit),
+    // The zod resolver rejects before `handleSubmit` runs, so route invalid submits through it too:
+    // it switches to the step holding the error and scrolls/focuses the offending field.
+    onSubmit: form.handleSubmit(handleSubmit, () => {
+      void handleSubmit();
+    }),
   };
 }

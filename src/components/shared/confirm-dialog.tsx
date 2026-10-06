@@ -10,7 +10,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { Spinner } from "@/components/ui/spinner";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export function ConfirmDialog({
   open,
@@ -33,6 +36,43 @@ export function ConfirmDialog({
   onConfirm: () => void;
   loading?: boolean;
 }) {
+  const isMobile = useIsMobile();
+
+  // Phones get a native-style action sheet: stacked full-width buttons within thumb reach.
+  if (isMobile) {
+    return (
+      <Sheet open={open} onOpenChange={(val) => !loading && onOpenChange(val)}>
+        <SheetContent side="bottom" showCloseButton={false} className="px-5 pb-5">
+          <div className="flex flex-col items-center gap-1.5 pt-1 text-center">
+            <SheetTitle className="text-lg">{title}</SheetTitle>
+            <SheetDescription className="max-w-sm text-balance">{description}</SheetDescription>
+          </div>
+          <div className="mt-6 flex flex-col gap-2.5">
+            <Button
+              size="lg"
+              variant={destructive ? "destructive" : "default"}
+              className="h-12 rounded-xl text-base"
+              disabled={loading}
+              onClick={onConfirm}
+            >
+              {loading && <Spinner className="mr-1.5 size-4" />}
+              {confirmLabel}
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="h-12 rounded-xl text-base"
+              disabled={loading}
+              onClick={() => onOpenChange(false)}
+            >
+              {cancelLabel}
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
   return (
     <AlertDialog open={open} onOpenChange={(val) => !loading && onOpenChange(val)}>
       <AlertDialogContent>

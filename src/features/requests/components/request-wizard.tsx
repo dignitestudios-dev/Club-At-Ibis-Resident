@@ -903,26 +903,27 @@ function CategoryFormWizard({
         </Card>
 
         <div className="sticky bottom-0 z-30 -mx-4 sm:-mx-6 lg:-mx-8 mt-6">
-          <div className="border-t border-border/80 bg-[#F8FAFC] dark:bg-[#0D1522] px-4 sm:px-6 lg:px-8 py-4 ">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <Button type="button" variant="outline" onClick={handleBack}>
+          <div className="border-t border-border/80 bg-[#F8FAFC] dark:bg-[#0D1522] px-4 sm:px-6 lg:px-8 py-4 max-lg:pb-[calc(1rem+env(safe-area-inset-bottom))] max-lg:shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.25)]">
+            <div className="flex items-center justify-between gap-3">
+              <Button type="button" variant="outline" onClick={handleBack} className="max-sm:h-11 max-sm:rounded-xl max-sm:px-4">
                 <ArrowLeft className="size-4 mr-1" />
                 Back
               </Button>
 
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2.5 max-sm:flex-1">
                 {!isReviewStep ? (
                   <Button
                     type="button"
                     onClick={handleNext}
                     disabled={documentsUploading}
+                    className="max-sm:h-11 max-sm:w-full max-sm:rounded-xl"
                     title={documentsUploading ? "Wait for the document upload to finish before continuing." : undefined}
                   >
                     Next
                     <ArrowRight className="size-4 ml-1" />
                   </Button>
                 ) : (
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 max-sm:w-full">
                     {isSavingDraft && (
                       <span className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-md px-2.5 py-1 flex items-center gap-1.5 animate-pulse">
                         <Spinner className="size-3.5" />
@@ -932,6 +933,7 @@ function CategoryFormWizard({
                     <Button
                       type="submit"
                       disabled={isPending || isSavingDraft || !reviewReady}
+                      className="max-sm:h-11 max-sm:w-full max-sm:rounded-xl"
                     >
                       {isPending ? <Spinner className="size-4 mr-1" /> : <Send className="size-4 mr-1" />}
                       {isPending ? "Submitting..." : "Submit Request"}

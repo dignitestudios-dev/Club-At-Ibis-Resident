@@ -25,6 +25,16 @@ export async function getNotificationsForResident(
   }
 }
 
+/** Total unread across ALL pages, as reported by the backend (`data.unreadCount`). */
+export async function getUnreadNotificationCount(): Promise<number> {
+  try {
+    const { data } = await axiosInstance.get("/notifications", { params: { limit: 1 } });
+    return Number(data?.data?.unreadCount ?? 0) || 0;
+  } catch {
+    return 0;
+  }
+}
+
 export async function markNotificationRead(id: string): Promise<void> {
   await axiosInstance.patch(`/notifications/${id}/read`);
 }

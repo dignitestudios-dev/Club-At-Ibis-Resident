@@ -182,6 +182,7 @@ export default function RequestsListPage() {
               nativeButton={false}
               render={<Link href="/requests/new" />}
               aria-label="Create a new architectural request"
+              className="max-lg:hidden"
             >
               <PlusCircle className="size-4" aria-hidden="true" />
               New Request

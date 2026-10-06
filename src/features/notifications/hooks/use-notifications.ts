@@ -2,7 +2,7 @@
 
 import { useMemo, useCallback } from "react";
 import { useCurrentUser } from "@/hooks/use-current-user";
-import { useNotificationsQuery } from "@/features/notifications/api/notifications.queries";
+import { useNotificationsQuery, useUnreadNotificationCountQuery } from "@/features/notifications/api/notifications.queries";
 import {
   useMarkAllNotificationsReadMutation,
   useMarkNotificationReadMutation,
@@ -11,12 +11,15 @@ import {
 export function useNotifications() {
   const user = useCurrentUser();
   const { data: notifications, isLoading } = useNotificationsQuery(user?.id);
+  const { data: unreadTotal } = useUnreadNotificationCountQuery(user?.id);
   const markRead = useMarkNotificationReadMutation();
   const markAllRead = useMarkAllNotificationsReadMutation();
 
-  const unreadCount = useMemo(() => {
-    return (notifications ?? []).filter((n) => !n.read).length;
-  }, [notifications]);
+  // Prefer the backend's total (covers every page); fall back to the loaded page.
+  const unreadCount = useMemo(
+    () => unreadTotal ?? (notifications ?? []).filter((n) => !n.read).length,
+    [unreadTotal, notifications]
+  );
 
   const handleMarkRead = useCallback(
     (id: string) => {

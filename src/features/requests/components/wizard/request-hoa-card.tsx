@@ -20,7 +20,7 @@ export function RequestHoaCard({
   const hasError = !disabled && !!error;
 
   return (
-    <div className="space-y-2 pt-1" role="group" aria-labelledby="hoa-approval-title">
+    <div id="hoa-approval-section" className="space-y-2 pt-1" role="group" aria-labelledby="hoa-approval-title">
       <label
         htmlFor="hoaApproved"
         className={cn(

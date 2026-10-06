@@ -8,10 +8,12 @@ import {
   Download,
   Info,
   MessageSquare,
+  XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { type PreviewableFile } from "@/components/shared/file-preview-dialog";
+import { ExpandableText } from "@/components/shared/expandable-text";
 import { formatDate, formatDateTime, formatRelative } from "@/utils/format";
 
 interface RequestDetailAlertsProps {
@@ -76,7 +78,7 @@ export function RequestDetailAlerts({
                 )}
               </div>
               <p className="font-medium italic text-slate-800 dark:text-slate-200 leading-relaxed text-sm break-words [overflow-wrap:anywhere] [word-break:break-word] whitespace-pre-wrap">
-                &ldquo;{request.feedback || latestComment?.message}&rdquo;
+                &ldquo;<ExpandableText text={request.feedback || latestComment?.message || ""} />&rdquo;
               </p>
             </div>
           )}
@@ -105,20 +107,48 @@ export function RequestDetailAlerts({
         </Alert>
       )}
 
-      {request.status === "rejected" && request.rejectionReason && (
-        <Alert variant="destructive" className="min-w-0 break-words [overflow-wrap:anywhere]">
-          <AlertTriangle className="size-4 shrink-0" aria-hidden="true" />
-          <AlertTitle>Request Rejected</AlertTitle>
-          <AlertDescription className="space-y-1.5 min-w-0">
-            <p className="break-words [overflow-wrap:anywhere] [word-break:break-word] whitespace-pre-wrap">{request.rejectionReason}</p>
-            {(request.decision?.decidedBy || request.decidedAt) && (
-              <p className="text-xs opacity-80 break-words [overflow-wrap:anywhere]">
-                {request.decision?.decidedBy ? `Decided by ${request.decision.decidedBy.displayName}` : "Decided"}
-                {request.decidedAt ? ` · ${formatDateTime(request.decidedAt)}` : ""}
+      {request.status === "rejected" && (
+        <div
+          role="alert"
+          className="rounded-2xl border border-rose-300 dark:border-rose-800/80 bg-gradient-to-r from-rose-50 to-rose-100/40 dark:from-rose-950/50 dark:to-rose-950/20 p-5 sm:p-6 shadow-2xs space-y-4 animate-in fade-in duration-300"
+        >
+          <div className="flex items-start gap-3.5">
+            <span
+              className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 dark:bg-rose-950/80 text-rose-900 dark:text-rose-300 border border-rose-300/80 dark:border-rose-700/60 shadow-2xs"
+              aria-hidden="true"
+            >
+              <XCircle className="size-5 text-rose-700 dark:text-rose-400" />
+            </span>
+            <div className="min-w-0 space-y-1">
+              <h3 className="font-heading text-lg font-medium text-rose-950 dark:text-rose-200">
+                Request Rejected
+              </h3>
+              <p className="text-xs sm:text-sm text-rose-900/90 dark:text-rose-300/90 leading-relaxed">
+                The Review Board did not approve this submission. Review the reason below.
               </p>
-            )}
-          </AlertDescription>
-        </Alert>
+            </div>
+          </div>
+
+          {request.rejectionReason && (
+            <div className="rounded-xl border border-rose-200/90 dark:border-rose-800/60 bg-white/90 dark:bg-card/90 p-4 text-xs text-rose-950 dark:text-rose-200 space-y-1.5 shadow-2xs min-w-0 break-words [overflow-wrap:anywhere]">
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 font-semibold text-[11px] text-rose-900 dark:text-rose-300 uppercase tracking-wider">
+                <span className="flex items-center gap-1.5">
+                  <MessageSquare className="size-3.5 text-rose-700 dark:text-rose-400 shrink-0" aria-hidden="true" />
+                  Rejection Reason
+                </span>
+                {(request.decision?.decidedBy || request.decidedAt) && (
+                  <span className="font-normal normal-case tracking-normal text-muted-foreground break-words [overflow-wrap:anywhere]">
+                    {request.decision?.decidedBy ? request.decision.decidedBy.displayName : "Decided"}
+                    {request.decidedAt ? ` · ${formatRelative(request.decidedAt)}` : ""}
+                  </span>
+                )}
+              </div>
+              <p className="font-medium italic text-slate-800 dark:text-slate-200 leading-relaxed text-sm break-words [overflow-wrap:anywhere] [word-break:break-word] whitespace-pre-wrap">
+                &ldquo;<ExpandableText text={request.rejectionReason} />&rdquo;
+              </p>
+            </div>
+          )}
+        </div>
       )}
 
       {request.status === "approved" && (
@@ -254,7 +284,7 @@ export function RequestDetailAlerts({
           </div>
           <div className="sm:pl-9 space-y-1">
             <p className="text-sm font-medium text-foreground leading-relaxed break-words [overflow-wrap:anywhere] whitespace-pre-wrap">
-              &ldquo;{latestComment.message}&rdquo;
+              &ldquo;<ExpandableText text={latestComment.message} />&rdquo;
             </p>
             <p className="text-xs text-muted-foreground">
               by {latestComment.author} • {formatRelative(latestComment.createdAt)}

@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { PageHeader } from "@/components/shared/page-header";
+import { ExpandableText } from "@/components/shared/expandable-text";
 import { Stepper } from "@/features/requests/components/stepper";
 import { DynamicField } from "@/features/requests/components/dynamic-field";
 import { RequestReview } from "@/features/requests/components/request-review";
@@ -29,6 +30,7 @@ export function RequestReviseWizard({ request }: { request: RequestRecord }) {
     isSavingDraft,
     lastSavedAt,
     hasUnsavedChanges,
+    guardDialog,
     isSubmitting,
     submissionErrors,
     reviewReady,
@@ -118,7 +120,7 @@ export function RequestReviseWizard({ request }: { request: RequestRecord }) {
                               <AlertTriangle className="size-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" aria-hidden="true" />
                               <div className="min-w-0 flex-1 break-words [overflow-wrap:anywhere]">
                                 <span className="font-semibold">Reviewer Flag: </span>
-                                <span className="text-amber-800 dark:text-amber-300 break-words [overflow-wrap:anywhere] [word-break:break-word] whitespace-pre-wrap">{reason}</span>
+                                <span className="text-amber-800 dark:text-amber-300 break-words [overflow-wrap:anywhere] [word-break:break-word] whitespace-pre-wrap"><ExpandableText text={reason} limit={140} /></span>
                               </div>
                             </div>
                           </div>
@@ -209,6 +211,8 @@ export function RequestReviseWizard({ request }: { request: RequestRecord }) {
           </div>
         </div>
       </form>
+
+      {guardDialog}
     </div>
   );
 }

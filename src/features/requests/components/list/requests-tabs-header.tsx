@@ -30,7 +30,7 @@ export function RequestsTabsHeader({
       <div
         role="tablist"
         aria-label="Request categories"
-        className="flex items-center gap-1.5 p-1 bg-slate-100/90 dark:bg-slate-900/90 rounded-xl border border-slate-200/80 dark:border-slate-800 w-fit max-w-full overflow-x-auto"
+        className="grid grid-cols-3 sm:flex items-center gap-1 sm:gap-1.5 p-1 bg-slate-100/90 dark:bg-slate-900/90 rounded-xl border border-slate-200/80 dark:border-slate-800 w-full sm:w-fit max-w-full"
       >
         {/* Tab 1: Active Requests */}
         <button
@@ -41,14 +41,14 @@ export function RequestsTabsHeader({
           id="tab-requests"
           onClick={() => onTabChange("requests")}
           className={cn(
-            "flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all shrink-0 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary",
+            "flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-3.5 py-2.5 sm:py-1.5 text-xs font-semibold rounded-lg transition-all min-w-0 sm:shrink-0 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary",
             activeTab === "requests"
               ? "bg-white dark:bg-slate-800 text-primary dark:text-foreground shadow-xs"
               : "text-muted-foreground hover:text-foreground"
           )}
         >
-          <ListChecks className="size-3.5" aria-hidden="true" />
-          <span>Active Requests</span>
+          <ListChecks className="size-3.5 max-sm:hidden" aria-hidden="true" />
+          <span><span className="sm:hidden">Active</span><span className="max-sm:hidden">Active Requests</span></span>
           <span
             className={cn(
               "rounded-full px-1.5 py-0.2 text-[11px] font-bold",
@@ -71,13 +71,13 @@ export function RequestsTabsHeader({
           id="tab-history"
           onClick={() => onTabChange("history")}
           className={cn(
-            "flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all shrink-0 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary",
+            "flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-3.5 py-2.5 sm:py-1.5 text-xs font-semibold rounded-lg transition-all min-w-0 sm:shrink-0 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary",
             activeTab === "history"
               ? "bg-white dark:bg-slate-800 text-primary dark:text-foreground shadow-xs"
               : "text-muted-foreground hover:text-foreground"
           )}
         >
-          <History className="size-3.5" aria-hidden="true" />
+          <History className="size-3.5 max-sm:hidden" aria-hidden="true" />
           <span>History</span>
           <span
             className={cn(
@@ -101,14 +101,14 @@ export function RequestsTabsHeader({
           id="tab-drafts"
           onClick={() => onTabChange("drafts")}
           className={cn(
-            "flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all shrink-0 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary",
+            "flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-3.5 py-2.5 sm:py-1.5 text-xs font-semibold rounded-lg transition-all min-w-0 sm:shrink-0 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary",
             activeTab === "drafts"
               ? "bg-white dark:bg-slate-800 text-primary dark:text-foreground shadow-xs"
               : "text-muted-foreground hover:text-foreground"
           )}
         >
-          <FileEdit className="size-3.5" aria-hidden="true" />
-          <span>Saved Drafts</span>
+          <FileEdit className="size-3.5 max-sm:hidden" aria-hidden="true" />
+          <span><span className="sm:hidden">Drafts</span><span className="max-sm:hidden">Saved Drafts</span></span>
           {draftsCount > 0 && (
             <span
               className={cn(
@@ -129,7 +129,7 @@ export function RequestsTabsHeader({
       <div
         role="group"
         aria-label="Display layout mode"
-        className="flex items-center gap-1 p-1 bg-slate-100/90 dark:bg-slate-900/90 rounded-xl border border-slate-200/80 dark:border-slate-800 shrink-0 self-start sm:self-auto"
+        className="flex items-center gap-1 p-1 bg-slate-100/90 dark:bg-slate-900/90 rounded-xl border border-slate-200/80 dark:border-slate-800 shrink-0 self-start sm:self-auto max-sm:hidden"
       >
         <button
           type="button"

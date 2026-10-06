@@ -60,7 +60,7 @@ export function AuthView({ initialTab = "login" }: AuthViewProps) {
             type="button"
             onClick={() => switchTab("login")}
             className={cn(
-              "relative z-10 flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-lg transition-colors duration-200 select-none cursor-pointer",
+              "relative z-10 flex items-center justify-center gap-1.5 py-2.5 sm:py-1.5 text-xs font-semibold rounded-lg transition-colors duration-200 select-none cursor-pointer",
               tab === "login"
                 ? "text-primary dark:text-foreground font-semibold"
                 : "text-muted-foreground hover:text-foreground"
@@ -78,7 +78,7 @@ export function AuthView({ initialTab = "login" }: AuthViewProps) {
             type="button"
             onClick={() => switchTab("register")}
             className={cn(
-              "relative z-10 flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-lg transition-colors duration-200 select-none cursor-pointer",
+              "relative z-10 flex items-center justify-center gap-1.5 py-2.5 sm:py-1.5 text-xs font-semibold rounded-lg transition-colors duration-200 select-none cursor-pointer",
               tab === "register"
                 ? "text-primary dark:text-foreground font-semibold"
                 : "text-muted-foreground hover:text-foreground"

@@ -15,9 +15,27 @@ export function Stepper({
   currentIndex: number;
   className?: string;
 }) {
+  const current = steps[currentIndex];
+  const percent = steps.length ? Math.round(((currentIndex + 1) / steps.length) * 100) : 0;
+
   return (
     <nav aria-label="Request progress" className={cn("w-full py-2", className)}>
-      <ol className="flex items-center w-full">
+      {/* Phone: compact native-style progress header */}
+      <div className="sm:hidden" aria-hidden="true">
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="min-w-0 truncate text-sm font-semibold text-foreground">{current?.title}</span>
+          <span className="shrink-0 text-xs font-medium text-muted-foreground">
+            Step {currentIndex + 1} of {steps.length}
+          </span>
+        </div>
+        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+          <div className="h-full rounded-full bg-primary transition-all duration-300" style={{ width: `${percent}%` }} />
+        </div>
+      </div>
+      <span className="sr-only sm:hidden">
+        Step {currentIndex + 1} of {steps.length}: {current?.title}
+      </span>
+      <ol className="hidden sm:flex items-center w-full">
         {steps.map((step, index) => {
           const isComplete = index < currentIndex;
           const isCurrent = index === currentIndex;

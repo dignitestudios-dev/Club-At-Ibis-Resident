@@ -1,4 +1,5 @@
 import { MessageSquare, ShieldCheck, User } from "lucide-react";
+import { ExpandableText } from "@/components/shared/expandable-text";
 import { cn } from "@/utils/cn";
 import { formatDateTime } from "@/utils/format";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -59,7 +60,7 @@ export function CommentFeed({ comments }: { comments: CommentEntry[] }) {
               </time>
             </div>
             <p className="text-sm text-foreground/90 leading-relaxed pl-9 break-words [overflow-wrap:anywhere] whitespace-pre-wrap">
-              {comment.message}
+              <ExpandableText text={comment.message} />
             </p>
           </article>
         );
