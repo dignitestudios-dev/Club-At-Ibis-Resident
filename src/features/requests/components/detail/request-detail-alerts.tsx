@@ -180,6 +180,11 @@ export function RequestDetailAlerts({
             audience="resident"
             withdrawnAt={formatDate(request.withdrawal?.withdrawnAt ?? request.withdrawnAt ?? request.updatedAt)}
             withdrawnFrom={request.withdrawal?.withdrawnFrom ?? null}
+            by={
+              request.withdrawal?.withdrawnBy?.displayName
+                ? `${request.withdrawal.withdrawnBy.displayName}${request.withdrawal.withdrawnBy.role === "REVIEWER" ? " (ARB Reviewer)" : request.withdrawal.withdrawnBy.role === "SUPER_ADMIN" ? " (Admin)" : ""}`
+                : undefined
+            }
             refund={
               request.deposit?.status === "received" || request.depositReceived
                 ? request.refund?.outcome === "refunded" || request.refundStatus === "refunded"
@@ -193,9 +198,10 @@ export function RequestDetailAlerts({
                         request.deposit?.amount != null
                           ? `$${Number(request.deposit.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                           : undefined,
+                      by: request.refund?.recordedBy,
                     }
                   : request.refund?.outcome === "no_refund" || request.refundStatus === "no_refund"
-                    ? { state: "no_refund", explanation: request.refund?.explanation }
+                    ? { state: "no_refund", explanation: request.refund?.explanation, by: request.refund?.recordedBy }
                     : { state: "awaiting" }
                 : undefined
             }

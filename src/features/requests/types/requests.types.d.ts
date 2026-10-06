@@ -248,6 +248,8 @@ interface ResidentCompletionRecord {
 interface ResidentWithdrawalRecord {
   withdrawnAt: string | null;
   withdrawnFrom?: RequestStatus | null;
+  /** Who withdrew the request (staff on the resident's behalf). */
+  withdrawnBy?: { displayName: string | null; role?: string | null } | null;
 }
 
 interface ResidentRefundRecord {
@@ -255,6 +257,9 @@ interface ResidentRefundRecord {
   refundDate?: string | null;
   displayValue?: string | null;
   explanation?: string | null;
+  /** Display name of the staff member who recorded the outcome. */
+  recordedBy?: string | null;
+  recordedAt?: string | null;
 }
 
 interface RequestRecord {

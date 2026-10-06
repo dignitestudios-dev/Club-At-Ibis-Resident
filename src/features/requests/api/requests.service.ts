@@ -1,5 +1,17 @@
 import axiosInstance from "@/lib/axios";
 
+/** The `withdrawal` object has no "from" status; the withdraw history event records it as `details.previousStatus`. */
+function withdrawnFromHistory(history: any[] | undefined): string | undefined {
+  const event = history?.find((h) => h?.type === "request.withdrawn");
+  return event?.details?.previousStatus ?? undefined;
+}
+
+/** Actor objects ({ actorId, role, displayName }) -> a display name. */
+function actorName(actor: any): string | null {
+  if (!actor) return null;
+  return typeof actor === "string" ? actor : (actor.displayName ?? actor.name ?? null);
+}
+
 function toRequestRecord(raw: any): RequestRecord {
   const code = raw.reference || raw.code || "ARB-PENDING";
   const catId = raw.categoryId || raw.requestTypeId || raw.category?.id || raw.category?._id || "";
@@ -157,15 +169,24 @@ function toRequestRecord(raw: any): RequestRecord {
       completedAt: raw.completedAt || null,
       finalApprovalLetter: raw.approvalLetter || null,
     } : null),
-    withdrawal: raw.withdrawal || (raw.withdrawnAt ? {
-      withdrawnAt: raw.withdrawnAt,
-      withdrawnFrom: raw.withdrawnFrom || null,
-    } : null),
+    withdrawal: raw.withdrawal
+      ? {
+          withdrawnAt: raw.withdrawal.withdrawnAt ?? null,
+          withdrawnFrom: raw.withdrawal.withdrawnFrom ?? withdrawnFromHistory(raw.history) ?? null,
+          withdrawnBy: raw.withdrawal.withdrawnBy
+            ? { displayName: actorName(raw.withdrawal.withdrawnBy), role: raw.withdrawal.withdrawnBy.role ?? null }
+            : null,
+        }
+      : raw.withdrawnAt
+        ? { withdrawnAt: raw.withdrawnAt, withdrawnFrom: raw.withdrawnFrom || withdrawnFromHistory(raw.history) || null, withdrawnBy: null }
+        : null,
     refund: raw.refund ? {
       outcome: raw.refund.outcome,
       refundDate: raw.refund.refundDate || raw.refund.date || null,
       displayValue: raw.refund.displayValue || (raw.refund.outcome === "no_refund" ? "-" : raw.refund.refundDate),
       explanation: raw.refund.explanation || (raw.refund.outcome === "no_refund" ? "A No Refund decision was recorded." : null),
+      recordedBy: actorName(raw.refund.recordedBy),
+      recordedAt: raw.refund.recordedAt ?? null,
     } : (raw.refundStatus ? {
       outcome: raw.refundStatus,
       refundDate: raw.refundDate || null,
