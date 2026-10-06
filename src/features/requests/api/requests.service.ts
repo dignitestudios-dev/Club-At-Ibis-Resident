@@ -72,6 +72,7 @@ function toRequestRecord(raw: any): RequestRecord {
         message: h.message || "",
         createdAt: h.occurredAt || h.createdAt || new Date().toISOString(),
         flaggedItems: Array.isArray(h.details?.flaggedItems) ? h.details.flaggedItems : undefined,
+      details: h.details && typeof h.details === "object" ? h.details : undefined,
         feedback: h.details?.feedback || undefined,
         submissionNumber: typeof h.details?.submissionNumber === "number" ? h.details.submissionNumber : undefined,
       }))

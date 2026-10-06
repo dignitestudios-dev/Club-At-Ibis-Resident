@@ -1,5 +1,6 @@
 "use client";
 
+import { WithdrawnNotice } from "@/components/shared/withdrawn-notice";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -7,7 +8,6 @@ import {
   Download,
   Info,
   MessageSquare,
-  UserX,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -122,23 +122,26 @@ export function RequestDetailAlerts({
       )}
 
       {request.status === "approved" && (
-        <Alert className="border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/40">
-          <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
-          <AlertTitle className="text-emerald-900 dark:text-emerald-200">Request Approved</AlertTitle>
-          <AlertDescription className="space-y-1.5 text-emerald-800 dark:text-emerald-300">
-            <p>
+        <div
+          role="status"
+          className="flex items-start gap-3 rounded-2xl border border-emerald-300 bg-emerald-100 p-4 dark:border-emerald-700/60 dark:bg-emerald-950/40"
+        >
+          <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-emerald-700 dark:text-emerald-400" aria-hidden="true" />
+          <div className="min-w-0 flex-1 space-y-1 text-sm">
+            <p className="font-semibold text-emerald-950 dark:text-emerald-200">Request Approved</p>
+            <p className="text-emerald-900 dark:text-emerald-300">
               {request.deposit?.required
                 ? `A security deposit of $${request.deposit.amount ? Number(request.deposit.amount).toLocaleString() : "—"} is required. Once the deposit and final approval documentation are recorded, you will be notified.`
                 : "Final processing (final approval letter) is in progress. You will be notified once this request is marked completed."}
             </p>
             {(request.decision?.decidedBy || request.decidedAt) && (
-              <p className="text-xs opacity-80">
+              <p className="text-xs text-emerald-800/80 dark:text-emerald-300/80">
                 {request.decision?.decidedBy ? `Decided by ${request.decision.decidedBy.displayName}` : "Decided"}
                 {request.decidedAt ? ` · ${formatDateTime(request.decidedAt)}` : ""}
               </p>
             )}
-          </AlertDescription>
-        </Alert>
+          </div>
+        </div>
       )}
 
       {request.status === "completed" && (
@@ -173,24 +176,30 @@ export function RequestDetailAlerts({
 
       {request.status === "withdrawn" && (
         <div className="space-y-3">
-          <Alert>
-            <UserX className="size-4 text-muted-foreground" aria-hidden="true" />
-            <AlertTitle>Request Withdrawn</AlertTitle>
-            <AlertDescription className="space-y-1">
-              <p>
-                This request was withdrawn on {formatDate(request.withdrawal?.withdrawnAt ?? request.withdrawnAt ?? request.updatedAt)}. Further review and approval processing has stopped.
-              </p>
-              {(request.deposit?.status === "received" || request.depositReceived) && (
-                <p className="text-xs text-muted-foreground pt-1">
-                  {request.refund?.outcome === "refunded" || request.refundStatus === "refunded"
-                    ? `Deposit refund was processed on ${request.refund?.refundDate || request.refundDate ? formatDate(request.refund?.refundDate || request.refundDate!) : "—"}.`
-                    : request.refund?.outcome === "no_refund" || request.refundStatus === "no_refund"
-                    ? "Deposit refund status: No refund applicable (-)."
-                    : "Deposit refund is awaiting administrative processing."}
-                </p>
-              )}
-            </AlertDescription>
-          </Alert>
+          <WithdrawnNotice
+            audience="resident"
+            withdrawnAt={formatDate(request.withdrawal?.withdrawnAt ?? request.withdrawnAt ?? request.updatedAt)}
+            withdrawnFrom={request.withdrawal?.withdrawnFrom ?? null}
+            refund={
+              request.deposit?.status === "received" || request.depositReceived
+                ? request.refund?.outcome === "refunded" || request.refundStatus === "refunded"
+                  ? {
+                      state: "refunded",
+                      date:
+                        request.refund?.refundDate || request.refundDate
+                          ? formatDate(request.refund?.refundDate || request.refundDate!)
+                          : undefined,
+                      amount:
+                        request.deposit?.amount != null
+                          ? `$${Number(request.deposit.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                          : undefined,
+                    }
+                  : request.refund?.outcome === "no_refund" || request.refundStatus === "no_refund"
+                    ? { state: "no_refund", explanation: request.refund?.explanation }
+                    : { state: "awaiting" }
+                : undefined
+            }
+          />
 
           {request.completion?.finalApprovalLetter && (
             <Alert className="border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/40">

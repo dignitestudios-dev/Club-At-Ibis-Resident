@@ -187,7 +187,15 @@ type HistoryEventType =
   | "letter_email"
   | "withdrawn"
   | "refunded"
-  | "no_refund";
+  | "no_refund"
+  | "deposit_configured"
+  | "deposit_receipt_recorded"
+  | "final_letter_uploaded"
+  | "completion_email_sent"
+  | "completion_email_failed"
+  | "completion_email_retry_requested"
+  | "refund_outcome_recorded"
+  | "refund_outcome_corrected";
 
 interface HistoryEvent {
   id: string;
@@ -195,6 +203,8 @@ interface HistoryEvent {
   actor: { name: string; role: string };
   message: string;
   createdAt: string;
+  /** The backend's raw `details` for this event (amounts, file names, outcomes...). */
+  details?: Record<string, unknown>;
   /** Set on a "revision-requested" event: the exact fields flagged for that review round, with the reviewer's reason. `submissions[]` never carries per-round item reviews, so this is the only place a past round's flagged items are reconstructable from. */
   flaggedItems?: { fieldId: string; label: string; reason: string }[];
   /** Set on a "revision-requested" event once the reviewer's general feedback field exists on the backend — the overall note for that round, separate from each flagged item's own reason. */
