@@ -73,7 +73,11 @@ export function RequestDetailSidebar({ request }: RequestDetailSidebarProps) {
                     </span>
                   </div>
                   <span className="font-mono text-base font-bold text-slate-900 dark:text-slate-100">
-                    ${request.deposit?.amount ? Number(request.deposit.amount).toLocaleString() : request.depositAmount ? Number(request.depositAmount).toLocaleString() : "—"}
+                    {request.deposit?.amount
+                      ? `$${Number(request.deposit.amount).toLocaleString()}`
+                      : request.depositAmount
+                        ? `$${Number(request.depositAmount).toLocaleString()}`
+                        : <span className="font-sans text-sm font-normal text-muted-foreground">Amount to be confirmed</span>}
                   </span>
                 </div>
 
