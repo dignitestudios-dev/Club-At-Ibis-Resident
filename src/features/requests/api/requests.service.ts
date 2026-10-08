@@ -183,14 +183,14 @@ function toRequestRecord(raw: any): RequestRecord {
     refund: raw.refund ? {
       outcome: raw.refund.outcome,
       refundDate: raw.refund.refundDate || raw.refund.date || null,
-      displayValue: raw.refund.displayValue || (raw.refund.outcome === "no_refund" ? "-" : raw.refund.refundDate),
+      displayValue: raw.refund.displayValue || (raw.refund.outcome === "no_refund" ? "No Refund" : raw.refund.refundDate),
       explanation: raw.refund.explanation || (raw.refund.outcome === "no_refund" ? "A No Refund decision was recorded." : null),
       recordedBy: actorName(raw.refund.recordedBy),
       recordedAt: raw.refund.recordedAt ?? null,
     } : (raw.refundStatus ? {
       outcome: raw.refundStatus,
       refundDate: raw.refundDate || null,
-      displayValue: raw.refundStatus === "no_refund" ? "-" : raw.refundDate,
+      displayValue: raw.refundStatus === "no_refund" ? "No Refund" : raw.refundDate,
       explanation: raw.refundStatus === "no_refund" ? "A No Refund decision was recorded." : null,
     } : null),
     rejectionReason: decision?.rejectionReason ?? raw.rejectionReason,
