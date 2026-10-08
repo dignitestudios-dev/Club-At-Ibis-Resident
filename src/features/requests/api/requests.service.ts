@@ -155,15 +155,15 @@ function toRequestRecord(raw: any): RequestRecord {
     hoaConfirmedAt: raw.hoaConfirmedAt || raw.hoaApprovedAt,
     depositRequired: raw.deposit?.required ?? raw.depositRequired,
     depositAmount: raw.deposit?.amount ?? raw.depositAmount,
-    depositReceived: (raw.deposit?.status === "received") || raw.depositReceived,
+    depositReceived: (raw.deposit?.status === "received") || raw.depositStatus === "received" || raw.depositReceived,
     deposit: raw.deposit ? {
       required: !!raw.deposit.required,
       amount: raw.deposit.amount != null ? String(raw.deposit.amount) : null,
       status: raw.deposit.status || (raw.deposit.required ? "pending" : "not_required"),
     } : (raw.depositRequired !== undefined ? {
       required: !!raw.depositRequired,
-      amount: raw.depositAmount != null ? String(raw.depositAmount) : null,
-      status: raw.depositReceived ? "received" : raw.depositRequired ? "pending" : "not_required",
+      amount: raw.depositAmount != null ? String(raw.depositAmount) : raw.depositAmountMinor != null ? (raw.depositAmountMinor / 100).toFixed(2) : null,
+      status: raw.depositStatus || (raw.depositReceived ? "received" : raw.depositRequired ? "pending" : "not_required"),
     } : null),
     completion: raw.completion || (raw.completedAt || raw.approvalLetter ? {
       completedAt: raw.completedAt || null,
@@ -201,7 +201,7 @@ function toRequestRecord(raw: any): RequestRecord {
     decision,
     approvalLetterAvailable: !!(raw.approvalLetterAvailable || raw.completion?.finalApprovalLetter || raw.approvalLetter),
     approvalLetter: raw.completion?.finalApprovalLetter || raw.approvalLetter || null,
-    refundStatus: raw.refund?.outcome || raw.refundStatus || null,
+    refundStatus: raw.refund?.outcome || raw.refundOutcome || raw.refundStatus || null,
     refundDate: raw.refund?.refundDate || raw.refundDate || null,
     withdrawnAt: raw.withdrawal?.withdrawnAt || raw.withdrawnAt,
     createdAt: raw.createdAt || new Date().toISOString(),

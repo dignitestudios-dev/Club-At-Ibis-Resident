@@ -5,7 +5,7 @@ export const PUBLIC_ROUTES = [
   "/auth/forgot-password",
   "/auth/reset-password",
   "/auth/verify-email",
-  "/install",
+  // "/install", // switched off for now
 ];
 
 export const PROTECTED_ROUTES = [

@@ -1,6 +1,7 @@
 "use client";
 
 import { WithdrawnNotice } from "@/components/shared/withdrawn-notice";
+import { useState } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -12,18 +13,53 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { type PreviewableFile } from "@/components/shared/file-preview-dialog";
+import { Spinner } from "@/components/ui/spinner";
+import { useToast } from "@/hooks/use-toast";
+import { getFileDownloadUrl } from "@/features/requests/api/requests.service";
+import { downloadFromUrl } from "@/utils/download";
 import { ExpandableText } from "@/components/shared/expandable-text";
 import { formatDate, formatDateTime, formatRelative } from "@/utils/format";
 
 interface RequestDetailAlertsProps {
   request: RequestRecord;
-  onPreviewLetter: (file: PreviewableFile) => void;
+}
+
+/** Downloads the issued letter straight to the device; shows a spinner until the link is ready and saved. */
+function DownloadLetterButton({ requestId, file, label }: { requestId: string; file: { id: string; name?: string }; label: string }) {
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+
+  async function handleDownload() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const { url } = await getFileDownloadUrl(requestId, file.id);
+      if (!url) throw new Error("No download link");
+      await downloadFromUrl(url, file.name || "final-approval-letter.pdf");
+    } catch {
+      toast.error("Download unavailable", "The letter couldn't be downloaded. Please try again in a moment.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Button
+      size="sm"
+      variant="outline"
+      className="shrink-0 bg-card gap-1.5"
+      onClick={handleDownload}
+      disabled={busy}
+      aria-label={label}
+    >
+      {busy ? <Spinner className="size-3.5" /> : <Download className="size-3.5" aria-hidden="true" />}
+      {busy ? "Downloading…" : "Download Letter"}
+    </Button>
+  );
 }
 
 export function RequestDetailAlerts({
   request,
-  onPreviewLetter,
 }: RequestDetailAlertsProps) {
   const latestComment =
     request.comments.length > 0 ? request.comments[request.comments.length - 1] : null;
@@ -180,25 +216,12 @@ export function RequestDetailAlerts({
           <AlertTitle className="text-emerald-900 dark:text-emerald-200">Request Completed</AlertTitle>
           <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <span className="text-emerald-800 dark:text-emerald-300">Your final approval letter is ready to download.</span>
-            {(request.completion?.finalApprovalLetter || request.approvalLetter || request.approvalLetterAvailable) && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="shrink-0 bg-card gap-1.5"
-                onClick={() => {
-                  const doc = request.completion?.finalApprovalLetter ?? request.approvalLetter ?? {
-                    id: "final-approval-letter",
-                    name: `${request.code}-approval-letter.pdf`,
-                    size: 245000,
-                    uploadedAt: request.completedAt ?? new Date().toISOString(),
-                  };
-                  onPreviewLetter(doc as PreviewableFile);
-                }}
-                aria-label="Download or view approval letter"
-              >
-                <Download className="size-3.5" aria-hidden="true" />
-                Download Letter
-              </Button>
+            {(request.completion?.finalApprovalLetter ?? request.approvalLetter) && (
+              <DownloadLetterButton
+                requestId={request.id}
+                file={(request.completion?.finalApprovalLetter ?? request.approvalLetter)!}
+                label="Download approval letter"
+              />
             )}
           </AlertDescription>
         </Alert>
@@ -245,18 +268,11 @@ export function RequestDetailAlerts({
                 <span className="text-muted-foreground text-xs">
                   A final approval letter was issued prior to request withdrawal and remains accessible.
                 </span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="shrink-0 bg-card gap-1.5"
-                  onClick={() => {
-                    onPreviewLetter(request.completion!.finalApprovalLetter! as PreviewableFile);
-                  }}
-                  aria-label="Download or view issued approval letter"
-                >
-                  <Download className="size-3.5" aria-hidden="true" />
-                  Download Letter
-                </Button>
+                <DownloadLetterButton
+                  requestId={request.id}
+                  file={request.completion.finalApprovalLetter}
+                  label="Download issued approval letter"
+                />
               </AlertDescription>
             </Alert>
           )}

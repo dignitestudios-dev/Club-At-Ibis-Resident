@@ -3,6 +3,7 @@
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/features/requests/components/status-badge";
+import { ProcessingChip } from "@/components/shared/processing-chip";
 import { formatDate } from "@/utils/format";
 
 interface RequestDetailHeaderProps {
@@ -35,6 +36,7 @@ export function RequestDetailHeader({
               {request.categoryName || requestType?.name || "Architectural Request"}
             </h1>
             <StatusBadge status={request.status} className="text-sm" />
+            <ProcessingChip request={request} className="gap-1.5 px-2.5 py-0.5 text-sm font-medium shadow-2xs [&_svg]:size-3.5" />
           </div>
           <p className="text-sm text-muted-foreground">
             <span className="font-mono font-semibold text-slate-700 dark:text-slate-300 break-all">

@@ -11,6 +11,10 @@ export interface DashboardRequestCard {
   submittedAt: string;
   createdAt: string;
   updatedAt: string;
+  /** Flat deposit / refund fields, used to flag withdrawn requests with a refund outcome. */
+  depositRequired?: boolean | null;
+  depositStatus?: string | null;
+  refundOutcome?: string | null;
 }
 
 function toRequestCard(r: any): DashboardRequestCard {
@@ -25,6 +29,9 @@ function toRequestCard(r: any): DashboardRequestCard {
     submittedAt: r.submittedAt,
     createdAt: r.createdAt,
     updatedAt: r.updatedAt,
+    depositRequired: r.depositRequired ?? null,
+    depositStatus: r.depositStatus ?? null,
+    refundOutcome: r.refundOutcome ?? null,
   };
 }
 

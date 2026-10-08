@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { ProcessingChip } from "@/components/shared/processing-chip";
 import Link from "next/link";
 import {
   ChevronRight,
@@ -92,6 +93,7 @@ export const RequestListItem = memo(function RequestListItem({
             <span>·</span>
             <span>Last update {formatDate(request.updatedAt)}</span>
           </div>
+          <ProcessingChip request={request} />
         </div>
 
         <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/60 pr-1">
@@ -177,11 +179,14 @@ export const RequestListItem = memo(function RequestListItem({
             Submitted {formatDate(request.submittedAt ?? request.createdAt)}
           </span>
 
-          <span
-            aria-hidden="true"
-            className="flex size-7 items-center justify-center rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-border/60 text-muted-foreground transition-all duration-200 group-hover:bg-primary group-hover:text-primary-foreground group-hover:translate-x-0.5 group-hover:border-primary shadow-2xs"
-          >
-            <ChevronRight className="size-3.5" />
+          <span className="flex items-center gap-2">
+            <ProcessingChip request={request} />
+            <span
+              aria-hidden="true"
+              className="flex size-7 items-center justify-center rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-border/60 text-muted-foreground transition-all duration-200 group-hover:bg-primary group-hover:text-primary-foreground group-hover:translate-x-0.5 group-hover:border-primary shadow-2xs"
+            >
+              <ChevronRight className="size-3.5" />
+            </span>
           </span>
         </div>
       </div>

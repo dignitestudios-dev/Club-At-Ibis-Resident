@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { ProcessingChip } from "@/components/shared/processing-chip";
 import Link from "next/link";
 import { ChevronRight, MapPin, Calendar } from "lucide-react";
 import { StatusBadge } from "@/features/requests/components/status-badge";
@@ -84,11 +85,21 @@ export const DashboardRequestCard = memo(function DashboardRequestCard({
             <Calendar className="size-3 text-slate-400 shrink-0" aria-hidden="true" />
             Submitted {formatDate(request.submittedAt ?? request.createdAt)}
           </span>
-          <span
-            aria-hidden="true"
-            className="flex size-7 items-center justify-center rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-border/60 text-muted-foreground transition-all duration-200 group-hover:bg-primary group-hover:text-primary-foreground group-hover:translate-x-0.5 group-hover:border-primary shadow-2xs"
-          >
-            <ChevronRight className="size-3.5" />
+          <span className="flex items-center gap-2">
+            <ProcessingChip
+              request={{
+                status: request.status,
+                depositRequired: request.depositRequired,
+                depositReceived: request.depositStatus === "received",
+                refundStatus: request.refundOutcome,
+              }}
+            />
+            <span
+              aria-hidden="true"
+              className="flex size-7 items-center justify-center rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-border/60 text-muted-foreground transition-all duration-200 group-hover:bg-primary group-hover:text-primary-foreground group-hover:translate-x-0.5 group-hover:border-primary shadow-2xs"
+            >
+              <ChevronRight className="size-3.5" />
+            </span>
           </span>
         </div>
       </div>

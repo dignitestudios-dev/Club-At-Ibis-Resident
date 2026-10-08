@@ -120,10 +120,7 @@ export default function RequestDetailPage({ id }: { id: string }) {
         </Alert>
       )}
 
-      <RequestDetailAlerts
-        request={request}
-        onPreviewLetter={(file) => setPreviewFile(file)}
-      />
+      <RequestDetailAlerts request={request} />
 
       <div className="grid gap-6 lg:grid-cols-3 items-start">
         <div className="min-w-0 space-y-6 lg:col-span-2 lg:sticky lg:top-20 self-start">

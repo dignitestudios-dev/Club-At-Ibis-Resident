@@ -4,7 +4,7 @@ import {
   PlusCircle,
   FileEdit,
   Bell,
-  Download,
+  // Download,
   UserRound,
   type LucideIcon,
 } from "lucide-react";
@@ -34,7 +34,7 @@ export const navGroups: NavGroup[] = [
     items: [
       { href: "/notifications", label: "Notifications", icon: Bell },
       { href: "/profile", label: "Profile", icon: UserRound },
-      { href: "/install", label: "Install App", icon: Download },
+      // { href: "/install", label: "Install App", icon: Download }, // /install is switched off for now
     ],
   },
 ];
