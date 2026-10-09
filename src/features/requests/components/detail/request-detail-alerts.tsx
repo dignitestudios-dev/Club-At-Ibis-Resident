@@ -85,7 +85,7 @@ export function RequestDetailAlerts({
                   ARB Action Required: Changes Requested
                 </h3>
                 <p className="text-xs sm:text-sm text-amber-900/90 dark:text-amber-300/90 leading-relaxed">
-                  The Review Board has flagged items on this submission. Review the directive below, revise the indicated details, and resubmit.
+                  The Review Board has flagged items on this submission. Review the instructions below, revise the indicated details, and resubmit.
                 </p>
               </div>
             </div>
@@ -105,7 +105,7 @@ export function RequestDetailAlerts({
               <div className="flex items-center justify-between font-semibold text-[11px] text-amber-900 dark:text-amber-300 uppercase tracking-wider">
                 <span className="flex items-center gap-1.5">
                   <MessageSquare className="size-3.5 text-amber-700 dark:text-amber-400 shrink-0" aria-hidden="true" />
-                  Reviewer Directive &amp; Feedback
+                  Reviewer Instructions &amp; Feedback
                 </span>
                 {latestComment && (
                   <span className="font-normal text-muted-foreground break-words [overflow-wrap:anywhere]">
