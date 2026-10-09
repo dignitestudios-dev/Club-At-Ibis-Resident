@@ -25,7 +25,6 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { cn } from "@/utils/cn";
-import { ExpandableText } from "@/components/shared/expandable-text";
 import { formatDateTime, formatRelative } from "@/utils/format";
 import { describeEvent, titleCase } from "@/lib/history-event-info";
 
@@ -128,19 +127,6 @@ export function HistoryTimeline({ events }: { events: HistoryEvent[] }) {
                 </ul>
               )}
 
-              {event.type === "revision_requested" && event.flaggedItems && event.flaggedItems.length > 0 && (
-                <div className="rounded-lg border border-amber-300/80 bg-amber-50/90 px-3 py-2 text-xs leading-relaxed text-amber-950 dark:border-amber-800/80 dark:bg-amber-950/40 dark:text-amber-200">
-                  <span className="mb-1 block font-semibold text-amber-800 dark:text-amber-300">Fields flagged for correction:</span>
-                  <ul className="space-y-0.5">
-                    {event.flaggedItems.map((item, i) => (
-                      <li key={i} className="min-w-0 break-words [overflow-wrap:anywhere]">
-                        <span className="font-medium">{item.label}:</span>{" "}
-                        <ExpandableText text={item.reason ?? ""} limit={120} />
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
 
               <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-1.5 text-xs text-muted-foreground">
                 <span>
