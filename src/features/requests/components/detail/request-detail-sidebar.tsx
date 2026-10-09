@@ -121,7 +121,7 @@ export function RequestDetailSidebar({ request }: RequestDetailSidebarProps) {
         </Card>
       )}
 
-      {/* Security Deposit Refund Card */}
+      {/* Deposit Refund Card */}
       {(request.deposit?.status === "received" || request.depositReceived) && (
         <Card className="border-slate-200/90 dark:border-slate-800 shadow-2xs overflow-hidden bg-white dark:bg-card">
           <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800/80">
@@ -171,7 +171,7 @@ export function RequestDetailSidebar({ request }: RequestDetailSidebarProps) {
                   </div>
                 )}
                 <p className="text-xs text-emerald-900/85 dark:text-emerald-300/85 leading-relaxed pt-1">
-                  Your security deposit has been refunded to your original payment method.
+                  Your deposit has been refunded to your original payment method.
                 </p>
               </div>
             ) : (request.refund?.outcome === "awaiting_refund_action" || request.refundStatus === "awaiting") ? (

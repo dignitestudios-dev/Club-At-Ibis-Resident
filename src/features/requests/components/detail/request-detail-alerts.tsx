@@ -197,7 +197,7 @@ export function RequestDetailAlerts({
             <p className="font-semibold text-emerald-950 dark:text-emerald-200">Request Approved</p>
             <p className="text-emerald-900 dark:text-emerald-300">
               {request.deposit?.required
-                ? `A security deposit${request.deposit.amount ? ` of $${Number(request.deposit.amount).toLocaleString()}` : ""} is required. Once the deposit and final approval documentation are recorded, you will be notified.`
+                ? `A deposit${request.deposit.amount ? ` of $${Number(request.deposit.amount).toLocaleString()}` : ""} is required. Once the deposit and final approval documentation are recorded, you will be notified.`
                 : "Final processing (final approval letter) is in progress. You will be notified once this request is marked completed."}
             </p>
             {(request.decision?.decidedBy || request.decidedAt) && (
