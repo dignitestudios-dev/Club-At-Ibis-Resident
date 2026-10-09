@@ -182,15 +182,11 @@ export default function VerifyEmailView({ token }: { token: string }) {
       </div>
       <div className="space-y-2">
         <h1 className="font-heading text-2xl font-medium text-foreground">Email Verified!</h1>
-        <p className="text-sm text-muted-foreground">
-          Your resident account is now active. Taking you to your dashboard…
-        </p>
+        <p className="text-sm text-muted-foreground">Your resident account is now active.</p>
       </div>
-      <div className="pt-2">
-        <Button onClick={() => router.push("/dashboard")} className="w-full">
-          <Spinner className="size-4 mr-1.5" />
-          Continue to Dashboard
-        </Button>
+      <div className="flex items-center justify-center gap-2 pt-2 text-sm text-muted-foreground" role="status">
+        <Spinner className="size-4" />
+        Please wait, you are being redirected to the dashboard.
       </div>
     </div>
   );
