@@ -282,6 +282,20 @@ export function useRequestRevise(request: RequestRecord) {
     return out;
   }, [editableFlaggedFields, form]);
 
+  /**
+   * The request is no longer taking corrections (REQUEST_REVISION_NOT_ALLOWED), e.g. it was already resubmitted
+   * from another tab or device: reload it and show the page that reflects its real state.
+   */
+  const notEditableRef = useRef(false);
+  const redirectToRequest = useCallback(() => {
+    notEditableRef.current = true;
+    queryClient.invalidateQueries({ queryKey: ["requests"] });
+    queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    toast.warning("Request already updated", "This request is no longer accepting corrections, so its latest details have been loaded.");
+    guardAllowLeave();
+    router.push(`/requests/${request.id}`);
+  }, [guardAllowLeave, queryClient, request.id, router, toast]);
+
   const triggerAutosave = useCallback(async () => {
     if (isSavingRef.current || editableFlaggedFields.length === 0) return;
     const fieldValues = extractFlaggedValues();
@@ -316,12 +330,16 @@ export function useRequestRevise(request: RequestRecord) {
       setLastSavedAt(new Date());
       setHasUnsavedChanges(false);
     } catch (err: any) {
+      if ((err?.code || err?.responseData?.code) === "REQUEST_REVISION_NOT_ALLOWED") {
+        redirectToRequest();
+        return;
+      }
       toast.error("Failed to save your corrections.", err?.responseData?.message || err?.message);
     } finally {
       isSavingRef.current = false;
       setIsSavingDraft(false);
     }
-  }, [applyUpdatedRecord, editableFlaggedFields.length, extractFlaggedValues, request.id, toast]);
+  }, [applyUpdatedRecord, editableFlaggedFields.length, extractFlaggedValues, redirectToRequest, request.id, toast]);
 
   // Debounced autosave on field changes, mirroring the create-request wizard.
   // File fields are deliberately excluded: a document replacement is already
@@ -568,6 +586,7 @@ export function useRequestRevise(request: RequestRecord) {
       // endpoint itself carries no field values, only the version guards.
       if (hasUnsavedChanges) {
         await triggerAutosave();
+        if (notEditableRef.current) return;
       }
 
       const idempotencyKey = `resubmit-${request.id}-${Date.now()}`;
@@ -613,6 +632,10 @@ export function useRequestRevise(request: RequestRecord) {
       const code = err?.code || err?.responseData?.code;
       const fieldId = err?.responseData?.details?.[0]?.fieldId;
       const message = err?.responseData?.message || err?.message || "Unable to resubmit your request.";
+      if (code === "REQUEST_REVISION_NOT_ALLOWED") {
+        redirectToRequest();
+        return;
+      }
       if (code === "FLAGGED_FIELD_UNCHANGED" && fieldId) {
         form.setError(fieldId as any, { type: "server", message });
         const field = editableFlaggedFields.find((f) => f.id === fieldId);
