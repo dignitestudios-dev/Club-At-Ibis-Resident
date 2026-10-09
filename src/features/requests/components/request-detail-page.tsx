@@ -91,6 +91,17 @@ export default function RequestDetailPage({ id }: { id: string }) {
       message: h.feedback!,
       createdAt: h.createdAt,
     }));
+  // A rejection reason is feedback too: list it in the same feed, as the same kind of card.
+  if (request.status === "rejected" && request.rejectionReason) {
+    const rejectedEvent = request.history.find((h) => h.type === "rejected");
+    feedbackEntries.push({
+      id: rejectedEvent?.id ?? "rejection-reason",
+      author: request.decision?.decidedBy?.displayName || rejectedEvent?.actor?.name || "ARB Reviewer",
+      authorRole: "arb" as const,
+      message: request.rejectionReason,
+      createdAt: request.decidedAt || rejectedEvent?.createdAt || request.updatedAt,
+    });
+  }
   const feedbackFeed = [...request.comments, ...feedbackEntries];
 
   return (
