@@ -967,7 +967,7 @@ function CategoryFormWizard({
               You have entered information in this request. Would you like to save it to your drafts before leaving?
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex flex-row items-center justify-center gap-3 pt-3">
+          <AlertDialogFooter className="flex flex-row items-center justify-end gap-3 pt-3">
             <Button
               type="button"
               variant="outline"

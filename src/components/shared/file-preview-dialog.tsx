@@ -204,7 +204,7 @@ export function FilePreviewDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-4xl max-h-[90vh] h-[85vh] flex flex-col p-0 text-left overflow-hidden border border-border shadow-2xl rounded-2xl max-sm:top-0 max-sm:left-0 max-sm:h-svh max-sm:max-h-svh max-sm:w-full max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-none max-sm:border-0">
         {/* Header */}
-        <DialogHeader className="flex flex-row items-center justify-between text-left border-b border-border bg-slate-50/90 dark:bg-card px-5 py-3 shrink-0 max-sm:px-3 max-sm:pt-[calc(0.75rem+env(safe-area-inset-top))]">
+        <DialogHeader className="flex flex-row items-center justify-between text-left [&_[data-slot=dialog-title]]:text-left border-b border-border bg-slate-50/90 dark:bg-card px-5 py-3 shrink-0 max-sm:px-3 max-sm:pt-[calc(0.75rem+env(safe-area-inset-top))]">
           <div className="flex items-center gap-2.5 min-w-0">
             <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary">
               {isImage ? <ImageIcon className="size-4" /> : <FileText className="size-4" />}

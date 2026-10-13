@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useTransition } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Bell, CheckCheck, Layers } from "lucide-react";
+import { Bell, CheckCheck, Layers, RefreshCw } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
@@ -46,6 +46,8 @@ export default function NotificationList() {
   const {
     notifications,
     isLoading,
+    isFetching,
+    refresh,
     unreadCount,
     markRead,
     markAllRead,
@@ -74,19 +76,40 @@ export default function NotificationList() {
         title="Notifications"
         description="Real-time updates, reviewer feedback, and ARB decisions on your submissions."
         actions={
-          unreadCount > 0 ? (
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={handleMarkAll}
-              disabled={isMarkingAllRead}
-              className="bg-white dark:bg-card gap-1.5 shadow-2xs hover:border-primary/40 hover:bg-slate-50 dark:hover:bg-slate-800"
-              aria-label={`Mark all ${unreadCount} unread notifications as read`}
+              onClick={async () => {
+                try {
+                  await refresh();
+                  toast.success("Notifications refreshed");
+                } catch {
+                  toast.error("Failed to refresh notifications");
+                }
+              }}
+              disabled={isFetching}
+              className="h-8 gap-1.5"
+              aria-label="Refresh notifications"
+              title="Refresh notifications"
             >
-              <CheckCheck className="size-4 text-primary" aria-hidden="true" />
-              Mark all as read ({unreadCount})
+              <RefreshCw className={cn("size-3.5", isFetching && "animate-spin")} />
+              <span>Refresh</span>
             </Button>
-          ) : undefined
+            {unreadCount > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleMarkAll}
+                disabled={isMarkingAllRead}
+                className="bg-white dark:bg-card gap-1.5 shadow-2xs hover:border-primary/40 hover:bg-slate-50 dark:hover:bg-slate-800"
+                aria-label={`Mark all ${unreadCount} unread notifications as read`}
+              >
+                <CheckCheck className="size-4 text-primary" aria-hidden="true" />
+                Mark all as read ({unreadCount})
+              </Button>
+            )}
+          </div>
         }
       />
 

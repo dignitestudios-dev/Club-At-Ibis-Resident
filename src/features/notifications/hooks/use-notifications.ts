@@ -10,8 +10,8 @@ import {
 
 export function useNotifications() {
   const user = useCurrentUser();
-  const { data: notifications, isLoading } = useNotificationsQuery(user?.id);
-  const { data: unreadTotal } = useUnreadNotificationCountQuery(user?.id);
+  const { data: notifications, isLoading, isFetching, refetch } = useNotificationsQuery(user?.id);
+  const { data: unreadTotal, refetch: refetchUnread } = useUnreadNotificationCountQuery(user?.id);
   const markRead = useMarkNotificationReadMutation();
   const markAllRead = useMarkAllNotificationsReadMutation();
 
@@ -38,9 +38,16 @@ export function useNotifications() {
     return notifications ?? [];
   }, [notifications]);
 
+  /** Reloads the list and the unread total. */
+  const refresh = useCallback(async () => {
+    await Promise.all([refetch(), refetchUnread()]);
+  }, [refetch, refetchUnread]);
+
   return {
     notifications: notificationsList,
     isLoading,
+    isFetching,
+    refresh,
     unreadCount,
     markRead: handleMarkRead,
     markAllRead: handleMarkAllRead,
