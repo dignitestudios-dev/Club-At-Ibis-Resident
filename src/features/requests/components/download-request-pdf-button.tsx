@@ -18,20 +18,10 @@ function asText(value: unknown): string {
   return String(value);
 }
 
-function statusLabel(status: string): string {
-  return status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
 function date(value?: string | null): string {
   if (!value) return "";
   const d = new Date(value);
   return Number.isNaN(d.getTime()) ? value : d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
-}
-
-function money(value: unknown): string {
-  if (value === null || value === undefined || value === "") return "";
-  const n = Number(value);
-  return Number.isNaN(n) ? "" : `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function present(rows: RequestPdfRow[]): RequestPdfRow[] {
@@ -67,7 +57,6 @@ export function DownloadRequestPdfButton({
         const value = asText(request.fieldValues?.[f.id]);
         return { label: f.label, value, wide: f.type === "textarea" || value.length > 48 || value.includes("\n") };
       };
-      const label = statusLabel(request.status);
       const category = request.categoryName || "Architectural Request";
 
       const sections: RequestPdfSection[] = [
@@ -76,9 +65,7 @@ export function DownloadRequestPdfButton({
           rows: present([
             { label: "Reference number", value: request.reference || request.code },
             { label: "Category", value: category },
-            { label: "Status", value: label },
             { label: "Date submitted", value: date(request.submittedAt ?? request.createdAt) },
-            { label: "Last updated", value: date(request.updatedAt) },
           ]),
         },
         {
@@ -90,24 +77,11 @@ export function DownloadRequestPdfButton({
         },
         { title: "Project Information", rows: answers.filter(isCommon).map(toRow) },
         { title: `${category} Information`, rows: answers.filter((f) => !isCommon(f)).map(toRow) },
-        ...(request.deposit?.required || request.depositRequired
-          ? [
-              {
-                title: "Deposit",
-                rows: present([
-                  { label: "Deposit required", value: "Yes" },
-                  { label: "Deposit amount", value: money(request.deposit?.amount ?? request.depositAmount) },
-                  { label: "Deposit status", value: request.deposit?.status === "received" || request.depositReceived ? "Received" : "Pending" },
-                ]),
-              },
-            ]
-          : []),
       ];
 
       const input: RequestPdfInput = {
         reference: request.reference || request.code,
         categoryName: category,
-        statusLabel: label,
         sections,
         documents: fileFields.flatMap((f) =>
           (request.uploads?.[f.id] ?? []).map((file) => ({
