@@ -5,8 +5,11 @@ import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useToast } from "@/hooks/use-toast";
-import { downloadRequestPdf, type RequestPdfInput } from "@/lib/request-pdf";
+import { downloadRequestPdf, type RequestPdfInput, type RequestPdfRow, type RequestPdfSection } from "@/lib/request-pdf";
 import { getFileDownloadUrl } from "@/features/requests/api/requests.service";
+
+/** Fields every request carries; the rest come from the category's own form. */
+const COMMON_FIELD_IDS = new Set(["propertyAddress", "lotNo", "projectDescription", "contractorName", "contractorNumber", "additionalDetails"]);
 
 function asText(value: unknown): string {
   if (Array.isArray(value)) return value.join(", ");
@@ -19,7 +22,23 @@ function statusLabel(status: string): string {
   return status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-/** Downloads this request (answers + uploaded documents) as a branded PDF. */
+function date(value?: string | null): string {
+  if (!value) return "";
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? value : d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+}
+
+function money(value: unknown): string {
+  if (value === null || value === undefined || value === "") return "";
+  const n = Number(value);
+  return Number.isNaN(n) ? "" : `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function present(rows: RequestPdfRow[]): RequestPdfRow[] {
+  return rows.filter((r) => r.value && r.value.trim());
+}
+
+/** Downloads this request (answers + uploaded documents) as a formal PDF record. */
 export function DownloadRequestPdfButton({
   request,
   formFields,
@@ -41,36 +60,61 @@ export function DownloadRequestPdfButton({
     setMessage("Preparing…");
     try {
       const ordered = [...formFields].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-      const fields = ordered.filter((f) => f.type !== "file");
+      const answers = ordered.filter((f) => f.type !== "file");
       const fileFields = ordered.filter((f) => f.type === "file");
+      const isCommon = (f: FieldConfig) => (f.source ? f.source === "common" : COMMON_FIELD_IDS.has(f.id));
+      const toRow = (f: FieldConfig): RequestPdfRow => {
+        const value = asText(request.fieldValues?.[f.id]);
+        return { label: f.label, value, wide: f.type === "textarea" || value.length > 48 || value.includes("\n") };
+      };
+      const label = statusLabel(request.status);
+      const category = request.categoryName || "Architectural Request";
+
+      const sections: RequestPdfSection[] = [
+        {
+          title: "Request Information",
+          rows: present([
+            { label: "Reference number", value: request.reference || request.code },
+            { label: "Category", value: category },
+            { label: "Status", value: label },
+            { label: "Date submitted", value: date(request.submittedAt ?? request.createdAt) },
+            { label: "Last updated", value: date(request.updatedAt) },
+          ]),
+        },
+        {
+          title: "Resident Information",
+          rows: present([
+            { label: "Resident name", value: residentName ?? "" },
+            { label: "Resident ID", value: residentIdNumber ?? "" },
+          ]),
+        },
+        { title: "Project Information", rows: answers.filter(isCommon).map(toRow) },
+        { title: `${category} Information`, rows: answers.filter((f) => !isCommon(f)).map(toRow) },
+        ...(request.deposit?.required || request.depositRequired
+          ? [
+              {
+                title: "Deposit",
+                rows: present([
+                  { label: "Deposit required", value: "Yes" },
+                  { label: "Deposit amount", value: money(request.deposit?.amount ?? request.depositAmount) },
+                  { label: "Deposit status", value: request.deposit?.status === "received" || request.depositReceived ? "Received" : "Pending" },
+                ]),
+              },
+            ]
+          : []),
+      ];
 
       const input: RequestPdfInput = {
         reference: request.reference || request.code,
-        categoryName: request.categoryName || "Architectural Request",
-        title: request.title,
-        status: request.status,
-        statusLabel: statusLabel(request.status),
-        submittedAt: request.submittedAt ?? request.createdAt,
-        updatedAt: request.updatedAt,
-        resident: { name: residentName, idNumber: residentIdNumber },
-        property: {
-          address: request.propertyAddress || asText(request.fieldValues?.propertyAddress),
-          lotNo: request.lotNo || asText(request.fieldValues?.lotNo),
-        },
-        fields: fields.map((f) => ({
-          label: f.label,
-          value: asText(request.fieldValues?.[f.id]),
-          required: f.required,
-        })),
+        categoryName: category,
+        statusLabel: label,
+        sections,
         documents: fileFields.flatMap((f) =>
           (request.uploads?.[f.id] ?? []).map((file) => ({
             title: f.label,
             fileId: file.id,
             name: file.name,
-            size: file.size,
             mimeType: file.mimeType,
-            uploadedAt: file.uploadedAt,
-            required: f.required,
           }))
         ),
         getFileUrl: async (fileId) => {
