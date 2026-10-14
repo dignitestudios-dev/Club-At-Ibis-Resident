@@ -20,8 +20,6 @@ import { RequestDetailSidebar } from "@/features/requests/components/detail/requ
 import { RequestDocumentsTab } from "@/features/requests/components/detail/request-documents-tab";
 import { useRequestDetail } from "@/features/requests/hooks/use-request-detail";
 import { earlierSubmissions } from "@/features/requests/utils/submissions";
-import { DownloadRequestPdfButton } from "@/features/requests/components/download-request-pdf-button";
-import { useCurrentUser } from "@/hooks/use-current-user";
 import { getFileDownloadUrl } from "@/features/requests/api/requests.service";
 
 const FilePreviewDialog = dynamic(
@@ -33,7 +31,6 @@ export default function RequestDetailPage({ id }: { id: string }) {
   const router = useRouter();
   const { request, isLoading } = useRequestDetail(id);
   const [previewFile, setPreviewFile] = useState<PreviewableFile | null>(null);
-  const me = useCurrentUser();
 
   const handleBack = () => {
     // Always land on the requests list, not wherever browser history happens
@@ -112,14 +109,6 @@ export default function RequestDetailPage({ id }: { id: string }) {
       <RequestDetailHeader
         request={request}
         onBack={handleBack}
-        actions={
-          <DownloadRequestPdfButton
-            request={request}
-            formFields={formFields}
-            residentName={me ? [me.firstName, me.lastName].filter(Boolean).join(" ") || undefined : undefined}
-            residentIdNumber={(me as { residentId?: string } | null)?.residentId}
-          />
-        }
       />
 
       {isDraft && (

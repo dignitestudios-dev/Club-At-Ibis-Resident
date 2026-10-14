@@ -10,15 +10,12 @@ interface RequestDetailHeaderProps {
   request: RequestRecord;
   requestType?: RequestType | null;
   onBack: () => void;
-  /** Extra controls shown at the right of the title (for example the PDF download). */
-  actions?: React.ReactNode;
 }
 
 export function RequestDetailHeader({
   request,
   requestType,
   onBack,
-  actions,
 }: RequestDetailHeaderProps) {
   return (
     <div className="space-y-3">
@@ -48,7 +45,6 @@ export function RequestDetailHeader({
             · Submitted {formatDate(request.submittedAt ?? request.createdAt)}
           </p>
         </div>
-        {actions}
       </div>
     </div>
   );
