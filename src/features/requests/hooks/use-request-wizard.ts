@@ -43,7 +43,9 @@ export function parseBackendErrors(err: any): ParsedBackendErrors {
   const generalErrors: string[] = [];
 
   const responseData = err?.responseData || err?.response?.data || err;
-  const details = responseData?.details;
+  // REQUEST_NOT_READY carries its per-field problems in details.issues.
+  const rawDetails = responseData?.details;
+  const details = Array.isArray(rawDetails?.issues) ? rawDetails.issues : rawDetails;
   const code = responseData?.code || err?.code;
   const mainMessage = responseData?.message || err?.message || "An unexpected error occurred.";
 
@@ -171,7 +173,8 @@ export function useRequestWizard(
   categoryOrType: ActiveCategory | RequestType,
   onChangeType: () => void,
   initialDraft?: RequestDraft | RequestRecord | null,
-  dynamicFields?: CategoryFormField[]
+  dynamicFields?: CategoryFormField[],
+  hoaApprovalRequiredInitial?: boolean
 ) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -293,7 +296,13 @@ export function useRequestWizard(
     [commonFields, categoryFields, documentFields]
   );
 
-  const schema = useMemo(() => buildCategoryFormSchema(allFields), [allFields]);
+  // Whether this category form version needs the HOA confirmation + letter.
+  // Starts from the draft/form, then follows the form after a migration.
+  const [hoaRequired, setHoaRequired] = useState<boolean>(
+    initialDraft?.hoaApprovalRequired ?? hoaApprovalRequiredInitial ?? false
+  );
+
+  const schema = useMemo(() => buildCategoryFormSchema(allFields, { hoaRequired }), [allFields, hoaRequired]);
 
   const initialFormValues = useMemo(() => {
     const defaults = defaultValuesForFields(allFields);
@@ -830,6 +839,9 @@ export function useRequestWizard(
             setIsStaleForm(false);
             setSubmissionErrors([]);
             setHasMigratedNotice(true);
+            if (typeof migrated.hoaApprovalRequired === "boolean") {
+              setHoaRequired(migrated.hoaApprovalRequired);
+            }
 
             queryClient.invalidateQueries({ queryKey: ["categories"] });
             queryClient.invalidateQueries({ queryKey: ["drafts"] });
@@ -966,7 +978,7 @@ export function useRequestWizard(
       return;
     }
 
-    if (values.hoaApproved !== true) {
+    if (hoaRequired && values.hoaApproved !== true) {
       form.setError("hoaApproved", { message: "HOA confirmation is required before submission." });
       toast.error("Validation error", "You must confirm HOA approval before submitting.");
       scrollToFirstError("#hoaApproved");
@@ -1063,8 +1075,7 @@ export function useRequestWizard(
           payload: {
             expectedDraftRevision: rev,
             expectedMediaRevision: mediaRevisionRef.current,
-            hoaConfirmed: true,
-            hoaApproved: true,
+            ...(hoaRequired ? { hoaConfirmed: true, hoaApproved: true } : {}),
           },
           idempotencyKey,
         },
@@ -1146,6 +1157,7 @@ export function useRequestWizard(
 
   return {
     form,
+    hoaRequired,
     stepIndex,
     setStepIndex,
     isReviewStep,

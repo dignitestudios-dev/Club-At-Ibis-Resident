@@ -17,6 +17,7 @@ interface RequestDraft {
   /** Optimistic-concurrency guard for file upload/delete — required on every upload-intent/delete call for this draft's documents. */
   mediaRevision?: number;
   hoaApproved?: boolean;
+  hoaApprovalRequired?: boolean;
   commonFormVersion?: number;
   categoryFormVersion?: number;
   form?: {

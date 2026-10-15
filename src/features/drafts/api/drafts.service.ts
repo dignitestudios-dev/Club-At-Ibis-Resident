@@ -25,6 +25,7 @@ export function toDraft(r: RequestRecord): RequestDraft {
     draftRevision: r.draftRevision ?? 0,
     mediaRevision: r.mediaRevision ?? 0,
     hoaApproved: r.hoaApproved,
+    hoaApprovalRequired: r.hoaApprovalRequired,
     commonFormVersion: r.commonFormVersion,
     categoryFormVersion: r.categoryFormVersion,
     form: r.form,

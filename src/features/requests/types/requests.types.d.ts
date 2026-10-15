@@ -298,6 +298,8 @@ interface RequestRecord {
   submissionReadiness?: SubmissionReadiness;
   hoaApproved: boolean;
   hoaConfirmedAt?: string;
+  /** The pinned category form version requires HOA confirmation and a letter. */
+  hoaApprovalRequired?: boolean;
   depositRequired?: boolean;
   depositAmount?: number | string | null;
   depositReceived?: boolean;

@@ -103,6 +103,7 @@ export async function getActiveCategoryForm(
     category,
     commonFormVersion: rawForm.commonFormVersion ?? 1,
     categoryFormVersion: rawForm.categoryFormVersion ?? 1,
+    hoaApprovalRequired: rawForm.hoaApprovalRequired === true,
     fields,
   };
 }

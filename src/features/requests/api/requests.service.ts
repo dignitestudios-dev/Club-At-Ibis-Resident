@@ -153,6 +153,7 @@ function toRequestRecord(raw: any): RequestRecord {
     submissionReadiness: raw.submissionReadiness,
     hoaApproved: !!(raw.hoaConfirmed ?? raw.hoaApproved),
     hoaConfirmedAt: raw.hoaConfirmedAt || raw.hoaApprovedAt,
+    hoaApprovalRequired: raw.hoaApprovalRequired ?? raw.form?.hoaApprovalRequired,
     depositRequired: raw.deposit?.required ?? raw.depositRequired,
     depositAmount: raw.deposit?.amount ?? raw.depositAmount,
     depositReceived: (raw.deposit?.status === "received") || raw.depositStatus === "received" || raw.depositReceived,
@@ -301,9 +302,8 @@ export async function migrateDraftForm(
 
 /**
  * Submit a completed draft with HOA approval confirmation.
- * Backend POST /requests/:id/submit strictly requires:
- * - expectedDraftRevision (number)
- * - hoaConfirmed (boolean)
+ * Backend POST /requests/:id/submit requires expectedDraftRevision;
+ * hoaConfirmed (true) is sent only when the category requires HOA approval.
  */
 export async function submitRequest(
   id: string,
@@ -312,8 +312,9 @@ export async function submitRequest(
 ): Promise<RequestRecord> {
   const cleanBody: Record<string, any> = {
     expectedDraftRevision: payload.expectedDraftRevision,
-    hoaConfirmed: payload.hoaConfirmed ?? payload.hoaApproved ?? true,
   };
+  // Only categories that require HOA approval take the confirmation.
+  if (payload.hoaConfirmed === true) cleanBody.hoaConfirmed = true;
   if (typeof payload.expectedMediaRevision === "number") {
     cleanBody.expectedMediaRevision = payload.expectedMediaRevision;
   }

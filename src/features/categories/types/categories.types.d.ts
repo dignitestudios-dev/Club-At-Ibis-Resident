@@ -47,6 +47,8 @@ export interface CategoryFormResponse {
   category: ActiveCategory;
   commonFormVersion: number;
   categoryFormVersion: number;
+  /** True when residents must confirm HOA approval and upload the letter. */
+  hoaApprovalRequired: boolean;
   fields: CategoryFormField[];
 }
 

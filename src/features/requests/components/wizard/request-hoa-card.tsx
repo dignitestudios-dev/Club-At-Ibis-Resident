@@ -77,7 +77,7 @@ export function RequestHoaCard({
           </p>
 
           <p id="hoa-helper-text" className="text-xs text-muted-foreground leading-relaxed">
-            The Club at Ibis Architectural Review Board requires prior written HOA approval from your sub-association before processing this request.
+            The Club at Ibis Architectural Review Board requires prior written HOA approval from your sub-association before processing this request. Upload your HOA Approval Confirmation Letter in the Documents step.
           </p>
         </div>
 

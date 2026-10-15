@@ -580,6 +580,7 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
       key={`${selectedCategory.id}-${effectiveDraft?.categoryFormVersion ?? 1}-${effectiveDraft?.commonFormVersion ?? 1}-${dynamicFields.length}`}
       category={selectedCategory}
       dynamicFields={dynamicFields}
+      hoaApprovalRequired={effectiveDraft?.hoaApprovalRequired ?? categoryFormData?.hoaApprovalRequired ?? false}
       initialDraft={effectiveDraft}
       onChangeType={() => {
         clearWizardState();
@@ -601,16 +602,19 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
 function CategoryFormWizard({
   category,
   dynamicFields,
+  hoaApprovalRequired,
   initialDraft,
   onChangeType,
 }: {
   category: ActiveCategory;
   dynamicFields: CategoryFormField[];
+  hoaApprovalRequired: boolean;
   initialDraft?: RequestDraft | null;
   onChangeType: () => void;
 }) {
   const {
     form,
+    hoaRequired,
     stepIndex,
     setStepIndex,
     isReviewStep,
@@ -643,7 +647,7 @@ function CategoryFormWizard({
     cancelChangeCategory,
     guardDialog,
     onSubmit,
-  } = useRequestWizard(category, onChangeType, initialDraft, dynamicFields);
+  } = useRequestWizard(category, onChangeType, initialDraft, dynamicFields, hoaApprovalRequired);
 
   const router = useRouter();
   const toast = useToast();
@@ -887,18 +891,20 @@ function CategoryFormWizard({
                 }
               />
 
-              <Controller
-                name="hoaApproved"
-                control={form.control}
-                render={({ field: rhf }) => (
-                  <RequestHoaCard
-                    checked={rhf.value === true}
-                    onCheckedChange={(checked) => rhf.onChange(checked)}
-                    error={!isStaleForm ? (hoaError?.message as string | undefined) : undefined}
-                    disabled={isPending || isStaleForm}
-                  />
-                )}
-              />
+              {hoaRequired && (
+                <Controller
+                  name="hoaApproved"
+                  control={form.control}
+                  render={({ field: rhf }) => (
+                    <RequestHoaCard
+                      checked={rhf.value === true}
+                      onCheckedChange={(checked) => rhf.onChange(checked)}
+                      error={!isStaleForm ? (hoaError?.message as string | undefined) : undefined}
+                      disabled={isPending || isStaleForm}
+                    />
+                  )}
+                />
+              )}
             </div>
           )}
         </Card>

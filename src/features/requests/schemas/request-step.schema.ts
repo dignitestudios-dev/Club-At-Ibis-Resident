@@ -312,15 +312,19 @@ export function buildStepSchema(fields: FieldConfig[]) {
   return z.object(shape);
 }
 
-export function buildCategoryFormSchema(fields: FieldConfig[]) {
+export function buildCategoryFormSchema(
+  fields: FieldConfig[],
+  options: { hoaRequired?: boolean } = {}
+) {
   const dataShape = buildStepSchema(fields).shape;
   return z.object({
     ...dataShape,
-    hoaApproved: z
-      .boolean()
-      .refine((v) => v === true, {
-        message: "You must confirm HOA approval before submitting.",
-      }),
+    // Only categories that require HOA approval need the confirmation.
+    hoaApproved: options.hoaRequired
+      ? z.boolean().refine((v) => v === true, {
+          message: "You must confirm HOA approval before submitting.",
+        })
+      : z.boolean().optional(),
   });
 }
 
