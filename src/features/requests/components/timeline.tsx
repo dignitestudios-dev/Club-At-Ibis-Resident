@@ -91,7 +91,8 @@ const EVENT_CONFIG: Record<
 };
 
 export function Timeline({ entries }: { entries: ActivityEntry[] }) {
-  const list = entries ?? [];
+  // Assignment entries are staff-only and never listed for a resident.
+  const list = (entries ?? []).filter((e) => e.type !== "assigned");
 
   return (
     <div className="space-y-0">

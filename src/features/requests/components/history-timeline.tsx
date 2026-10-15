@@ -59,7 +59,8 @@ const EVENT_CONFIG: Record<HistoryEventType, { icon: LucideIcon; label: string; 
 };
 
 export function HistoryTimeline({ events }: { events: HistoryEvent[] }) {
-  const list = events ?? [];
+  // Assignment and reassignment events (and who the reviewer is) are staff-only: never listed for a resident.
+  const list = (events ?? []).filter((e) => e.type !== "assigned" && e.type !== "reassigned");
 
   return (
     <ol className="space-y-0">

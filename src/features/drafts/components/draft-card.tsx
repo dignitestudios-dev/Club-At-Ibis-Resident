@@ -1,3 +1,4 @@
+import { Highlight } from "@/components/shared/highlight";
 import { useState, memo } from "react";
 import Link from "next/link";
 import { ArrowRight, Trash2, Clock, MapPin } from "lucide-react";
@@ -16,6 +17,7 @@ export const DraftCard = memo(function DraftCard({
   onToggleSelect,
   className,
   style,
+  query,
 }: {
   draft: RequestDraft;
   onDelete: (id: string, onSettled?: () => void) => void;
@@ -25,6 +27,8 @@ export const DraftCard = memo(function DraftCard({
   onToggleSelect?: (id: string, selected: boolean) => void;
   className?: string;
   style?: React.CSSProperties;
+  /** The current search text: matching parts are highlighted. */
+  query?: string;
 }) {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const categoryTitle = draft.categoryName || draft.title || "Architectural Request";
@@ -75,11 +79,11 @@ export const DraftCard = memo(function DraftCard({
           <div className="min-w-0 flex-1 space-y-1.5">
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="font-heading text-base sm:text-lg font-medium text-foreground group-hover:text-primary transition-colors truncate">
-                {categoryTitle}
+                <Highlight text={categoryTitle} query={query} />
               </h3>
               {reference && (
                 <span className="rounded-md bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 px-2 py-0.5 text-xs font-mono font-semibold text-slate-700 dark:text-slate-200 whitespace-nowrap shrink-0">
-                  {reference}
+                  <Highlight text={reference} query={query} />
                 </span>
               )}
               <span className="rounded-md bg-amber-50 dark:bg-amber-950/40 border border-amber-200/90 dark:border-amber-800/60 px-2 py-0.5 text-xs font-mono font-semibold text-amber-900 dark:text-amber-300 whitespace-nowrap shrink-0">
@@ -90,7 +94,7 @@ export const DraftCard = memo(function DraftCard({
               {fullAddress && (
                 <span className="inline-flex items-center gap-1 text-slate-600 dark:text-slate-300 font-medium truncate max-w-xs">
                   <MapPin className="size-3 text-brand-gold shrink-0" />
-                  {fullAddress}
+                  <Highlight text={fullAddress} query={query} />
                 </span>
               )}
               <span className="inline-flex items-center gap-1">
@@ -186,7 +190,7 @@ export const DraftCard = memo(function DraftCard({
             )}
             {reference && (
               <span className="rounded-lg bg-slate-100 dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700/80 px-2.5 py-1 text-xs font-mono font-semibold text-slate-800 dark:text-slate-200 shadow-2xs tracking-wide whitespace-nowrap shrink-0">
-                {reference}
+                <Highlight text={reference} query={query} />
               </span>
             )}
           </div>
@@ -197,7 +201,7 @@ export const DraftCard = memo(function DraftCard({
 
         <div className="space-y-1.5">
           <h3 className="font-heading text-lg sm:text-xl font-medium text-foreground group-hover:text-primary transition-colors line-clamp-1">
-            {categoryTitle}
+            <Highlight text={categoryTitle} query={query} />
           </h3>
           <p className="text-xs text-muted-foreground leading-relaxed min-h-[2.25rem]">
             In progress submittal · Unsubmitted changes preserved
@@ -209,7 +213,7 @@ export const DraftCard = memo(function DraftCard({
         {fullAddress && (
           <div className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300 font-medium truncate">
             <MapPin className="size-3.5 text-brand-gold shrink-0" aria-hidden="true" />
-            <span className="truncate">{fullAddress}</span>
+            <span className="truncate"><Highlight text={fullAddress} query={query} /></span>
           </div>
         )}
 

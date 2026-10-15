@@ -383,17 +383,29 @@ export const getResidentFileDownloadUrl = getFileDownloadUrl;
 /**
  * Get all requests for the resident (drafts, submitted, active, etc.)
  */
-export async function getResidentRequests(params?: {
+export interface ResidentRequestsParams {
   status?: string;
   search?: string;
   page?: number;
   limit?: number;
-}): Promise<ResidentRequestsResult> {
+  categoryId?: string;
+  /** Category's current status: only "active" or "archived" are sent. */
+  categoryStatus?: string;
+  /** Submitted date range, YYYY-MM-DD, both inclusive. */
+  submittedFrom?: string;
+  submittedTo?: string;
+}
+
+export async function getResidentRequests(params?: ResidentRequestsParams): Promise<ResidentRequestsResult> {
   const queryParams: Record<string, string | number> = {};
   if (params?.page) queryParams.page = params.page;
   if (params?.limit) queryParams.limit = params.limit;
   if (params?.status) queryParams.status = params.status;
   if (params?.search && params.search.trim()) queryParams.search = params.search.trim();
+  if (params?.categoryId && params.categoryId !== "all") queryParams.categoryId = params.categoryId;
+  if (params?.categoryStatus === "active" || params?.categoryStatus === "archived") queryParams.categoryStatus = params.categoryStatus;
+  if (params?.submittedFrom) queryParams.submittedFrom = params.submittedFrom;
+  if (params?.submittedTo) queryParams.submittedTo = params.submittedTo;
 
   const { data } = await axiosInstance.get("/requests", { params: queryParams });
   const rawList = data?.data?.requests ?? [];

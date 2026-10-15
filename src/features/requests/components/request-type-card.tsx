@@ -1,4 +1,5 @@
 import { ChevronRight, Layers } from "lucide-react";
+import { Highlight } from "@/components/shared/highlight";
 import { cn } from "@/utils/cn";
 import type { ActiveCategory } from "@/features/categories/types/categories.types";
 
@@ -6,10 +7,13 @@ export function RequestTypeCard({
   category,
   requestType,
   onSelect,
+  query,
 }: {
   category?: ActiveCategory;
   requestType?: RequestType;
   onSelect: () => void;
+  /** The current search text: matching parts are highlighted. */
+  query?: string;
 }) {
   const item = category || requestType;
   if (!item) return null;
@@ -34,7 +38,7 @@ export function RequestTypeCard({
               <Layers className="size-4" />
             </span>
             <h3 className="font-heading text-base sm:text-lg font-medium text-foreground group-hover:text-primary transition-colors truncate">
-              {item.name}
+              <Highlight text={item.name} query={query} />
             </h3>
           </div>
           <span
@@ -45,7 +49,7 @@ export function RequestTypeCard({
           </span>
         </div>
         <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
-          {item.description || "Submit an architectural review request for this category."}
+          {item.description ? <Highlight text={item.description} query={query} /> : "Submit an architectural review request for this category."}
         </p>
       </div>
     </button>

@@ -1,17 +1,23 @@
 import { useQuery } from "@tanstack/react-query";
-import { getRequestById, getResidentRequests, getRequestsForResident } from "./requests.service";
+import { getRequestById, getResidentRequests, getRequestsForResident, type ResidentRequestsParams } from "./requests.service";
 
 export function useResidentRequestsQuery(
-  params?: {
-    status?: string;
-    search?: string;
-    page?: number;
-    limit?: number;
-  },
+  params?: ResidentRequestsParams,
   options?: { enabled?: boolean }
 ) {
   return useQuery({
-    queryKey: ["requests", "list", params?.status ?? "all", params?.search ?? "", params?.page ?? 1, params?.limit ?? 50],
+    queryKey: [
+      "requests",
+      "list",
+      params?.status ?? "all",
+      params?.search ?? "",
+      params?.page ?? 1,
+      params?.limit ?? 50,
+      params?.categoryId ?? "",
+      params?.categoryStatus ?? "",
+      params?.submittedFrom ?? "",
+      params?.submittedTo ?? "",
+    ],
     queryFn: () => getResidentRequests(params),
     enabled: options?.enabled ?? true,
     staleTime: 30_000,

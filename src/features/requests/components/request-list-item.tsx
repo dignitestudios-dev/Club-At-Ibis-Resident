@@ -1,3 +1,4 @@
+import { Highlight } from "@/components/shared/highlight";
 import { memo } from "react";
 import { ProcessingChip } from "@/components/shared/processing-chip";
 import Link from "next/link";
@@ -30,8 +31,11 @@ export const RequestListItem = memo(function RequestListItem({
   viewMode = "grid",
   className,
   style,
+  query,
 }: {
   request: RequestRecord;
+  /** The current search text: matching parts are highlighted. */
+  query?: string;
   viewMode?: "grid" | "list";
   className?: string;
   style?: React.CSSProperties;
@@ -67,10 +71,10 @@ export const RequestListItem = memo(function RequestListItem({
         <div className="min-w-0 flex-1 space-y-1.5">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="font-heading text-base sm:text-lg font-medium text-foreground group-hover:text-primary transition-colors truncate">
-              {categoryTitle}
+              <Highlight text={categoryTitle} query={query} />
             </h3>
             <span className="rounded-md bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 px-2 py-0.5 text-xs font-mono font-semibold text-slate-700 dark:text-slate-200">
-              {request.code}
+              <Highlight text={request.code} query={query} />
             </span>
             {hasFeedback && (
               <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-300/80 dark:border-amber-700/60 px-2 py-0.5 text-[10px] font-semibold text-amber-900 dark:text-amber-300 shadow-2xs">
@@ -83,7 +87,7 @@ export const RequestListItem = memo(function RequestListItem({
             {fullAddress && (
               <span className="inline-flex items-center gap-1 text-slate-600 dark:text-slate-300 font-medium truncate max-w-xs">
                 <MapPin className="size-3 text-brand-gold shrink-0" aria-hidden="true" />
-                {fullAddress}
+                <Highlight text={fullAddress} query={query} />
               </span>
             )}
             <span className="inline-flex items-center gap-1">
@@ -133,7 +137,7 @@ export const RequestListItem = memo(function RequestListItem({
         {/* Top Header: Code Badge + Status Badge */}
         <div className="flex items-center justify-between gap-2.5">
           <span className="rounded-lg bg-slate-100 dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700/80 px-2.5 py-1 text-xs font-mono font-semibold text-slate-800 dark:text-slate-200 shadow-2xs tracking-wide">
-            {request.code}
+            <Highlight text={request.code} query={query} />
           </span>
 
           <div className="flex items-center gap-1.5 shrink-0">
@@ -150,11 +154,11 @@ export const RequestListItem = memo(function RequestListItem({
         {/* Title & Description */}
         <div className="space-y-1.5">
           <h3 className="font-heading text-lg sm:text-xl font-medium text-foreground group-hover:text-primary transition-colors line-clamp-1">
-            {categoryTitle}
+            <Highlight text={categoryTitle} query={query} />
           </h3>
           {description ? (
             <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 font-normal leading-relaxed min-h-[2.25rem]">
-              {description}
+              <Highlight text={description} query={query} />
             </p>
           ) : (
             <p className="text-xs text-muted-foreground/60 italic min-h-[2.25rem]">
@@ -169,7 +173,7 @@ export const RequestListItem = memo(function RequestListItem({
         {fullAddress && (
           <div className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300 font-medium truncate">
             <MapPin className="size-3.5 text-brand-gold shrink-0" aria-hidden="true" />
-            <span className="truncate">{fullAddress}</span>
+            <span className="truncate"><Highlight text={fullAddress} query={query} /></span>
           </div>
         )}
 

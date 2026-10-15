@@ -6,6 +6,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { PlusCircle, FileText, FileEdit, History, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
+import { ErrorState } from "@/components/shared/error-state";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,23 +17,24 @@ import { DraftCard } from "@/features/drafts/components/draft-card";
 import { RequestsTabsHeader, type RequestsTabType } from "@/features/requests/components/list/requests-tabs-header";
 import { RequestsFilterToolbar } from "@/features/requests/components/list/requests-filter-toolbar";
 import { useRequestsList } from "@/features/requests/hooks/use-requests-list";
+import { useActiveCategoriesQuery } from "@/features/categories/api/categories.queries";
 import { useDeleteDraftMutation } from "@/features/drafts/api/drafts.mutations";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/utils/cn";
 
 const VIEW_MODE_STORAGE_KEY = "ib_requests_view_mode";
 
-const ACTIVE_STATUS_OPTIONS: { label: string; value: RequestStatus | "all" }[] = [
+const ACTIVE_STATUS_OPTIONS: { label: string; value: string }[] = [
   { label: "All Active Statuses", value: "all" },
   { label: "Submitted", value: "submitted" },
-  { label: "Assigned", value: "assigned" },
-  { label: "Under Review", value: "under_review" },
+  // Assigned and Under Review requests are both shown to the resident as "Review Started".
+  { label: "Review Started", value: "review_started" },
   { label: "Changes Required", value: "changes_required" },
   { label: "Resubmitted", value: "resubmitted" },
   { label: "Approved", value: "approved" },
 ];
 
-const HISTORY_STATUS_OPTIONS: { label: string; value: RequestStatus | "all" }[] = [
+const HISTORY_STATUS_OPTIONS: { label: string; value: string }[] = [
   { label: "All History Records", value: "all" },
   { label: "Rejected", value: "rejected" },
   { label: "Completed & Closed", value: "completed" },
@@ -105,8 +107,22 @@ export default function RequestsListPage() {
     setSearch,
     status,
     setStatus,
+    categoryId,
+    setCategory,
+    categoryStatus,
+    setCategoryStatus,
+    submittedFrom,
+    submittedTo,
+    setDateRange,
+    dateRangeInvalid,
+    isError,
+    isRetrying,
+    retry,
     resetFilters,
   } = useRequestsList(activeTab);
+
+  const { data: categoriesData } = useActiveCategoriesQuery({ limit: 100 });
+  const categoryOptions = (categoriesData?.categories ?? []).map((c) => ({ label: c.name, value: c.id }));
 
   const toast = useToast();
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -169,7 +185,40 @@ export default function RequestsListPage() {
     });
   };
 
-  const hasActiveFilters = search.trim() !== "" || status !== "all";
+  const hasActiveFilters =
+    search.trim() !== "" ||
+    status !== "all" ||
+    categoryId !== "all" ||
+    categoryStatus !== "all" ||
+    !!submittedFrom ||
+    !!submittedTo;
+
+  // Shown in the no-match message so the selected criteria stay visible.
+  const criteria = [
+    search.trim() && `search "${search.trim()}"`,
+    status !== "all" && `status ${[...ACTIVE_STATUS_OPTIONS, ...HISTORY_STATUS_OPTIONS].find((o) => o.value === status)?.label ?? status}`,
+    categoryId !== "all" && `category ${categoryOptions.find((o) => o.value === categoryId)?.label ?? ""}`.trim(),
+    categoryStatus !== "all" && `${categoryStatus} categories`,
+    (submittedFrom || submittedTo) && `submitted ${submittedFrom || "…"} to ${submittedTo || "…"}`,
+  ]
+    .filter(Boolean)
+    .join(", ");
+  const noMatchText = dateRangeInvalid
+    ? "The selected date range is invalid (the start date is after the end date), so it was not applied."
+    : criteria
+      ? `No requests match: ${criteria}. Adjust the filters or clear them.`
+      : "Try adjusting your search criteria or filters, or clear all filters.";
+
+  const extraToolbarProps = {
+    categoryOptions,
+    categoryId,
+    onCategoryChange: setCategory,
+    categoryStatus,
+    onCategoryStatusChange: setCategoryStatus,
+    submittedFrom,
+    submittedTo,
+    onDateRangeChange: setDateRange,
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -224,8 +273,11 @@ export default function RequestsListPage() {
             filteredCount={activeRequests.length}
             totalCount={activeTotalCount}
             onResetFilters={resetFilters}
-            searchPlaceholder="Search by reference, category, title..."
+            searchPlaceholder="Search by reference, name, property address or lot number..."
+            {...extraToolbarProps}
           />
+
+          {isError && <ErrorState title="We couldn't load your requests" onRetry={retry} retrying={isRetrying} />}
 
           {isLoadingRequests && (
             <div
@@ -254,14 +306,14 @@ export default function RequestsListPage() {
             </div>
           )}
 
-          {!isLoadingRequests && activeRequests.length === 0 && (
+          {!isLoadingRequests && !isError && activeRequests.length === 0 && (
             <div className="animate-in fade-in duration-300">
               <EmptyState
                 icon={FileText}
                 title={hasActiveFilters ? "No matching requests found" : "No active requests found"}
                 description={
                   hasActiveFilters
-                    ? "Try adjusting your search criteria or filters, or clear all filters."
+                    ? noMatchText
                     : "You currently have no active requests in review. Start a new architectural submission."
                 }
                 action={
@@ -298,6 +350,7 @@ export default function RequestsListPage() {
                 <RequestListItem
                   key={request.id}
                   request={request}
+                  query={search}
                   viewMode={viewMode}
                   className="animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-both"
                   style={{ animationDelay: `${Math.min(idx * 50, 350)}ms` }}
@@ -327,8 +380,11 @@ export default function RequestsListPage() {
             filteredCount={historyRequests.length}
             totalCount={historyTotalCount}
             onResetFilters={resetFilters}
-            searchPlaceholder="Search history by reference, category..."
+            searchPlaceholder="Search history by reference, name, property address or lot number..."
+            {...extraToolbarProps}
           />
+
+          {isError && <ErrorState title="We couldn't load your request history" onRetry={retry} retrying={isRetrying} />}
 
           {isLoadingRequests && (
             <div
@@ -355,14 +411,14 @@ export default function RequestsListPage() {
             </div>
           )}
 
-          {!isLoadingRequests && historyRequests.length === 0 && (
+          {!isLoadingRequests && !isError && historyRequests.length === 0 && (
             <div className="animate-in fade-in duration-300">
               <EmptyState
                 icon={History}
                 title={hasActiveFilters ? "No matching history records" : "No historical records found"}
                 description={
                   hasActiveFilters
-                    ? "Try adjusting your search criteria or clearing filters."
+                    ? noMatchText
                     : "Requests that have completed final inspection, concluded with a decision, or been archived will appear here in your permanent record."
                 }
                 action={
@@ -390,6 +446,7 @@ export default function RequestsListPage() {
                 <RequestListItem
                   key={request.id}
                   request={request}
+                  query={search}
                   viewMode={viewMode}
                   className="animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-both"
                   style={{ animationDelay: `${Math.min(idx * 50, 350)}ms` }}
@@ -536,6 +593,7 @@ export default function RequestsListPage() {
                 <DraftCard
                   key={draft.id}
                   draft={draft}
+                  query={search}
                   viewMode={viewMode}
                   selected={selectedDraftIds.includes(draft.id)}
                   onToggleSelect={handleToggleSelectDraft}

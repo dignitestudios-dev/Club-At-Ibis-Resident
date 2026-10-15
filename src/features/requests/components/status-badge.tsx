@@ -72,7 +72,10 @@ export const StatusBadge = memo(function StatusBadge({
   status: RequestStatus;
   className?: string;
 }) {
-  const config = STATUS_CONFIG[status];
+  // Residents see "Review Started" for both internal assigned and under-review states.
+  const isReviewStarted = status === "assigned" || status === "under_review";
+  const config = STATUS_CONFIG[isReviewStarted ? "under_review" : status];
+  const label = isReviewStarted ? "Review Started" : config.label;
   return (
     <span
       className={cn(
@@ -88,7 +91,7 @@ export const StatusBadge = memo(function StatusBadge({
           config.pulse && "animate-pulse"
         )}
       />
-      {config.label}
+      {label}
     </span>
   );
 });

@@ -5,8 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useResidentRequestsQuery } from "@/features/requests/api/requests.queries";
 import { useResidentDraftsQuery } from "@/features/drafts/api/drafts.queries";
 import type { RequestsTabType } from "@/features/requests/components/list/requests-tabs-header";
-
-export type DatePeriod = "all" | "30d" | "90d" | "year";
+import { usableRange } from "@/lib/date-range";
 
 // Stable references: a fresh `[]` each render re-triggers effects that depend on these lists.
 const EMPTY_REQUESTS: NonNullable<ReturnType<typeof useResidentRequestsQuery>["data"]>["requests"] = [];
@@ -20,11 +19,18 @@ export function useRequestsList(activeTab: RequestsTabType = "requests") {
   const urlSearch = searchParams.get("search") || "";
   const [search, setSearchState] = useState(urlSearch);
 
-  const urlStatus = (searchParams.get("status") as RequestStatus | "all") || "all";
-  const [status, setStatusState] = useState<RequestStatus | "all">(urlStatus);
+  // "review_started" is the resident-facing status for both assigned and under-review requests.
+  const urlStatus = searchParams.get("status") || "all";
+  const [status, setStatusState] = useState<string>(urlStatus);
+
+  // The remaining filters live in the URL only.
+  const categoryId = searchParams.get("category") || "all";
+  const categoryStatus = searchParams.get("categoryStatus") || "all";
+  const submittedFrom = searchParams.get("from") || "";
+  const submittedTo = searchParams.get("to") || "";
 
   useEffect(() => {
-    setStatusState((searchParams.get("status") as RequestStatus | "all") || "all");
+    setStatusState(searchParams.get("status") || "all");
     setSearchState(searchParams.get("search") || "");
   }, [searchParams]);
 
@@ -54,8 +60,15 @@ export function useRequestsList(activeTab: RequestsTabType = "requests") {
     [updateQuery]
   );
 
+  const setCategory = useCallback((next: string) => updateQuery({ category: next === "all" ? null : next }), [updateQuery]);
+  const setCategoryStatus = useCallback((next: string) => updateQuery({ categoryStatus: next === "all" ? null : next }), [updateQuery]);
+  const setDateRange = useCallback(
+    (range: { from: string; to: string }) => updateQuery({ from: range.from || null, to: range.to || null }),
+    [updateQuery]
+  );
+
   const setStatus = useCallback(
-    (nextStatus: RequestStatus | "all") => {
+    (nextStatus: string) => {
       setStatusState(nextStatus);
       updateQuery({ status: nextStatus === "all" ? null : nextStatus });
     },
@@ -70,6 +83,10 @@ export function useRequestsList(activeTab: RequestsTabType = "requests") {
     params.delete("search");
     params.delete("type");
     params.delete("period");
+    params.delete("category");
+    params.delete("categoryStatus");
+    params.delete("from");
+    params.delete("to");
     const query = params.toString();
     startTransition(() => {
       router.replace(query ? `/requests?${query}` : "/requests", { scroll: false });
@@ -89,21 +106,44 @@ export function useRequestsList(activeTab: RequestsTabType = "requests") {
       ? status
       : "submitted,assigned,under_review,changes_required,resubmitted,approved";
 
+  // An invalid range (start after end) is never sent to the API.
+  const range = usableRange(submittedFrom, submittedTo);
+  const extraFilters = {
+    categoryId: categoryId !== "all" ? categoryId : undefined,
+    categoryStatus: categoryStatus !== "all" ? categoryStatus : undefined,
+    submittedFrom: range.from,
+    submittedTo: range.to,
+  };
+
   const isRequestsTab = activeTab === "requests";
-  const { data: activeData, isLoading: isLoadingActive } = useResidentRequestsQuery({
+  const {
+    data: activeData,
+    isLoading: isLoadingActive,
+    isError: isErrorActive,
+    isFetching: isFetchingActive,
+    refetch: refetchActive,
+  } = useResidentRequestsQuery({
     status: activeStatusQuery,
     search: trimmedSearch,
     limit: isRequestsTab ? undefined : 1,
+    ...extraFilters,
   });
 
   const historyStatusQuery =
     status !== "all" ? status : "rejected,completed,withdrawn";
 
   const isHistoryTab = activeTab === "history";
-  const { data: historyData, isLoading: isLoadingHistory } = useResidentRequestsQuery({
+  const {
+    data: historyData,
+    isLoading: isLoadingHistory,
+    isError: isErrorHistory,
+    isFetching: isFetchingHistory,
+    refetch: refetchHistory,
+  } = useResidentRequestsQuery({
     status: historyStatusQuery,
     search: trimmedSearch,
     limit: isHistoryTab ? undefined : 1,
+    ...extraFilters,
   });
 
   const isDraftsTab = activeTab === "drafts";
@@ -120,6 +160,14 @@ export function useRequestsList(activeTab: RequestsTabType = "requests") {
   const historyRequests = (isHistoryTab && historyData?.requests) || EMPTY_REQUESTS;
   const draftRequests = (isDraftsTab && draftsData?.drafts) || EMPTY_DRAFTS;
 
+  const isError = (isRequestsTab && isErrorActive) || (isHistoryTab && isErrorHistory);
+  const isRetrying = (isRequestsTab && isFetchingActive) || (isHistoryTab && isFetchingHistory);
+  const retry = () => {
+    if (isRequestsTab) void refetchActive();
+    if (isHistoryTab) void refetchHistory();
+  };
+  const dateRangeError = submittedFrom && submittedTo && submittedFrom > submittedTo;
+
   return {
     activeRequests,
     activeTotalCount,
@@ -135,10 +183,17 @@ export function useRequestsList(activeTab: RequestsTabType = "requests") {
     setSearch,
     status,
     setStatus,
-    requestTypeId: "all",
-    setRequestTypeId: () => {},
-    period: "all" as DatePeriod,
-    setPeriod: () => {},
+    categoryId,
+    setCategory,
+    categoryStatus,
+    setCategoryStatus,
+    submittedFrom,
+    submittedTo,
+    setDateRange,
+    dateRangeInvalid: !!dateRangeError,
+    isError,
+    isRetrying,
+    retry,
     resetFilters,
   };
 }

@@ -480,6 +480,7 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
               <RequestTypeCard
                 key={cat.id}
                 category={cat}
+                query={categorySearch}
                 onSelect={() => handleSelectCategory(cat)}
               />
             ))}

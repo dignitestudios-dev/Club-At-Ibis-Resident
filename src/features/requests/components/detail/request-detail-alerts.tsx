@@ -121,11 +121,11 @@ export function RequestDetailAlerts({
         </div>
       )}
 
-      {(request.status === "submitted" || request.status === "under_review") && (
+      {(request.status === "submitted" || request.status === "assigned" || request.status === "under_review") && (
         <Alert className="border-sky-200 dark:border-sky-800/60 bg-sky-50/80 dark:bg-sky-950/40 min-w-0 break-words [overflow-wrap:anywhere]">
           <Info className="size-4 text-sky-700 dark:text-sky-400 shrink-0" aria-hidden="true" />
           <AlertTitle className="text-sky-900 dark:text-sky-200">
-            {request.status === "submitted" ? "Request Submitted" : "Under ARB Review"}
+            {request.status === "submitted" ? "Request Submitted" : "Review Started"}
           </AlertTitle>
           <AlertDescription className="text-sky-800 dark:text-sky-300 break-words [overflow-wrap:anywhere]">
             This request is currently under review by the Architectural Review Board. Submissions are locked and cannot be edited while in review unless changes are specifically requested by a reviewer.

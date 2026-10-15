@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, RotateCcw, SlidersHorizontal } from "lucide-react";
+import { Check, ChevronDown, RotateCcw, SlidersHorizontal } from "lucide-react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/utils/cn";
@@ -13,6 +13,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SearchInput } from "@/components/shared/search-input";
+import { DateRangeFilter } from "@/components/shared/date-range-filter";
+import { FilterSidebar, FiltersButton } from "@/components/shared/filter-sidebar";
 
 interface FilterOption<T> {
   label: string;
@@ -22,16 +24,18 @@ interface FilterOption<T> {
 interface RequestsFilterToolbarProps {
   search: string;
   onSearchChange: (value: string) => void;
-  status: RequestStatus | "all";
-  onStatusChange: (status: RequestStatus | "all") => void;
-  statusOptions: FilterOption<RequestStatus | "all">[];
+  status: string;
+  onStatusChange: (status: string) => void;
+  statusOptions: FilterOption<string>[];
   statusPlaceholder?: string;
-  requestTypeId?: string;
-  onRequestTypeChange?: (typeId: string) => void;
   categoryOptions?: FilterOption<string>[];
-  period?: string;
-  onPeriodChange?: (period: any) => void;
-  periodOptions?: FilterOption<any>[];
+  categoryId?: string;
+  onCategoryChange?: (id: string) => void;
+  categoryStatus?: string;
+  onCategoryStatusChange?: (status: string) => void;
+  submittedFrom?: string;
+  submittedTo?: string;
+  onDateRangeChange?: (range: { from: string; to: string }) => void;
   hasActiveFilters: boolean;
   filteredCount: number;
   totalCount: number;
@@ -46,6 +50,14 @@ export function RequestsFilterToolbar({
   onStatusChange,
   statusOptions,
   statusPlaceholder = "Filter by status",
+  categoryOptions,
+  categoryId = "all",
+  onCategoryChange,
+  categoryStatus = "all",
+  onCategoryStatusChange,
+  submittedFrom = "",
+  submittedTo = "",
+  onDateRangeChange,
   hasActiveFilters,
   filteredCount,
   totalCount,
@@ -54,13 +66,22 @@ export function RequestsFilterToolbar({
 }: RequestsFilterToolbarProps) {
   const isMobile = useIsMobile();
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const extraActive = [categoryId !== "all", categoryStatus !== "all", !!submittedFrom || !!submittedTo].filter(Boolean).length;
+  const [moreOpen, setMoreOpen] = useState(false);
+  const hasExtra = !!(onCategoryChange || onCategoryStatusChange || onDateRangeChange);
+  const categoryItems = [{ label: "All categories", value: "all" }, ...(categoryOptions ?? [])];
+  const categoryStatusItems = [
+    { label: "All", value: "all" },
+    { label: "Active", value: "active" },
+    { label: "Archived", value: "archived" },
+  ];
   const activeLabel = statusOptions.find((o) => o.value === status)?.label;
 
   return (
     <div className="space-y-2.5" role="search" aria-label="Requests filter toolbar">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
         {/* Search Input with 1s Debounce */}
-        <div className="lg:col-span-2">
+        <div className="min-w-0 flex-1">
           <SearchInput
             value={search}
             onChange={onSearchChange}
@@ -121,10 +142,10 @@ export function RequestsFilterToolbar({
         <Select
           items={statusOptions}
           value={status}
-          onValueChange={(v) => onStatusChange(v as RequestStatus | "all")}
+          onValueChange={(v) => onStatusChange(v ?? "all")}
         >
           <SelectTrigger
-            className="w-full bg-card dark:bg-card border-border"
+            className="w-full bg-card dark:bg-card border-border sm:w-56"
             aria-label="Filter requests by status"
           >
             <SelectValue placeholder={statusPlaceholder} />
@@ -138,7 +159,53 @@ export function RequestsFilterToolbar({
           </SelectContent>
         </Select>
         )}
+
+        {/* The Filters button sits in the same row as the search and the status filter. */}
+        {hasExtra && <FiltersButton count={extraActive} onClick={() => setMoreOpen(true)} expanded={moreOpen} />}
       </div>
+
+      {/* More filters: category, category status and submitted date range, in a sidebar */}
+      {hasExtra && (
+        <>
+          <FilterSidebar open={moreOpen} onOpenChange={setMoreOpen} title="More filters" onClear={onResetFilters} clearDisabled={!hasActiveFilters}>
+            {onCategoryChange && (
+              <div className="space-y-1.5">
+                <span className="block text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Category</span>
+                <Select items={categoryItems} value={categoryId} onValueChange={(v) => onCategoryChange(v ?? "all")}>
+                  <SelectTrigger className="w-full border-border bg-card dark:bg-card" aria-label="Filter by category">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categoryItems.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            {onCategoryStatusChange && (
+              <div className="space-y-1.5">
+                <span className="block text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Category status</span>
+                <Select items={categoryStatusItems} value={categoryStatus} onValueChange={(v) => onCategoryStatusChange(v ?? "all")}>
+                  <SelectTrigger className="w-full border-border bg-card dark:bg-card" aria-label="Filter by category status">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categoryStatusItems.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            {onDateRangeChange && <DateRangeFilter from={submittedFrom} to={submittedTo} onChange={onDateRangeChange} idPrefix="resident-submitted" stacked />}
+          </FilterSidebar>
+        </>
+      )}
 
       {/* Active Filter Clear Trigger */}
       {hasActiveFilters && (
@@ -154,10 +221,10 @@ export function RequestsFilterToolbar({
             type="button"
             onClick={onResetFilters}
             className="inline-flex items-center gap-1 font-medium text-primary hover:underline cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary rounded"
-            aria-label="Reset all search filters"
+            aria-label="Clear all filters"
           >
             <RotateCcw className="size-3" aria-hidden="true" />
-            Reset filters
+            Clear all filters
           </button>
         </div>
       )}

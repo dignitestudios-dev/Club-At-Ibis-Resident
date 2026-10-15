@@ -202,6 +202,7 @@ export default function DraftsListPage() {
             <DraftCard
               key={draft.id}
               draft={draft}
+              query={search}
               selected={selectedDraftIds.includes(draft.id)}
               onToggleSelect={handleToggleSelect}
               onDelete={deleteDraft}
