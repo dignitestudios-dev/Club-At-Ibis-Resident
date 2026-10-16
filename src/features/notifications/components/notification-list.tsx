@@ -49,6 +49,7 @@ export default function NotificationList() {
     isFetching,
     refresh,
     unreadCount,
+    totalCount,
     markRead,
     markAllRead,
     isMarkingAllRead,
@@ -142,9 +143,9 @@ export default function NotificationList() {
                 ? "bg-white/20 text-white"
                 : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
             )}
-            aria-label={`${notifications.length} total notifications`}
+            aria-label={`${totalCount} total notifications`}
           >
-            {notifications.length}
+            {totalCount}
           </span>
         </button>
 

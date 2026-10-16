@@ -187,7 +187,9 @@ export function RequestDetailAlerts({
         </div>
       )}
 
-      {request.status === "approved" && (
+      {request.status === "approved" && (() => {
+        const approvedLetter = request.completion?.finalApprovalLetter ?? request.approvalLetter;
+        return (
         <div
           role="status"
           className="flex items-start gap-3 rounded-2xl border border-emerald-300 bg-emerald-100 p-4 dark:border-emerald-700/60 dark:bg-emerald-950/40"
@@ -196,7 +198,9 @@ export function RequestDetailAlerts({
           <div className="min-w-0 flex-1 space-y-1 text-sm">
             <p className="font-semibold text-emerald-950 dark:text-emerald-200">Request Approved</p>
             <p className="text-emerald-900 dark:text-emerald-300">
-              {request.deposit?.required
+              {approvedLetter
+                ? "Your final approval letter is ready to download."
+                : request.deposit?.required
                 ? `A deposit${request.deposit.amount ? ` of $${Number(request.deposit.amount).toLocaleString()}` : ""} is required. Once the deposit and final approval documentation are recorded, you will be notified.`
                 : "Final processing (final approval letter) is in progress. You will be notified once this request is marked completed."}
             </p>
@@ -207,8 +211,16 @@ export function RequestDetailAlerts({
               </p>
             )}
           </div>
+          {approvedLetter && (
+            <DownloadLetterButton
+              requestId={request.id}
+              file={approvedLetter}
+              label="Download approval letter"
+            />
+          )}
         </div>
-      )}
+        );
+      })()}
 
       {request.status === "completed" && (
         <Alert className="border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/40">

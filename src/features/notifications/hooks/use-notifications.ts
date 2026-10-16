@@ -2,7 +2,7 @@
 
 import { useMemo, useCallback } from "react";
 import { useCurrentUser } from "@/hooks/use-current-user";
-import { useNotificationsQuery, useUnreadNotificationCountQuery } from "@/features/notifications/api/notifications.queries";
+import { useNotificationMetaQuery, useNotificationsQuery, useUnreadNotificationCountQuery } from "@/features/notifications/api/notifications.queries";
 import {
   useMarkAllNotificationsReadMutation,
   useMarkNotificationReadMutation,
@@ -12,6 +12,7 @@ export function useNotifications() {
   const user = useCurrentUser();
   const { data: notifications, isLoading, isFetching, refetch } = useNotificationsQuery(user?.id);
   const { data: unreadTotal, refetch: refetchUnread } = useUnreadNotificationCountQuery(user?.id);
+  const { data: meta } = useNotificationMetaQuery(user?.id);
   const markRead = useMarkNotificationReadMutation();
   const markAllRead = useMarkAllNotificationsReadMutation();
 
@@ -49,6 +50,7 @@ export function useNotifications() {
     isFetching,
     refresh,
     unreadCount,
+    totalCount: Math.max(meta?.total ?? 0, notificationsList.length),
     markRead: handleMarkRead,
     markAllRead: handleMarkAllRead,
     isMarkingAllRead: markAllRead.isPending,
