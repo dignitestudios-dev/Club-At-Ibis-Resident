@@ -9,6 +9,8 @@ interface RequestHoaCardProps {
   onCheckedChange: (checked: boolean) => void;
   error?: string;
   disabled?: boolean;
+  /** The category also needs the HOA Approval Confirmation Letter uploaded. */
+  letterRequired?: boolean;
 }
 
 export function RequestHoaCard({
@@ -16,6 +18,7 @@ export function RequestHoaCard({
   onCheckedChange,
   error,
   disabled,
+  letterRequired,
 }: RequestHoaCardProps) {
   const hasError = !disabled && !!error;
 
@@ -77,7 +80,7 @@ export function RequestHoaCard({
           </p>
 
           <p id="hoa-helper-text" className="text-xs text-muted-foreground leading-relaxed">
-            The Club at Ibis Architectural Review Board requires prior written HOA approval from your sub-association before processing this request. Upload your HOA Approval Confirmation Letter in the Documents step.
+            The Club at Ibis Architectural Review Board requires prior written HOA approval from your sub-association before processing this request.{letterRequired ? " Tick the box to upload your HOA Approval Confirmation Letter below." : ""}
           </p>
         </div>
 

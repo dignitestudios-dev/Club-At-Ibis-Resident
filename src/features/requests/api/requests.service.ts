@@ -303,7 +303,7 @@ export async function migrateDraftForm(
 /**
  * Submit a completed draft with HOA approval confirmation.
  * Backend POST /requests/:id/submit requires expectedDraftRevision;
- * hoaConfirmed (true) is sent only when the category requires HOA approval.
+ * hoaConfirmed is always sent.
  */
 export async function submitRequest(
   id: string,
@@ -313,8 +313,8 @@ export async function submitRequest(
   const cleanBody: Record<string, any> = {
     expectedDraftRevision: payload.expectedDraftRevision,
   };
-  // Only categories that require HOA approval take the confirmation.
-  if (payload.hoaConfirmed === true) cleanBody.hoaConfirmed = true;
+  // The resident always confirms HOA approval; the backend only records it when the category requires it.
+  cleanBody.hoaConfirmed = payload.hoaConfirmed ?? payload.hoaApproved ?? true;
   if (typeof payload.expectedMediaRevision === "number") {
     cleanBody.expectedMediaRevision = payload.expectedMediaRevision;
   }

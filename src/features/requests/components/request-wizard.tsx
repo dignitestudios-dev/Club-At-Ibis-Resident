@@ -615,6 +615,7 @@ function CategoryFormWizard({
   const {
     form,
     hoaRequired,
+    hoaLetterField,
     stepIndex,
     setStepIndex,
     isReviewStep,
@@ -891,19 +892,32 @@ function CategoryFormWizard({
                 }
               />
 
-              {hoaRequired && (
-                <Controller
-                  name="hoaApproved"
-                  control={form.control}
-                  render={({ field: rhf }) => (
-                    <RequestHoaCard
-                      checked={rhf.value === true}
-                      onCheckedChange={(checked) => rhf.onChange(checked)}
-                      error={!isStaleForm ? (hoaError?.message as string | undefined) : undefined}
-                      disabled={isPending || isStaleForm}
-                    />
-                  )}
-                />
+              <Controller
+                name="hoaApproved"
+                control={form.control}
+                render={({ field: rhf }) => (
+                  <RequestHoaCard
+                    checked={rhf.value === true}
+                    onCheckedChange={(checked) => rhf.onChange(checked)}
+                    error={!isStaleForm ? (hoaError?.message as string | undefined) : undefined}
+                    disabled={isPending || isStaleForm}
+                    letterRequired={hoaRequired}
+                  />
+                )}
+              />
+
+              {hoaRequired && hoaLetterField && form.watch("hoaApproved") === true && (
+                <div className="rounded-2xl border border-border/90 bg-card p-4 sm:p-5">
+                  <DynamicField
+                    field={hoaLetterField}
+                    control={form.control}
+                    errors={form.formState.errors}
+                    disabled={isPending || isStaleForm}
+                    requestId={currentDraftId ?? undefined}
+                    mediaRevision={mediaRevision}
+                    onMediaRevisionChange={onMediaRevisionChange}
+                  />
+                </div>
               )}
             </div>
           )}

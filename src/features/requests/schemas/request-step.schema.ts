@@ -312,19 +312,17 @@ export function buildStepSchema(fields: FieldConfig[]) {
   return z.object(shape);
 }
 
-export function buildCategoryFormSchema(
-  fields: FieldConfig[],
-  options: { hoaRequired?: boolean } = {}
-) {
+export function buildCategoryFormSchema(fields: FieldConfig[]) {
   const dataShape = buildStepSchema(fields).shape;
   return z.object({
     ...dataShape,
-    // Only categories that require HOA approval need the confirmation.
-    hoaApproved: options.hoaRequired
-      ? z.boolean().refine((v) => v === true, {
-          message: "You must confirm HOA approval before submitting.",
-        })
-      : z.boolean().optional(),
+    // The HOA confirmation checkbox is always required. Whether the HOA letter
+    // must also be uploaded comes from the category (a system file field).
+    hoaApproved: z
+      .boolean()
+      .refine((v) => v === true, {
+        message: "You must confirm HOA approval before submitting.",
+      }),
   });
 }
 

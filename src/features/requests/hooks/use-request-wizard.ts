@@ -38,6 +38,8 @@ export interface ParsedBackendErrors {
   generalErrors: string[];
 }
 
+const HOA_LETTER_FIELD_ID = "hoaConfirmationLetter";
+
 export function parseBackendErrors(err: any): ParsedBackendErrors {
   const fieldErrors: Record<string, string> = {};
   const generalErrors: string[] = [];
@@ -262,14 +264,21 @@ export function useRequestWizard(
     [sourcedFields]
   );
 
+  // The HOA confirmation letter is uploaded on the Review step, right under the
+  // HOA checkbox, so it is kept out of the Documents step.
+  const hoaLetterField: FieldConfig | undefined = useMemo(
+    () => sourcedFields.find((f) => f.id === HOA_LETTER_FIELD_ID && f.type === "file"),
+    [sourcedFields]
+  );
+
   const documentFields: FieldConfig[] = useMemo(
-    () => sourcedFields.filter((f) => f.type === "file"),
+    () => sourcedFields.filter((f) => f.type === "file" && f.id !== HOA_LETTER_FIELD_ID),
     [sourcedFields]
   );
 
   const allFields = useMemo(
-    () => [...commonFields, ...categoryFields, ...documentFields],
-    [commonFields, categoryFields, documentFields]
+    () => [...commonFields, ...categoryFields, ...documentFields, ...(hoaLetterField ? [hoaLetterField] : [])],
+    [commonFields, categoryFields, documentFields, hoaLetterField]
   );
 
   const steps: WizardStep[] = useMemo(
@@ -296,13 +305,13 @@ export function useRequestWizard(
     [commonFields, categoryFields, documentFields]
   );
 
-  // Whether this category form version needs the HOA confirmation + letter.
+  // Whether this category form version also needs the HOA confirmation letter upload.
   // Starts from the draft/form, then follows the form after a migration.
   const [hoaRequired, setHoaRequired] = useState<boolean>(
     initialDraft?.hoaApprovalRequired ?? hoaApprovalRequiredInitial ?? false
   );
 
-  const schema = useMemo(() => buildCategoryFormSchema(allFields, { hoaRequired }), [allFields, hoaRequired]);
+  const schema = useMemo(() => buildCategoryFormSchema(allFields), [allFields]);
 
   const initialFormValues = useMemo(() => {
     const defaults = defaultValuesForFields(allFields);
@@ -978,19 +987,22 @@ export function useRequestWizard(
       return;
     }
 
-    if (hoaRequired && values.hoaApproved !== true) {
+    if (values.hoaApproved !== true) {
       form.setError("hoaApproved", { message: "HOA confirmation is required before submission." });
       toast.error("Validation error", "You must confirm HOA approval before submitting.");
       scrollToFirstError("#hoaApproved");
       return;
     }
 
-    const unfinishedUpload = documentFields.some((field) => {
+    const uploadFields = hoaLetterField ? [...documentFields, hoaLetterField] : documentFields;
+    const unfinishedUpload = uploadFields.some((field) => {
       const rows = (values[field.id] as DropzoneFile[]) ?? [];
       return rows.some((f) => f.status === "uploading" || f.status === "verifying" || f.status === "failed");
     });
     if (unfinishedUpload) {
-      setStepIndex(2);
+      if (documentFields.some((f) => ((values[f.id] as DropzoneFile[]) ?? []).some((r) => r.status === "uploading" || r.status === "verifying" || r.status === "failed"))) {
+        setStepIndex(2);
+      }
       toast.error("Documents not ready", "Wait for every upload to finish, or remove/retry a failed one, before submitting.");
       scrollToFirstError();
       return;
@@ -1075,7 +1087,8 @@ export function useRequestWizard(
           payload: {
             expectedDraftRevision: rev,
             expectedMediaRevision: mediaRevisionRef.current,
-            ...(hoaRequired ? { hoaConfirmed: true, hoaApproved: true } : {}),
+            hoaConfirmed: true,
+            hoaApproved: true,
           },
           idempotencyKey,
         },
@@ -1158,6 +1171,7 @@ export function useRequestWizard(
   return {
     form,
     hoaRequired,
+    hoaLetterField,
     stepIndex,
     setStepIndex,
     isReviewStep,
