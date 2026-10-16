@@ -47,7 +47,7 @@ export function useProfile() {
           dispatch(setUser(updated));
           toast.success("Profile updated.");
         },
-        onError: () => toast.error("Unable to update your profile."),
+        onError: (err: any) => toast.error("Unable to update your profile.", err?.message),
       }
     );
   }

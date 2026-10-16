@@ -144,23 +144,20 @@ export async function changePassword(payload: ChangePasswordPayload): Promise<vo
   });
 }
 
+/**
+ * PATCH /auth/me (resident only): firstName, lastName and a nullable phone.
+ * An empty phone is sent as null to clear it.
+ */
 export async function updateProfile(
   _id: string,
   updates: ProfileFormData
 ): Promise<PublicResident> {
-  // In v1, profile details are saved and cached in user session
-  const current = await getCurrentUser();
-  const updated: PublicResident = {
-    id: current?.id || _id,
-    residentIdNumber: current?.residentIdNumber || "",
-    email: current?.email || "",
-    firstName: updates.firstName,
-    lastName: updates.lastName || "",
-    phone: updates.phone,
-    address: current?.address,
-    lotNo: current?.lotNo,
-    createdAt: current?.createdAt || new Date().toISOString(),
-  };
+  const { data } = await axiosInstance.patch("/auth/me", {
+    firstName: updates.firstName.trim(),
+    lastName: (updates.lastName ?? "").trim(),
+    phone: updates.phone?.trim() ? updates.phone.trim() : null,
+  });
+  const updated = toPublicResident(data.data.user);
   localStorage.setItem("auth-user", JSON.stringify(updated));
   return updated;
 }
