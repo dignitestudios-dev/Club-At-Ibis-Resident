@@ -40,7 +40,10 @@ export function FileDropzone({
   onMediaRevisionChange,
   replacesFileId,
   onUploadComplete,
+  compact = false,
 }: {
+  /** Renders a small "Upload" button instead of the large drop area. */
+  compact?: boolean;
   value?: DropzoneFile[];
   onChange: (files: DropzoneFile[]) => void;
   accept?: string;
@@ -271,7 +274,35 @@ export function FileDropzone({
 
   return (
     <div className="space-y-2">
-      {!disabled && (
+      {!disabled && compact && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className={cn(
+              "inline-flex h-9 items-center gap-2 rounded-lg border bg-white px-3.5 text-sm font-medium text-primary shadow-2xs transition-colors hover:bg-primary/5 dark:bg-card",
+              invalid ? "border-destructive text-destructive" : "border-input"
+            )}
+          >
+            <Upload className="size-4" aria-hidden="true" />
+            {value.length > 0 ? "Replace letter" : "Upload letter"}
+          </button>
+          <span className="text-xs text-muted-foreground">PDF, Word or image · max 30MB</span>
+          <input
+            ref={inputRef}
+            type="file"
+            className="hidden"
+            accept={accept}
+            multiple={multiple}
+            onChange={(e) => {
+              addFiles(e.target.files);
+              e.target.value = "";
+            }}
+          />
+        </div>
+      )}
+
+      {!disabled && !compact && (
         <div
           role="button"
           tabIndex={0}

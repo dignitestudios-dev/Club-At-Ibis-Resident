@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertCircle, CheckCircle2, ShieldCheck } from "lucide-react";
+import type { ReactNode } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/utils/cn";
 
@@ -11,6 +12,8 @@ interface RequestHoaCardProps {
   disabled?: boolean;
   /** The category also needs the HOA Approval Confirmation Letter uploaded. */
   letterRequired?: boolean;
+  /** Compact upload control for the letter, rendered inside the card. */
+  upload?: ReactNode;
 }
 
 export function RequestHoaCard({
@@ -19,16 +22,16 @@ export function RequestHoaCard({
   error,
   disabled,
   letterRequired,
+  upload,
 }: RequestHoaCardProps) {
   const hasError = !disabled && !!error;
 
   return (
     <div id="hoa-approval-section" className="space-y-2 pt-1" role="group" aria-labelledby="hoa-approval-title">
-      <label
-        htmlFor="hoaApproved"
+      <div
         className={cn(
-          "group relative flex items-start gap-3.5 sm:gap-4 rounded-2xl border p-4.5 sm:p-5 transition-all duration-200 select-none",
-          disabled ? "opacity-60 cursor-not-allowed bg-muted/30 border-border/70" : "cursor-pointer",
+          "group relative flex items-start gap-3.5 sm:gap-4 rounded-2xl border p-4.5 sm:p-5 transition-all duration-200",
+          disabled && "opacity-60 bg-muted/30 border-border/70",
           checked
             ? "border-emerald-500/60 bg-emerald-50/40 dark:bg-emerald-950/20 shadow-2xs ring-1 ring-emerald-500/20"
             : hasError
@@ -52,9 +55,9 @@ export function RequestHoaCard({
         {/* Center Content */}
         <div className="min-w-0 flex-1 space-y-1.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <span id="hoa-approval-title" className="font-heading text-sm sm:text-base font-semibold text-foreground">
+            <label htmlFor="hoaApproved" id="hoa-approval-title" className={cn(!disabled && "cursor-pointer", "font-heading text-sm sm:text-base font-semibold text-foreground")}>
               Homeowners Association (HOA) Approval
-            </span>
+            </label>
             <span
               className={cn(
                 "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] sm:text-[11px] font-semibold tracking-wide uppercase transition-colors",
@@ -80,8 +83,10 @@ export function RequestHoaCard({
           </p>
 
           <p id="hoa-helper-text" className="text-xs text-muted-foreground leading-relaxed">
-            The Club at Ibis Architectural Review Board requires prior written HOA approval from your sub-association before processing this request.{letterRequired ? " Tick the box to upload your HOA Approval Confirmation Letter below." : ""}
+            The Club at Ibis Architectural Review Board requires prior written HOA approval from your sub-association before processing this request.{letterRequired ? " Upload your HOA Approval Confirmation Letter below, or tick the box to confirm." : ""}
           </p>
+
+          {letterRequired && upload && <div className="pt-1.5">{upload}</div>}
         </div>
 
         {/* Right Checkbox */}
@@ -102,7 +107,7 @@ export function RequestHoaCard({
             )}
           />
         </div>
-      </label>
+      </div>
 
       {hasError && (
         <div

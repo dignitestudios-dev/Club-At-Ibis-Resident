@@ -41,6 +41,7 @@ import { SearchInput } from "@/components/shared/search-input";
 import { StatusBadge } from "@/features/requests/components/status-badge";
 import { Stepper } from "@/features/requests/components/stepper";
 import { DynamicField } from "@/features/requests/components/dynamic-field";
+import { FileDropzone } from "@/features/requests/components/file-dropzone";
 import { RequestTypeCard } from "@/features/requests/components/request-type-card";
 import { RequestReview } from "@/features/requests/components/request-review";
 import { RequestHoaCard } from "@/features/requests/components/wizard/request-hoa-card";
@@ -902,23 +903,45 @@ function CategoryFormWizard({
                     error={!isStaleForm ? (hoaError?.message as string | undefined) : undefined}
                     disabled={isPending || isStaleForm}
                     letterRequired={hoaRequired}
+                    upload={
+                      hoaLetterField ? (
+                        <Controller
+                          name={hoaLetterField.id}
+                          control={form.control}
+                          render={({ field: letter }) => {
+                            const letterError = form.formState.errors[hoaLetterField.id];
+                            return (
+                              <div className="space-y-1.5">
+                                <FileDropzone
+                                  compact
+                                  value={(letter.value as DropzoneFile[]) ?? []}
+                                  onChange={(files: DropzoneFile[]) => {
+                                    letter.onChange(files);
+                                    // Uploading the letter confirms HOA approval.
+                                    if (files.length > 0 && rhf.value !== true) rhf.onChange(true);
+                                  }}
+                                  accept=".png,.jpg,.jpeg,.pdf,.docx,image/png,image/jpeg,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                  disabled={isPending || isStaleForm}
+                                  invalid={!isStaleForm && !!letterError}
+                                  requestId={currentDraftId ?? undefined}
+                                  fieldId={hoaLetterField.id}
+                                  mediaRevision={mediaRevision}
+                                  onMediaRevisionChange={onMediaRevisionChange}
+                                />
+                                {!isStaleForm && letterError && (
+                                  <p role="alert" className="text-xs font-medium text-destructive">
+                                    {(letterError as { message?: string }).message}
+                                  </p>
+                                )}
+                              </div>
+                            );
+                          }}
+                        />
+                      ) : undefined
+                    }
                   />
                 )}
               />
-
-              {hoaRequired && hoaLetterField && form.watch("hoaApproved") === true && (
-                <div className="rounded-2xl border border-border/90 bg-card p-4 sm:p-5">
-                  <DynamicField
-                    field={hoaLetterField}
-                    control={form.control}
-                    errors={form.formState.errors}
-                    disabled={isPending || isStaleForm}
-                    requestId={currentDraftId ?? undefined}
-                    mediaRevision={mediaRevision}
-                    onMediaRevisionChange={onMediaRevisionChange}
-                  />
-                </div>
-              )}
             </div>
           )}
         </Card>
