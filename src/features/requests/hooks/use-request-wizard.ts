@@ -954,6 +954,18 @@ export function useRequestWizard(
   async function handleSubmit(values: Record<string, unknown>) {
     if (!isReviewStep || isSubmittingRef.current || isPending) return;
 
+    // The HOA letter lives inside the HOA card (not a step), so check it first
+    // and point the resident at the card instead of a generic toast.
+    if (hoaRequired && hoaLetterField) {
+      const letterRows = (values[hoaLetterField.id] as DropzoneFile[] | undefined) ?? [];
+      if (letterRows.length === 0) {
+        form.setError(hoaLetterField.id, { message: "Please upload your HOA Approval Confirmation Letter (PDF or image)." });
+        toast.error("HOA letter required", "Please upload your HOA Approval Confirmation Letter before submitting.");
+        scrollToFirstError("#hoa-approval-section");
+        return;
+      }
+    }
+
     // 1. Client-side full form validation
     const isValid = await form.trigger();
     if (!isValid) {

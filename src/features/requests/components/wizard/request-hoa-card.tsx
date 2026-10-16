@@ -32,10 +32,10 @@ export function RequestHoaCard({
         className={cn(
           "group relative flex items-start gap-3.5 sm:gap-4 rounded-2xl border p-4.5 sm:p-5 transition-all duration-200",
           disabled && "opacity-60 bg-muted/30 border-border/70",
-          checked
-            ? "border-emerald-500/60 bg-emerald-50/40 dark:bg-emerald-950/20 shadow-2xs ring-1 ring-emerald-500/20"
-            : hasError
+          hasError
             ? "border-rose-400 dark:border-rose-800 bg-rose-50/40 dark:bg-rose-950/20 ring-1 ring-rose-500/20"
+            : checked
+            ? "border-emerald-500/60 bg-emerald-50/40 dark:bg-emerald-950/20 shadow-2xs ring-1 ring-emerald-500/20"
             : "border-border/90 bg-card hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50/60 dark:hover:bg-slate-800/40 shadow-2xs"
         )}
       >

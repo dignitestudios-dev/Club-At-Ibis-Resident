@@ -900,7 +900,14 @@ function CategoryFormWizard({
                   <RequestHoaCard
                     checked={rhf.value === true}
                     onCheckedChange={(checked) => rhf.onChange(checked)}
-                    error={!isStaleForm ? (hoaError?.message as string | undefined) : undefined}
+                    error={
+                      !isStaleForm
+                        ? ((hoaError?.message as string | undefined) ??
+                          (hoaLetterField
+                            ? ((form.formState.errors[hoaLetterField.id] as { message?: string } | undefined)?.message)
+                            : undefined))
+                        : undefined
+                    }
                     disabled={isPending || isStaleForm}
                     letterRequired={hoaRequired}
                     upload={
@@ -920,7 +927,7 @@ function CategoryFormWizard({
                                     // Uploading the letter confirms HOA approval.
                                     if (files.length > 0 && rhf.value !== true) rhf.onChange(true);
                                   }}
-                                  accept=".png,.jpg,.jpeg,.pdf,.docx,image/png,image/jpeg,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                  accept=".png,.jpg,.jpeg,.pdf,image/png,image/jpeg,application/pdf"
                                   disabled={isPending || isStaleForm}
                                   invalid={!isStaleForm && !!letterError}
                                   requestId={currentDraftId ?? undefined}
@@ -928,11 +935,6 @@ function CategoryFormWizard({
                                   mediaRevision={mediaRevision}
                                   onMediaRevisionChange={onMediaRevisionChange}
                                 />
-                                {!isStaleForm && letterError && (
-                                  <p role="alert" className="text-xs font-medium text-destructive">
-                                    {(letterError as { message?: string }).message}
-                                  </p>
-                                )}
                               </div>
                             );
                           }}

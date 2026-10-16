@@ -287,7 +287,7 @@ export function FileDropzone({
             <Upload className="size-4" aria-hidden="true" />
             {value.length > 0 ? "Replace letter" : "Upload letter"}
           </button>
-          <span className="text-xs text-muted-foreground">PDF, Word or image · max 30MB</span>
+          <span className="text-xs text-muted-foreground">PDF or image (PNG, JPG) · max 30MB</span>
           <input
             ref={inputRef}
             type="file"
