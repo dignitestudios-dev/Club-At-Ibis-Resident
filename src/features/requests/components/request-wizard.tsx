@@ -415,7 +415,7 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
       <div className="mx-auto max-w-3xl space-y-6 animate-in fade-in">
         <PageHeader
           title="New Request"
-          description="Choose the type of architectural request you'd like to submit."
+          description="Select the type of architectural request to begin your submission."
         />
 
         <SearchInput

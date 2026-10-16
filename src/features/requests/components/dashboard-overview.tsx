@@ -26,10 +26,10 @@ export default function DashboardOverview() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between animate-in fade-in slide-in-from-top-3 duration-500">
         <div className="space-y-1">
           <h1 className="font-heading text-2xl font-medium tracking-tight text-foreground sm:text-3xl">
-            Welcome back, {user?.firstName ?? "Resident"}
+            Welcome to your resident portal, {user?.firstName ?? "Resident"}.
           </h1>
           <p className="max-w-2xl text-sm text-muted-foreground">
-            Manage your architectural modifications, review ARB decisions, and track submittal progress.
+            See the latest updates on your requests and submissions.
           </p>
         </div>
 
@@ -115,7 +115,7 @@ export default function DashboardOverview() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="font-heading text-xl font-medium text-foreground">Recent Requests</h2>
-            <p className="text-xs text-muted-foreground">Your latest active submissions and updates</p>
+            <p className="text-xs text-muted-foreground">Check your latest requests and their current status.</p>
           </div>
           {stats.total > 0 && (
             <Link

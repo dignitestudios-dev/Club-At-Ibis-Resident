@@ -73,8 +73,8 @@ export default function NotificationList() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Notifications"
-        description="Real-time updates, reviewer feedback, and ARB decisions on your submissions."
+        title="Recent Updates"
+        description="Catch up on the latest activity and important updates."
         actions={
           <div className="flex items-center gap-2">
             <Button

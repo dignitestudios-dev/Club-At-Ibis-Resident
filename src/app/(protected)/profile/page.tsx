@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 export default function ProfilePage() {
   return (
     <div className="space-y-6">
-      <PageHeader title="My Profile" description="Manage your account details." />
+      <PageHeader title="Your Account Details" description="Manage your details and account information." />
       <ProfileForm />
     </div>
   );

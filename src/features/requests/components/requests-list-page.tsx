@@ -224,8 +224,8 @@ export default function RequestsListPage() {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="animate-in fade-in slide-in-from-top-2 duration-400">
         <PageHeader
-          title="My Requests"
-          description="Track your active architectural modifications, inspect past records, and resume saved drafts."
+          title="Your Request Activity"
+          description="Manage your requests, review past submissions, and continue saved drafts."
           actions={
             <Button
               nativeButton={false}
