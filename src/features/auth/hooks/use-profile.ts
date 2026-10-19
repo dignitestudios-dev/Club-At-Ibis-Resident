@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAppDispatch } from "@/store";
@@ -15,6 +15,7 @@ export function useProfile() {
   const dispatch = useAppDispatch();
   const toast = useToast();
   const { mutate: updateProfile, isPending } = useUpdateProfileMutation();
+  const initialized = useRef(false);
 
   const form = useForm<ProfileFormData>({
     mode: "onChange",
@@ -27,15 +28,15 @@ export function useProfile() {
   });
 
   useEffect(() => {
-    if (user) {
+    if (user && !initialized.current) {
       form.reset({
-        firstName: user.firstName,
-        lastName: user.lastName,
+        firstName: user.firstName ?? "",
+        lastName: user.lastName ?? "",
         phone: user.phone ?? "",
       });
+      initialized.current = true;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, form]);
 
   function onSubmit(data: ProfileFormData) {
     if (!user) return;
@@ -45,6 +46,11 @@ export function useProfile() {
         onSuccess: (updated) => {
           localStorage.setItem("auth-user", JSON.stringify(updated));
           dispatch(setUser(updated));
+          form.reset({
+            firstName: updated.firstName ?? "",
+            lastName: updated.lastName ?? "",
+            phone: updated.phone ?? "",
+          });
           toast.success("Profile updated.");
         },
         onError: (err: any) => toast.error("Unable to update your profile.", err?.message),
