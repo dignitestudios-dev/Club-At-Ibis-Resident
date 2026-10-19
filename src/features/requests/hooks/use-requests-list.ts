@@ -81,6 +81,7 @@ export function useRequestsList(activeTab: RequestsTabType = "requests") {
     const params = new URLSearchParams(searchParams.toString());
     params.delete("status");
     params.delete("search");
+    params.delete("q");
     params.delete("type");
     params.delete("period");
     params.delete("category");

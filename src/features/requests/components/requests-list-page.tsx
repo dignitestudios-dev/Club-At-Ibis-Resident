@@ -86,6 +86,9 @@ export default function RequestsListPage() {
   function handleTabChange(tab: RequestsTabType) {
     setActiveTab(tab);
     const params = new URLSearchParams(searchParams.toString());
+    params.delete("search");
+    params.delete("q");
+    params.delete("status");
     if (tab === "requests") {
       params.delete("tab");
     } else {
@@ -245,11 +248,7 @@ export default function RequestsListPage() {
 
       <RequestsTabsHeader
         activeTab={activeTab}
-        onTabChange={(tab) => {
-          setSearch("");
-          setStatus("all");
-          handleTabChange(tab);
-        }}
+        onTabChange={handleTabChange}
         activeCount={activeTotalCount}
         historyCount={historyTotalCount}
         draftsCount={draftsTotalCount}
