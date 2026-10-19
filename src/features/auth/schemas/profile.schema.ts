@@ -10,9 +10,7 @@ export const profileSchema = z.object({
   lastName: z
     .string()
     .trim()
+    .min(1, "Last name is required.")
     .max(30, "Last name must not exceed 30 characters.")
-    .regex(/^[a-zA-Z\s]*$/, "Last name cannot contain numbers or special characters.")
-    .optional()
-    .or(z.literal("")),
-  phone: z.string().optional(),
+    .regex(/^[a-zA-Z\s]+$/, "Last name cannot contain numbers or special characters."),
 });

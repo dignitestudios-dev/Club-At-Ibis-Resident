@@ -23,7 +23,6 @@ export function useProfile() {
     defaultValues: {
       firstName: user?.firstName ?? "",
       lastName: user?.lastName ?? "",
-      phone: user?.phone ?? "",
     },
   });
 
@@ -32,7 +31,6 @@ export function useProfile() {
       form.reset({
         firstName: user.firstName ?? "",
         lastName: user.lastName ?? "",
-        phone: user.phone ?? "",
       });
       initialized.current = true;
     }
@@ -40,16 +38,24 @@ export function useProfile() {
 
   function onSubmit(data: ProfileFormData) {
     if (!user) return;
+    const cleanFirstName = data.firstName.trim();
+    const cleanLastName = data.lastName.trim();
+
     updateProfile(
-      { id: user.id, updates: data },
+      {
+        id: user.id,
+        updates: {
+          firstName: cleanFirstName,
+          lastName: cleanLastName,
+        },
+      },
       {
         onSuccess: (updated) => {
           localStorage.setItem("auth-user", JSON.stringify(updated));
           dispatch(setUser(updated));
           form.reset({
-            firstName: updated.firstName ?? "",
-            lastName: updated.lastName ?? "",
-            phone: updated.phone ?? "",
+            firstName: updated.firstName ?? cleanFirstName,
+            lastName: updated.lastName ?? cleanLastName,
           });
           toast.success("Profile updated.");
         },

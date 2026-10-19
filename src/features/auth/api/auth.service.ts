@@ -154,8 +154,7 @@ export async function updateProfile(
 ): Promise<PublicResident> {
   const { data } = await axiosInstance.patch("/auth/me", {
     firstName: updates.firstName.trim(),
-    lastName: (updates.lastName ?? "").trim(),
-    phone: updates.phone?.trim() ? updates.phone.trim() : null,
+    lastName: updates.lastName.trim(),
   });
   const updated = toPublicResident(data.data.user);
   localStorage.setItem("auth-user", JSON.stringify(updated));

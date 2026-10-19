@@ -17,7 +17,7 @@ import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { formatDate } from "@/utils/format";
 
 import { ChangePasswordForm } from "@/features/auth/components/change-password-form";
-import { User, Calendar, Mail, Phone, Hash } from "lucide-react";
+import { User, Calendar, Mail, Hash } from "lucide-react";
 
 export default function ProfileForm() {
   const { form, onSubmit, isPending, user } = useProfile();
@@ -62,7 +62,8 @@ export default function ProfileForm() {
                   </Field>
                   <Field data-invalid={!!errors.lastName}>
                     <FieldLabel htmlFor="lastName">
-                      Last Name <span className="text-xs text-muted-foreground font-normal">(Optional)</span>
+                      Last Name
+                      <span className="text-red-500 font-bold ml-0.5 text-sm leading-none" aria-hidden="true">*</span>
                     </FieldLabel>
                     <FieldContent>
                       <Input
@@ -84,27 +85,13 @@ export default function ProfileForm() {
                       <Input id="email-readonly" value={user.email} disabled />
                     </FieldContent>
                   </Field>
-                  <Field data-invalid={!!errors.phone}>
-                    <FieldLabel htmlFor="phone">Phone</FieldLabel>
+                  <Field>
+                    <FieldLabel htmlFor="residentId-readonly">Resident ID</FieldLabel>
                     <FieldContent>
-                      <Input
-                        id="phone"
-                        placeholder="(561) 555-0100"
-                        maxLength={20}
-                        disabled={isPending}
-                        {...register("phone")}
-                      />
-                      <FieldError errors={errors.phone ? [errors.phone] : []} />
+                      <Input id="residentId-readonly" value={user.residentIdNumber} disabled />
                     </FieldContent>
                   </Field>
                 </div>
-
-                <Field>
-                  <FieldLabel htmlFor="residentId-readonly">Resident ID</FieldLabel>
-                  <FieldContent>
-                    <Input id="residentId-readonly" value={user.residentIdNumber} disabled />
-                  </FieldContent>
-                </Field>
 
                 <div className="pt-2">
                   <Button type="submit" disabled={isPending}>

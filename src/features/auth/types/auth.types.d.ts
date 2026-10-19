@@ -29,7 +29,7 @@ interface RegisterPayload {
 
 interface ProfileFormData {
   firstName: string;
-  lastName?: string;
+  lastName: string;
   phone?: string;
 }
 
