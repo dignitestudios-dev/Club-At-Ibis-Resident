@@ -13,6 +13,17 @@ function toNotificationRecord(raw: any, residentId?: string): NotificationRecord
   };
 }
 
+export interface UserNotificationsPageResult {
+  notifications: NotificationRecord[];
+  unreadCount: number;
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
 export async function getNotificationsForResident(
   residentId: string
 ): Promise<NotificationRecord[]> {
@@ -22,6 +33,37 @@ export async function getNotificationsForResident(
     return list.map((n: any) => toNotificationRecord(n, residentId));
   } catch {
     return [];
+  }
+}
+
+export async function getNotificationsPageForResident(params: {
+  residentId?: string;
+  page?: number;
+  limit?: number;
+  status?: "all" | "unread" | "read";
+} = {}): Promise<UserNotificationsPageResult> {
+  const { residentId, page = 1, limit = 20, status = "all" } = params;
+  try {
+    const { data } = await axiosInstance.get("/notifications", {
+      params: { page, limit, status },
+    });
+    const list = data?.data?.notifications || data?.notifications || [];
+    return {
+      notifications: list.map((n: any) => toNotificationRecord(n, residentId)),
+      unreadCount: Number(data?.data?.unreadCount ?? 0) || 0,
+      pagination: {
+        page: Number(data?.pagination?.page ?? page) || page,
+        limit: Number(data?.pagination?.limit ?? limit) || limit,
+        total: Number(data?.pagination?.total ?? 0) || 0,
+        totalPages: Number(data?.pagination?.totalPages ?? 1) || 1,
+      },
+    };
+  } catch {
+    return {
+      notifications: [],
+      unreadCount: 0,
+      pagination: { page, limit, total: 0, totalPages: 1 },
+    };
   }
 }
 

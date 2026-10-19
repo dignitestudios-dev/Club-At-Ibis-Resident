@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useCallback, useTransition } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Bell, CheckCheck, Layers, RefreshCw } from "lucide-react";
+import { Bell, CheckCheck, Layers, Loader2, RefreshCw } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NotificationItem } from "@/features/notifications/components/notification-item";
-import { useNotifications } from "@/features/notifications/hooks/use-notifications";
+import { useInfiniteNotifications } from "@/features/notifications/hooks/use-notifications";
+import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/utils/cn";
 
@@ -47,13 +48,23 @@ export default function NotificationList() {
     notifications,
     isLoading,
     isFetching,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
     refresh,
     unreadCount,
     totalCount,
     markRead,
     markAllRead,
     isMarkingAllRead,
-  } = useNotifications();
+  } = useInfiniteNotifications(filter);
+
+  const { sentinelRef } = useInfiniteScroll({
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  });
+
   const toast = useToast();
 
   const filtered = notifications.filter((n) => {
@@ -94,7 +105,7 @@ export default function NotificationList() {
               aria-label="Refresh notifications"
               title="Refresh notifications"
             >
-              <RefreshCw className={cn("size-3.5", isFetching && "animate-spin")} />
+              <RefreshCw className={cn("size-3.5", isFetching && !isFetchingNextPage && "animate-spin")} />
               <span>Refresh</span>
             </Button>
             {unreadCount > 0 && (
@@ -216,6 +227,22 @@ export default function NotificationList() {
               onMarkRead={handleMarkOne}
             />
           ))}
+
+          {/* Infinite Scroll Sentinel */}
+          <div ref={sentinelRef} className="h-4 w-full" aria-hidden="true" />
+
+          {isFetchingNextPage && (
+            <div className="flex items-center justify-center gap-2 py-4 text-xs text-muted-foreground" aria-live="polite">
+              <Loader2 className="size-4 animate-spin text-primary" />
+              <span>Loading more notifications...</span>
+            </div>
+          )}
+
+          {!hasNextPage && filtered.length > 0 && (
+            <p className="py-4 text-center text-xs text-muted-foreground">
+              You have caught up with all notifications.
+            </p>
+          )}
         </div>
       )}
     </div>
