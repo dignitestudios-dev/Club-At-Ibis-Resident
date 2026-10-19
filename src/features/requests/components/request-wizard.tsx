@@ -97,6 +97,7 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
       clearWizardState();
       setCreatedDraft(null);
       setIsChoosingCategory(false);
+      setCategorySearch("");
     }
   }, [draftId]);
 
@@ -175,6 +176,7 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
 
   async function handleSelectCategory(cat: ActiveCategory) {
     setIsChoosingCategory(false);
+    setCategorySearch("");
     setInitializingCategory(cat);
     try {
       const key = `create-draft-${cat.id}-${Date.now()}`;
@@ -587,14 +589,11 @@ export default function RequestWizard({ draftIdProp }: { draftIdProp?: string })
         clearWizardState();
         setIsChoosingCategory(true);
         setCreatedDraft(null);
+        setCategorySearch("");
         queryClient.invalidateQueries({ queryKey: ["categories"] });
         queryClient.refetchQueries({ queryKey: ["categories"] });
         queryClient.invalidateQueries({ queryKey: ["drafts"] });
-        if (typeof window !== "undefined") {
-          window.location.href = "/requests/new";
-        } else {
-          router.replace("/requests/new");
-        }
+        router.replace("/requests/new");
       }}
     />
   );
