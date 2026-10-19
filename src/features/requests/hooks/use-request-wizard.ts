@@ -281,29 +281,34 @@ export function useRequestWizard(
     [commonFields, categoryFields, documentFields, hoaLetterField]
   );
 
-  const steps: WizardStep[] = useMemo(
-    () => [
-      {
+  const steps: WizardStep[] = useMemo(() => {
+    const list: WizardStep[] = [];
+    if (commonFields.length > 0) {
+      list.push({
         id: "project-info",
         title: "Project Information",
         description: "Tell us about the property and the proposed project.",
         fields: commonFields,
-      },
-      {
+      });
+    }
+    if (categoryFields.length > 0) {
+      list.push({
         id: "category-details",
         title: "Category Details",
         description: "Provide the category-specific information.",
         fields: categoryFields,
-      },
-      {
+      });
+    }
+    if (documentFields.length > 0) {
+      list.push({
         id: "documents",
         title: "Documents",
         description: "Upload the required documents and photos.",
         fields: documentFields,
-      },
-    ],
-    [commonFields, categoryFields, documentFields]
-  );
+      });
+    }
+    return list;
+  }, [commonFields, categoryFields, documentFields]);
 
   // Whether this category form version also needs the HOA confirmation letter upload.
   // Starts from the draft/form, then follows the form after a migration.
@@ -550,7 +555,8 @@ export function useRequestWizard(
           : "currentStep" in initialDraft && typeof initialDraft.currentStep === "number"
           ? Math.max(0, initialDraft.currentStep - 1)
           : 0;
-      setStepIndex(targetStep);
+      const clampedStep = Math.min(Math.max(0, targetStep), steps.length);
+      setStepIndex(clampedStep);
 
       const cleanVals: Record<string, FieldValue> = {};
       for (const f of allFields) {
@@ -564,13 +570,19 @@ export function useRequestWizard(
       lastSavedSignatureRef.current = JSON.stringify({
         fieldValues: cleanVals,
         uploads: initialDraft.uploads || {},
-        currentStep: targetStep + 1,
+        currentStep: clampedStep + 1,
         hoaApproved: merged.hoaApproved === true,
         hoaConfirmed: merged.hoaApproved === true,
       });
       setHasUnsavedChanges(false);
     }
-  }, [initialDraft, allFields, form]);
+  }, [initialDraft, allFields, form, steps.length]);
+
+  useEffect(() => {
+    if (stepIndex > steps.length) {
+      setStepIndex(steps.length);
+    }
+  }, [stepIndex, steps.length]);
 
   const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -881,8 +893,10 @@ export function useRequestWizard(
 
             form.reset(merged);
 
-            // Redirect user to the Category Details dynamic form (stepIndex = 1)
-            const targetStepIdx = newFields.length > 0 || categoryFields.length > 0 ? 1 : 0;
+            // Redirect user to the Category Details or Documents step if present, else first step
+            const catStepIdx = steps.findIndex((s) => s.id === "category-details");
+            const docStepIdx = steps.findIndex((s) => s.id === "documents");
+            const targetStepIdx = catStepIdx !== -1 ? catStepIdx : (docStepIdx !== -1 ? docStepIdx : 0);
             setStepIndex(targetStepIdx);
             window.scrollTo({ top: 0, behavior: "smooth" });
 
@@ -976,20 +990,24 @@ export function useRequestWizard(
       const inCategory = categoryFields.some((f) => errorFieldIds.includes(f.id));
       const inDocuments = documentFields.some((f) => errorFieldIds.includes(f.id));
 
-      if (inCommon && stepIndex !== 0) {
-        setStepIndex(0);
+      const commonStepIdx = steps.findIndex((s) => s.id === "project-info");
+      const categoryStepIdx = steps.findIndex((s) => s.id === "category-details");
+      const documentStepIdx = steps.findIndex((s) => s.id === "documents");
+
+      if (inCommon && commonStepIdx !== -1 && stepIndex !== commonStepIdx) {
+        setStepIndex(commonStepIdx);
         toast.error("Validation error", "Please complete the required project information.");
         scrollToFirstError();
         return;
       }
-      if (inCategory && stepIndex !== 1) {
-        setStepIndex(1);
+      if (inCategory && categoryStepIdx !== -1 && stepIndex !== categoryStepIdx) {
+        setStepIndex(categoryStepIdx);
         toast.error("Validation error", "Please complete the required category details.");
         scrollToFirstError();
         return;
       }
-      if (inDocuments && stepIndex !== 2) {
-        setStepIndex(2);
+      if (inDocuments && documentStepIdx !== -1 && stepIndex !== documentStepIdx) {
+        setStepIndex(documentStepIdx);
         toast.error("Validation error", "Please upload the required documents.");
         scrollToFirstError();
         return;
@@ -1012,8 +1030,11 @@ export function useRequestWizard(
       return rows.some((f) => f.status === "uploading" || f.status === "verifying" || f.status === "failed");
     });
     if (unfinishedUpload) {
+      const documentStepIdx = steps.findIndex((s) => s.id === "documents");
       if (documentFields.some((f) => ((values[f.id] as DropzoneFile[]) ?? []).some((r) => r.status === "uploading" || r.status === "verifying" || r.status === "failed"))) {
-        setStepIndex(2);
+        if (documentStepIdx !== -1) {
+          setStepIndex(documentStepIdx);
+        }
       }
       toast.error("Documents not ready", "Wait for every upload to finish, or remove/retry a failed one, before submitting.");
       scrollToFirstError();

@@ -94,25 +94,26 @@ export function RequestReview({
         categoryFields ??
         (fields ? fields.filter((f) => f.source === "category") : []);
 
+      let nextStepIndex = 0;
       const result = [];
       if (comm.length > 0) {
         result.push({
           title: "Project Information",
-          stepIndex: 0,
+          stepIndex: nextStepIndex++,
           fields: comm,
         });
       }
       if (cat.length > 0) {
         result.push({
           title: "Category Details",
-          stepIndex: comm.length > 0 ? 1 : 0,
+          stepIndex: nextStepIndex++,
           fields: cat,
         });
       }
       if (documentFields && documentFields.length > 0) {
         result.push({
           title: "Documents",
-          stepIndex: 2,
+          stepIndex: nextStepIndex++,
           fields: documentFields,
         });
       }
