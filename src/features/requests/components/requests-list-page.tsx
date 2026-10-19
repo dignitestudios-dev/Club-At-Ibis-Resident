@@ -121,8 +121,11 @@ export default function RequestsListPage() {
     resetFilters,
   } = useRequestsList(activeTab);
 
-  const { data: categoriesData } = useActiveCategoriesQuery({ limit: 100 });
-  const categoryOptions = (categoriesData?.categories ?? []).map((c) => ({ label: c.name, value: c.id }));
+  const { data: categoriesData } = useActiveCategoriesQuery({ limit: 100, includeArchived: true });
+  const categoryOptions = (categoriesData?.categories ?? []).map((c) => ({
+    label: c.status === "archived" ? `${c.name} (archived)` : c.name,
+    value: c.id,
+  }));
 
   const toast = useToast();
   const [deletingId, setDeletingId] = useState<string | null>(null);

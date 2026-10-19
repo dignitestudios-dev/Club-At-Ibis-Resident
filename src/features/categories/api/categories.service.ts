@@ -10,6 +10,7 @@ export interface GetActiveCategoriesParams {
   search?: string;
   page?: number;
   limit?: number;
+  includeArchived?: boolean;
 }
 
 function toField(f: any): CategoryFormField {
@@ -63,11 +64,14 @@ function toCategory(raw: any): ActiveCategory {
 export async function getActiveCategories(
   params?: GetActiveCategoriesParams
 ): Promise<ActiveCategoriesResult> {
-  const queryParams: Record<string, string | number> = {};
+  const queryParams: Record<string, string | number | boolean> = {};
   if (params?.page) queryParams.page = params.page;
   if (params?.limit) queryParams.limit = params.limit;
   if (params?.search && params.search.trim()) {
     queryParams.search = params.search.trim();
+  }
+  if (params?.includeArchived !== undefined) {
+    queryParams.includeArchived = params.includeArchived;
   }
 
   const { data } = await axiosInstance.get("/categories", {
