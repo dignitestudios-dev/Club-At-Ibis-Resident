@@ -92,7 +92,7 @@ export function RequestDetailAlerts({
             <Button
               size="default"
               nativeButton={false}
-              render={<Link href={`/requests/${request.id}/revise`} />}
+              render={<Link href={`/requests/${request.id}/revise`} replace />}
               className="shrink-0 bg-amber-600 hover:bg-amber-700 text-white shadow-xs font-semibold"
             >
               Revise &amp; Resubmit

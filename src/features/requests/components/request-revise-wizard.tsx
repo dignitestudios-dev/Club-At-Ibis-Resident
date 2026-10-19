@@ -178,7 +178,7 @@ export function RequestReviseWizard({ request }: { request: RequestRecord }) {
           <div className="border-t border-border/80 bg-[#F8FAFC] dark:bg-[#0D1522] px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               {stepIndex === 0 ? (
-                <Button type="button" variant="outline" nativeButton={false} render={<Link href={`/requests/${request.id}`} />}>
+                <Button type="button" variant="outline" nativeButton={false} render={<Link href={`/requests/${request.id}`} replace />}>
                   <ArrowLeft className="size-4 mr-1" />
                   Cancel
                 </Button>

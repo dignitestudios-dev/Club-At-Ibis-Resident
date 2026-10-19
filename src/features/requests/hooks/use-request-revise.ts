@@ -312,7 +312,7 @@ export function useRequestRevise(request: RequestRecord) {
     queryClient.invalidateQueries({ queryKey: ["notifications"] });
     toast.warning("Request already updated", "This request is no longer accepting corrections, so its latest details have been loaded.");
     guardAllowLeave();
-    router.push(`/requests/${request.id}`);
+    router.replace(`/requests/${request.id}`);
   }, [guardAllowLeave, queryClient, request.id, router, toast]);
 
   const triggerAutosave = useCallback(async () => {
@@ -660,7 +660,7 @@ export function useRequestRevise(request: RequestRecord) {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
       toast.success("Revised request resubmitted for ARB review.", `Reference ${saved.reference || saved.code}`);
       guardAllowLeave();
-      router.push(`/requests/${request.id}`);
+      router.replace(`/requests/${request.id}`);
     } catch (err: any) {
       const code = err?.code || err?.responseData?.code;
       const fieldId = err?.responseData?.details?.[0]?.fieldId;

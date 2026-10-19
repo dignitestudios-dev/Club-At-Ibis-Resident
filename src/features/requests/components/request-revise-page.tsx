@@ -45,9 +45,21 @@ export default function RequestRevisePage({ id }: { id: string }) {
         title="Nothing to revise"
         description="This request isn't currently awaiting a revision from you."
         action={
-          <Button nativeButton={false} render={<Link href={`/requests/${id}`} />}>
-            Back to Request Details
-          </Button>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <Button
+              variant="outline"
+              onClick={() => router.replace("/requests")}
+              aria-label="Back to requests list"
+            >
+              Back to Requests
+            </Button>
+            <Button
+              onClick={() => router.replace(`/requests/${id}`)}
+              aria-label="Back to request details"
+            >
+              Back to Request Details
+            </Button>
+          </div>
         }
       />
     );
