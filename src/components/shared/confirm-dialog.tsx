@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+import { AlertTriangle, Info } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -8,6 +10,7 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
+  AlertDialogMedia,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -25,6 +28,7 @@ export function ConfirmDialog({
   destructive = false,
   onConfirm,
   loading = false,
+  icon,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -35,8 +39,21 @@ export function ConfirmDialog({
   destructive?: boolean;
   onConfirm: () => void;
   loading?: boolean;
+  icon?: ReactNode;
 }) {
   const isMobile = useIsMobile();
+
+  const renderedMedia = icon !== undefined ? (
+    icon ? <AlertDialogMedia>{icon}</AlertDialogMedia> : null
+  ) : destructive ? (
+    <AlertDialogMedia className="bg-destructive/10 text-destructive dark:bg-destructive/20">
+      <AlertTriangle className="size-5" />
+    </AlertDialogMedia>
+  ) : (
+    <AlertDialogMedia className="bg-primary/10 text-primary dark:bg-primary/20">
+      <Info className="size-5" />
+    </AlertDialogMedia>
+  );
 
   // Phones get a native-style action sheet: stacked full-width buttons within thumb reach.
   if (isMobile) {
@@ -44,6 +61,7 @@ export function ConfirmDialog({
       <Sheet open={open} onOpenChange={(val) => !loading && onOpenChange(val)}>
         <SheetContent side="bottom" showCloseButton={false} className="px-5 pb-5">
           <div className="flex flex-col items-center gap-1.5 pt-1 text-center">
+            {renderedMedia}
             <SheetTitle className="text-lg">{title}</SheetTitle>
             <SheetDescription className="max-w-sm text-balance">{description}</SheetDescription>
           </div>
@@ -76,9 +94,10 @@ export function ConfirmDialog({
   return (
     <AlertDialog open={open} onOpenChange={(val) => !loading && onOpenChange(val)}>
       <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>{description}</AlertDialogDescription>
+        <AlertDialogHeader className="items-center text-center">
+          {renderedMedia}
+          <AlertDialogTitle className="text-center">{title}</AlertDialogTitle>
+          <AlertDialogDescription className="text-center">{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={loading}>{cancelLabel}</AlertDialogCancel>
