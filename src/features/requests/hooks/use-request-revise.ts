@@ -121,29 +121,34 @@ export function useRequestRevise(request: RequestRecord) {
     queryClient.invalidateQueries({ queryKey: ["requests", "detail", request.id] });
   }, [queryClient, request.id]);
 
-  const steps: RevisionWizardStep[] = useMemo(
-    () => [
-      {
+  const steps: RevisionWizardStep[] = useMemo(() => {
+    const list: RevisionWizardStep[] = [];
+    if (commonFields.length > 0) {
+      list.push({
         id: "project-info",
         title: "Project Information",
         description: "Only the fields flagged by the ARB below can be edited.",
         fields: commonFields,
-      },
-      {
+      });
+    }
+    if (categoryFields.length > 0) {
+      list.push({
         id: "category-details",
         title: "Category Details",
         description: "Only the fields flagged by the ARB below can be edited.",
         fields: categoryFields,
-      },
-      {
+      });
+    }
+    if (documentFields.length > 0) {
+      list.push({
         id: "documents",
         title: "Documents",
         description: "Only the documents flagged by the ARB below can be replaced.",
         fields: documentFields,
-      },
-    ],
-    [commonFields, categoryFields, documentFields]
-  );
+      });
+    }
+    return list;
+  }, [commonFields, categoryFields, documentFields]);
 
   // The baseline values from the previous submission before any draft corrections were made.
   // We extract them from the latest submission in `request.submissions`, or freeze initial `request.fieldValues`.
@@ -207,10 +212,24 @@ export function useRequestRevise(request: RequestRecord) {
     // in `allFields` than a flagged field does. Documents only wins when
     // nothing else is flagged.
     const firstFlaggedField = editableFlaggedFields[0];
-    if (firstFlaggedField) return firstFlaggedField.source === "category" ? 1 : 0;
-    if (flaggedFileFields.length > 0) return 2;
+    if (firstFlaggedField) {
+      const targetId = firstFlaggedField.source === "category" ? "category-details" : "project-info";
+      const idx = steps.findIndex((s) => s.id === targetId);
+      if (idx !== -1) return idx;
+    }
+    if (flaggedFileFields.length > 0) {
+      const docIdx = steps.findIndex((s) => s.id === "documents");
+      if (docIdx !== -1) return docIdx;
+    }
     return 0;
   });
+
+  useEffect(() => {
+    if (stepIndex > steps.length) {
+      setStepIndex(steps.length);
+    }
+  }, [stepIndex, steps.length]);
+
   const isReviewStep = stepIndex === steps.length;
   const currentStep = steps[stepIndex];
   const stepperSteps = [...steps.map((s) => ({ id: s.id, title: s.title })), { id: "review", title: "Review & Resubmit" }];
@@ -484,20 +503,25 @@ export function useRequestRevise(request: RequestRecord) {
       const inCommon = commonFields.some((f) => errorFieldIds.includes(f.id));
       const inCategory = categoryFields.some((f) => errorFieldIds.includes(f.id));
       const inDocs = documentFields.some((f) => errorFieldIds.includes(f.id));
-      if (inCommon && stepIndex !== 0) {
-        setStepIndex(0);
+
+      const commonStepIdx = steps.findIndex((s) => s.id === "project-info");
+      const categoryStepIdx = steps.findIndex((s) => s.id === "category-details");
+      const documentStepIdx = steps.findIndex((s) => s.id === "documents");
+
+      if (inCommon && commonStepIdx !== -1 && stepIndex !== commonStepIdx) {
+        setStepIndex(commonStepIdx);
         toast.error("Validation error", "Please complete the required corrections.");
         scrollToFirstError();
         return;
       }
-      if (inCategory && stepIndex !== 1) {
-        setStepIndex(1);
+      if (inCategory && categoryStepIdx !== -1 && stepIndex !== categoryStepIdx) {
+        setStepIndex(categoryStepIdx);
         toast.error("Validation error", "Please complete the required corrections.");
         scrollToFirstError();
         return;
       }
-      if (inDocs && stepIndex !== 2) {
-        setStepIndex(2);
+      if (inDocs && documentStepIdx !== -1 && stepIndex !== documentStepIdx) {
+        setStepIndex(documentStepIdx);
         toast.error("Validation error", "Please replace the required documents.");
         scrollToFirstError();
         return;
@@ -525,8 +549,11 @@ export function useRequestRevise(request: RequestRecord) {
     }
 
     if (hasUnchanged && unchangedField) {
-      const targetStep = unchangedField.source === "common" ? 0 : 1;
-      setStepIndex(targetStep);
+      const targetId = unchangedField.source === "common" ? "project-info" : "category-details";
+      const targetStep = steps.findIndex((s) => s.id === targetId);
+      if (targetStep !== -1) {
+        setStepIndex(targetStep);
+      }
       toast.error(
         "Update flagged fields before resubmitting",
         `${unchangedField.label} must be corrected before you can resubmit.`
@@ -539,7 +566,10 @@ export function useRequestRevise(request: RequestRecord) {
       return rows.some((f) => f.status === "uploading" || f.status === "verifying" || f.status === "failed");
     });
     if (unfinishedUpload) {
-      setStepIndex(2);
+      const docStepIdx = steps.findIndex((s) => s.id === "documents");
+      if (docStepIdx !== -1) {
+        setStepIndex(docStepIdx);
+      }
       toast.error("Documents not ready", "Wait for the replacement upload to finish, or retry a failed one, before resubmitting.");
       return;
     }
@@ -564,7 +594,10 @@ export function useRequestRevise(request: RequestRecord) {
     }
 
     if (hasUnchangedDoc && unchangedDocField) {
-      setStepIndex(2);
+      const docStepIdx = steps.findIndex((s) => s.id === "documents");
+      if (docStepIdx !== -1) {
+        setStepIndex(docStepIdx);
+      }
       toast.error(
         "Replace flagged document before resubmitting",
         `${unchangedDocField.label} must be replaced before you can resubmit.`
