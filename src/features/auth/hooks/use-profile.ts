@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAppDispatch } from "@/store";
@@ -15,31 +14,26 @@ export function useProfile() {
   const dispatch = useAppDispatch();
   const toast = useToast();
   const { mutate: updateProfile, isPending } = useUpdateProfileMutation();
-  const initialized = useRef(false);
 
   const form = useForm<ProfileFormData>({
     mode: "onChange",
     resolver: zodResolver(profileSchema),
-    defaultValues: {
-      firstName: user?.firstName ?? "",
-      lastName: user?.lastName ?? "",
+    values: user
+      ? {
+          firstName: user.firstName ?? "",
+          lastName: user.lastName ?? "",
+        }
+      : undefined,
+    resetOptions: {
+      keepDirtyValues: true,
     },
   });
 
-  useEffect(() => {
-    if (user && !initialized.current) {
-      form.reset({
-        firstName: user.firstName ?? "",
-        lastName: user.lastName ?? "",
-      });
-      initialized.current = true;
-    }
-  }, [user, form]);
-
   function onSubmit(data: ProfileFormData) {
     if (!user) return;
-    const cleanFirstName = data.firstName.trim();
-    const cleanLastName = data.lastName.trim();
+    const currentValues = form.getValues();
+    const cleanFirstName = (data.firstName ?? currentValues.firstName ?? "").trim();
+    const cleanLastName = (data.lastName ?? currentValues.lastName ?? "").trim();
 
     updateProfile(
       {

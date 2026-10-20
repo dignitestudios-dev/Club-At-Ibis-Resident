@@ -1,5 +1,6 @@
 "use client";
 
+import { Controller } from "react-hook-form";
 import { Save } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,7 +23,7 @@ import { User, Calendar, Mail, Hash } from "lucide-react";
 export default function ProfileForm() {
   const { form, onSubmit, isPending, user } = useProfile();
   const {
-    register,
+    control,
     handleSubmit,
     formState: { errors, isDirty },
   } = form;
@@ -44,38 +45,56 @@ export default function ProfileForm() {
             <form onSubmit={handleSubmit(onSubmit)} noValidate>
               <FieldGroup>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <Field data-invalid={!!errors.firstName}>
-                    <FieldLabel htmlFor="firstName">
-                      First Name
-                      <span className="text-red-500 font-bold ml-0.5 text-sm leading-none" aria-hidden="true">*</span>
-                    </FieldLabel>
-                    <FieldContent>
-                      <Input
-                        id="firstName"
-                        maxLength={30}
-                        disabled={isPending}
-                        aria-invalid={!!errors.firstName}
-                        {...register("firstName")}
-                      />
-                      <FieldError errors={errors.firstName ? [errors.firstName] : []} />
-                    </FieldContent>
-                  </Field>
-                  <Field data-invalid={!!errors.lastName}>
-                    <FieldLabel htmlFor="lastName">
-                      Last Name
-                      <span className="text-red-500 font-bold ml-0.5 text-sm leading-none" aria-hidden="true">*</span>
-                    </FieldLabel>
-                    <FieldContent>
-                      <Input
-                        id="lastName"
-                        maxLength={30}
-                        disabled={isPending}
-                        aria-invalid={!!errors.lastName}
-                        {...register("lastName")}
-                      />
-                      <FieldError errors={errors.lastName ? [errors.lastName] : []} />
-                    </FieldContent>
-                  </Field>
+                  <Controller
+                    name="firstName"
+                    control={control}
+                    render={({ field }) => (
+                      <Field data-invalid={!!errors.firstName}>
+                        <FieldLabel htmlFor="firstName">
+                          First Name
+                          <span className="text-red-500 font-bold ml-0.5 text-sm leading-none" aria-hidden="true">*</span>
+                        </FieldLabel>
+                        <FieldContent>
+                          <Input
+                            id="firstName"
+                            maxLength={30}
+                            disabled={isPending}
+                            aria-invalid={!!errors.firstName}
+                            value={field.value ?? ""}
+                            onChange={field.onChange}
+                            onBlur={field.onBlur}
+                            ref={field.ref}
+                          />
+                          <FieldError errors={errors.firstName ? [errors.firstName] : []} />
+                        </FieldContent>
+                      </Field>
+                    )}
+                  />
+                  <Controller
+                    name="lastName"
+                    control={control}
+                    render={({ field }) => (
+                      <Field data-invalid={!!errors.lastName}>
+                        <FieldLabel htmlFor="lastName">
+                          Last Name
+                          <span className="text-red-500 font-bold ml-0.5 text-sm leading-none" aria-hidden="true">*</span>
+                        </FieldLabel>
+                        <FieldContent>
+                          <Input
+                            id="lastName"
+                            maxLength={30}
+                            disabled={isPending}
+                            aria-invalid={!!errors.lastName}
+                            value={field.value ?? ""}
+                            onChange={field.onChange}
+                            onBlur={field.onBlur}
+                            ref={field.ref}
+                          />
+                          <FieldError errors={errors.lastName ? [errors.lastName] : []} />
+                        </FieldContent>
+                      </Field>
+                    )}
+                  />
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2">
