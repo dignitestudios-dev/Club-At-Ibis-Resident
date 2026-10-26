@@ -68,9 +68,8 @@ export function FileDropzone({
   // Allowed submission types per the backend's own v1 scope: PNG, JPG/JPEG, PDF, DOCX only
   // (no WEBP, no legacy .doc) — see club-at-ibis-backend AGENTS.md.
   const ALLOWED_EXTENSIONS = [".png", ".jpg", ".jpeg", ".pdf", ".docx"];
-  // Backend accepts up to 50MB, but documents are capped tighter here so
-  // residents get a fast, clear rejection instead of a long failed upload.
-  const MAX_FILE_SIZE_BYTES = 30 * 1024 * 1024;
+  // Rejected client-side so residents get a fast, clear message instead of a long failed upload.
+  const MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024;
   const ALLOWED_MIME_TYPES = [
     "image/png",
     "image/jpeg",
@@ -182,8 +181,8 @@ export function FileDropzone({
       toastError(
         "File too large",
         oversized.length === 1
-          ? `"${oversized[0].name}" is ${formatFileSize(oversized[0].size)}. The maximum file size is 30MB.`
-          : `${oversized.length} files exceed the 30MB maximum file size.`
+          ? `"${oversized[0].name}" is ${formatFileSize(oversized[0].size)}. The maximum file size is 100MB.`
+          : `${oversized.length} files exceed the 100MB maximum file size.`
       );
     }
     if (validFiles.length === 0) return;
@@ -259,6 +258,14 @@ export function FileDropzone({
 
   async function removeFile(row: DropzoneFile) {
     if (disabled) return;
+    // Flagged-file revision: the previously submitted file can't be deleted on
+    // the backend (SUBMITTED_FILE_IMMUTABLE); it is only superseded when the
+    // replacement upload (with `replacesFileId`) completes. So "remove" just
+    // clears the old row locally and lets the resident pick the new file.
+    if (replacesFileId) {
+      onChange(value.filter((f) => f.id !== row.id));
+      return;
+    }
     if (!row.fileId || !requestId) {
       onChange(value.filter((f) => f.id !== row.id));
       return;
@@ -303,7 +310,7 @@ export function FileDropzone({
             <Upload className="size-4" aria-hidden="true" />
             {value.length > 0 ? "Replace letter" : "Upload letter"}
           </button>
-          <span className="text-xs text-muted-foreground">PDF or image (PNG, JPG) · max 30MB</span>
+          <span className="text-xs text-muted-foreground">PDF or image (PNG, JPG) · max 100MB</span>
           <input
             ref={inputRef}
             type="file"
@@ -351,7 +358,7 @@ export function FileDropzone({
               <span className="text-primary hover:underline">Click to upload</span> or drag and drop
             </p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              {formatAcceptDisplay(accept)} · max 30MB per file
+              {formatAcceptDisplay(accept)} · max 100MB per file
             </p>
           </div>
           <input
@@ -439,10 +446,11 @@ export function FileDropzone({
                     <Eye className="size-4" />
                   </button>
                 )}
-                {/* In a flagged-file replacement (replacesFileId set), removal is
-                    never a valid action — only uploading a new file in its place
-                    is, and the backend rejects deleting a submitted file anyway. */}
-                {!disabled && !busy && !replacesFileId && (
+                {/* In a flagged-file replacement (replacesFileId set), only the
+                    previously submitted file (no local `file`) can be cleared;
+                    a file uploaded this session is already persisted as the
+                    replacement and can only be replaced again. */}
+                {!disabled && !busy && (!replacesFileId || !f.file) && (
                   <button
                     type="button"
                     onClick={() => removeFile(f)}

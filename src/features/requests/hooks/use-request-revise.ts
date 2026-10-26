@@ -455,6 +455,7 @@ export function useRequestRevise(request: RequestRecord) {
       const rows = (values[field.id] as DropzoneFile[]) ?? [];
       const hasReplacement =
         replacementSatisfiedByField.get(field.id) === true ||
+        (!field.required && rows.length === 0) ||
         rows.some((f) => f.status === "ready" && f.fileId && (!flaggedOriginalFileId || f.fileId !== flaggedOriginalFileId));
       if (!hasReplacement) {
         form.setError(field.id as any, {
@@ -582,6 +583,7 @@ export function useRequestRevise(request: RequestRecord) {
       const rows = (values[field.id] as DropzoneFile[]) ?? [];
       const hasReplacement =
         replacementSatisfiedByField.get(field.id) === true ||
+        (!field.required && rows.length === 0) ||
         rows.some((f) => f.status === "ready" && f.fileId && (!flaggedOriginalFileId || f.fileId !== flaggedOriginalFileId));
       if (!hasReplacement) {
         form.setError(field.id as any, {
