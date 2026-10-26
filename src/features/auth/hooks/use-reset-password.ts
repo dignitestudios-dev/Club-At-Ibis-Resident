@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
+import { completePasswordReset } from "@/features/auth/lib/password-reset-notice";
 import { resetPasswordSchema } from "@/features/auth/schemas/reset-password.schema";
 import { useResetPasswordMutation, useForgotPasswordMutation } from "@/features/auth/api/auth.mutations";
 import { forgotPasswordSchema } from "@/features/auth/schemas/forgot-password.schema";
@@ -44,8 +45,7 @@ export function useResetPassword(token: string) {
       { token, password: data.password },
       {
         onSuccess: () => {
-          toast.success("Password updated.", "You can now sign in with your new password.");
-          router.push("/auth/login");
+          completePasswordReset();
         },
         onError: (error: Error) => {
           const msg = error.message.toLowerCase();

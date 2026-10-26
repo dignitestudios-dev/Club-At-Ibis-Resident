@@ -41,6 +41,8 @@ export function FileDropzone({
   onMediaRevisionChange,
   replacesFileId,
   onUploadComplete,
+  canRemoveFlagged = false,
+  fileRemoved = false,
   compact = false,
 }: {
   /** Renders a small "Upload" button instead of the large drop area. */
@@ -58,10 +60,16 @@ export function FileDropzone({
   replacesFileId?: string;
   /** Called after a file finishes uploading (e.g. to refresh the request so a `replacesFileId` correction's `currentFile` is current before any further replacement). */
   onUploadComplete?: () => void;
+  /** Revision of a flagged file (`replacesFileId` set): the field is optional, so the resident may delete the submitted file instead of replacing it. */
+  canRemoveFlagged?: boolean;
+  /** Revision: the flagged file was already removed, so there is nothing left to replace. */
+  fileRemoved?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [previewFile, setPreviewFile] = useState<PreviewableFile | null>(null);
+  const [removedLocal, setRemovedLocal] = useState(false);
+  const flaggedFileRemoved = (fileRemoved || removedLocal) && value.length === 0;
   const valueRef = useRef(value);
   valueRef.current = value;
 
@@ -133,7 +141,7 @@ export function FileDropzone({
         size: file.size,
         declaredMimeType: file.type || "application/octet-stream",
         expectedMediaRevision,
-        ...(replacesFileId ? { replacesFileId } : {}),
+        ...(replacesFileId && !removedLocal ? { replacesFileId } : {}),
       });
       onMediaRevisionChange?.(intent.mediaRevision);
       patchRow(row.id, { fileId: intent.file.id, progress: 0 });
@@ -258,12 +266,22 @@ export function FileDropzone({
 
   async function removeFile(row: DropzoneFile) {
     if (disabled) return;
-    // Flagged-file revision: the previously submitted file can't be deleted on
-    // the backend (SUBMITTED_FILE_IMMUTABLE); it is only superseded when the
-    // replacement upload (with `replacesFileId`) completes. So "remove" just
-    // clears the old row locally and lets the resident pick the new file.
+    // Flagged-file revision: the backend lets an optional flagged file be deleted
+    // (DELETE .../files/:currentFileId). Once removed there is no file left to
+    // replace, so the field stays empty and is resubmitted empty.
     if (replacesFileId) {
-      onChange(value.filter((f) => f.id !== row.id));
+      if (!requestId) return;
+      patchRow(row.id, { status: "verifying" });
+      try {
+        const result = await deleteRequestFile(requestId, replacesFileId, mediaRevision);
+        onMediaRevisionChange?.(result.mediaRevision);
+        onChange(valueRef.current.filter((f) => f.id !== row.id));
+        setRemovedLocal(true);
+        onUploadComplete?.();
+      } catch (err: any) {
+        patchRow(row.id, { status: "ready" });
+        toastError("Could not remove file", failureMessage(err));
+      }
       return;
     }
     if (!row.fileId || !requestId) {
@@ -297,6 +315,13 @@ export function FileDropzone({
 
   return (
     <div className="space-y-2">
+      {!disabled && flaggedFileRemoved && (
+        <div className="flex items-center gap-2 rounded-lg border border-border/80 bg-muted/30 px-3.5 py-2.5 text-xs text-muted-foreground">
+          <FileText className="size-4 shrink-0 text-muted-foreground/60" />
+          <span>File removed. Upload a new file below, or leave it empty to resubmit without this optional document.</span>
+        </div>
+      )}
+
       {!disabled && compact && (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <button
@@ -450,7 +475,7 @@ export function FileDropzone({
                     previously submitted file (no local `file`) can be cleared;
                     a file uploaded this session is already persisted as the
                     replacement and can only be replaced again. */}
-                {!disabled && !busy && (!replacesFileId || !f.file) && (
+                {!disabled && !busy && (!replacesFileId || (canRemoveFlagged && !f.file)) && (
                   <button
                     type="button"
                     onClick={() => removeFile(f)}

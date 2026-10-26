@@ -1,5 +1,7 @@
 "use client";
 
+import { consumePasswordResetNotice } from "@/features/auth/lib/password-reset-notice";
+import { useToast } from "@/hooks/use-toast";
 import { useEffect } from "react";
 import Link from "next/link";
 import { Controller } from "react-hook-form";
@@ -27,6 +29,11 @@ import { useLogin } from "@/features/auth/hooks/use-login";
 import { clearPendingRegistration } from "@/features/auth/hooks/use-register";
 
 export default function LoginForm() {
+  const toast = useToast();
+  useEffect(() => {
+    if (consumePasswordResetNotice()) toast.success("Password updated", "Your password has been changed. Sign in with your new password.");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const {
     form,
     onSubmit,

@@ -24,6 +24,7 @@ export function RequestReviseWizard({ request }: { request: RequestRecord }) {
     flaggedFields,
     flagsByField,
     replacesFileIdByField,
+    removedByField,
     onFileReplaced,
     mediaRevision,
     onMediaRevisionChange,
@@ -109,6 +110,7 @@ export function RequestReviseWizard({ request }: { request: RequestRecord }) {
                           mediaRevision={mediaRevision}
                           onMediaRevisionChange={onMediaRevisionChange}
                           replacesFileId={isFileFlag ? replacesFileIdByField.get(field.id) : undefined}
+                          fileRemoved={isFileFlag && removedByField.has(field.id)}
                           onUploadComplete={isFileFlag ? onFileReplaced : undefined}
                         />
                         {isFlagged && reason && (

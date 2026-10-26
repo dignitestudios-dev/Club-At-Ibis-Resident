@@ -34,6 +34,7 @@ export function DynamicField({
   mediaRevision,
   onMediaRevisionChange,
   replacesFileId,
+  fileRemoved,
   onUploadComplete,
 }: {
   field: FieldConfig;
@@ -47,6 +48,7 @@ export function DynamicField({
   onMediaRevisionChange?: (next: number) => void;
   /** Set when this field's current file is being replaced (revise wizard, reviewer-flagged file). */
   replacesFileId?: string;
+  fileRemoved?: boolean;
   /** Called after a file finishes uploading (revise wizard: refreshes the request so a follow-up replacement targets the new current file). */
   onUploadComplete?: () => void;
 }) {
@@ -449,6 +451,8 @@ export function DynamicField({
                     mediaRevision={mediaRevision ?? 0}
                     onMediaRevisionChange={onMediaRevisionChange}
                     replacesFileId={replacesFileId}
+                    canRemoveFlagged={!field.required}
+                    fileRemoved={fileRemoved}
                     onUploadComplete={onUploadComplete}
                   />
                   {hasError && (

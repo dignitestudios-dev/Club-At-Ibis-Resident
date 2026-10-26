@@ -116,6 +116,16 @@ export function useRequestRevise(request: RequestRecord) {
       ),
     [request.revision]
   );
+  /** fieldId -> the flagged document was already deleted (optional field), so there is nothing left to replace. */
+  const removedByField = useMemo(
+    () =>
+      new Set(
+        (request.revision?.items ?? [])
+          .filter((item) => item.kind === "file" && item.replacementStatus === "removed")
+          .map((item) => item.fieldId)
+      ),
+    [request.revision]
+  );
   /** Refresh the request after a file replacement completes so `currentFile`/`replacementStatus`/`mediaRevision` are current before any further replacement is attempted in the same session. */
   const refreshAfterFileReplaced = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["requests", "detail", request.id] });
@@ -703,6 +713,7 @@ export function useRequestRevise(request: RequestRecord) {
     flagsByField,
     replacesFileIdByField,
     replacementSatisfiedByField,
+    removedByField,
     onFileReplaced: refreshAfterFileReplaced,
     mediaRevision,
     onMediaRevisionChange: handleMediaRevisionChange,
