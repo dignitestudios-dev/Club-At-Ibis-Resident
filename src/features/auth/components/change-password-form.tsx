@@ -14,9 +14,14 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { useChangePassword } from "@/features/auth/hooks/use-change-password";
+import { useEffect, useState } from "react";
+import { getAdminAccessSession } from "@/lib/admin-access";
 
 export function ChangePasswordForm() {
   const { form, onSubmit, isPending } = useChangePassword();
+  // An admin-access session may not change the resident's password (the API refuses it as well).
+  const [adminAccess, setAdminAccess] = useState(false);
+  useEffect(() => setAdminAccess(!!getAdminAccessSession()), []);
   const {
     control,
     handleSubmit,
@@ -35,6 +40,11 @@ export function ChangePasswordForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {adminAccess ? (
+          <p className="text-sm text-muted-foreground">
+            The password can't be changed while you are using admin access. The resident can change it after signing in with their own password.
+          </p>
+        ) : (
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
           <FieldGroup>
             <Controller
@@ -140,6 +150,7 @@ export function ChangePasswordForm() {
             </div>
           </FieldGroup>
         </form>
+        )}
       </CardContent>
     </Card>
   );

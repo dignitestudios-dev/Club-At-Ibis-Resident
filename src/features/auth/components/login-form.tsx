@@ -1,5 +1,6 @@
 "use client";
 
+import { consumeAdminAccessExpiredNotice } from "@/lib/admin-access";
 import { consumePasswordResetNotice } from "@/features/auth/lib/password-reset-notice";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect } from "react";
@@ -32,6 +33,7 @@ export default function LoginForm() {
   const toast = useToast();
   useEffect(() => {
     if (consumePasswordResetNotice()) toast.success("Password updated", "Your password has been changed. Sign in with your new password.");
+    if (consumeAdminAccessExpiredNotice()) toast.warning("Admin access ended", "The 15-minute admin session has expired. Sign in again to continue.");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const {

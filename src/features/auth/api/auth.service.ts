@@ -76,7 +76,9 @@ export async function getResidentById(_id: string): Promise<PublicResident | nul
 /**
  * Log in as a resident. Callers store `token` in localStorage and Redux.
  */
-export async function loginUser(credentials: LoginCredentials): Promise<{ token: string; user: PublicResident }> {
+export async function loginUser(
+  credentials: LoginCredentials
+): Promise<{ token: string; user: PublicResident; accessMode?: string; expiresIn?: string }> {
   const { data } = await axiosInstance.post("/auth/login", {
     ...credentials,
     role: "RESIDENT",
@@ -84,6 +86,8 @@ export async function loginUser(credentials: LoginCredentials): Promise<{ token:
   return {
     token: data.data.token,
     user: toPublicResident(data.data.user),
+    accessMode: data.data.accessMode,
+    expiresIn: data.data.expiresIn,
   };
 }
 

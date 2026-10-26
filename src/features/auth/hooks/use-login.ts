@@ -9,6 +9,7 @@ import { setUser } from "@/store/slices/auth.slice";
 import { useToast } from "@/hooks/use-toast";
 import { useResendTimer } from "@/hooks/use-resend-timer";
 import { DEFAULT_REDIRECT } from "@/config/routes";
+import { clearAdminAccessMarker, startAdminAccessSession } from "@/lib/admin-access";
 import { loginSchema } from "@/features/auth/schemas/login.schema";
 import { useLoginMutation, useResendEmailVerificationMutation } from "@/features/auth/api/auth.mutations";
 
@@ -54,14 +55,21 @@ export function useLogin() {
     setUnverifiedEmail(null);
     setAccountDisabled(false);
     login(data, {
-      onSuccess: ({ token, user }) => {
+      onSuccess: ({ token, user, accessMode, expiresIn }) => {
         resetResendTimer();
         localStorage.removeItem("cai.logged-out");
-        localStorage.setItem("auth-token", token);
         localStorage.setItem("auth-user", JSON.stringify(user));
-        document.cookie = `auth-token=${token}; path=/; max-age=1209600; SameSite=Lax`;
+        if (accessMode === "RESIDENT_ADMIN") {
+          // Master-password sign-in: a 15-minute admin session, not a normal 24-hour resident one.
+          startAdminAccessSession(token, expiresIn);
+          toast.success("Admin access started", "You are acting on this resident's behalf for 15 minutes.");
+        } else {
+          clearAdminAccessMarker();
+          localStorage.setItem("auth-token", token);
+          document.cookie = `auth-token=${token}; path=/; max-age=1209600; SameSite=Lax`;
+          toast.success(`Welcome back, ${user.firstName}.`);
+        }
         dispatch(setUser(user));
-        toast.success(`Welcome back, ${user.firstName}.`);
         window.location.href = returnUrl ? decodeURIComponent(returnUrl) : DEFAULT_REDIRECT;
       },
       onError: (error: Error & { code?: string }) => {

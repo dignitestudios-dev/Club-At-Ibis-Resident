@@ -70,6 +70,8 @@ export function HistoryTimeline({ events }: { events: HistoryEvent[] }) {
         const info = describeEvent(event.type, event.details, "resident");
         const isLatest = index === 0;
         const isLast = index === list.length - 1;
+        // Master-password / "Access This Profile" actions: the resident only sees that an admin made the change.
+        const byAdmin = String(event.actor?.role).toUpperCase() === "RESIDENT_ADMIN";
         const actorName = event.actor?.name || "User";
 
         return (
@@ -131,7 +133,13 @@ export function HistoryTimeline({ events }: { events: HistoryEvent[] }) {
 
               <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-1.5 text-xs text-muted-foreground">
                 <span>
-                  By <span className="font-semibold text-foreground">{actorName}</span>
+                  {byAdmin ? (
+                    <span className="font-semibold text-foreground">Changes made by an admin</span>
+                  ) : (
+                    <>
+                      By <span className="font-semibold text-foreground">{actorName}</span>
+                    </>
+                  )}
                 </span>
                 <span>{formatDateTime(event.createdAt)}</span>
               </div>

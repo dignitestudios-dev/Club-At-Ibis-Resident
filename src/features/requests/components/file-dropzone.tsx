@@ -4,7 +4,6 @@ import { useRef, useState } from "react";
 import { Upload, X, FileText, Eye, RotateCw, Loader2 } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { formatFileSize } from "@/utils/format";
-import { validateFileIntegrity } from "@/utils/file-integrity";
 import { FilePreviewDialog, type PreviewableFile } from "@/components/shared/file-preview-dialog";
 import {
   createUploadIntent,
@@ -195,23 +194,8 @@ export function FileDropzone({
     }
     if (validFiles.length === 0) return;
 
-    // Check file integrity (detect corrupted PDFs, damaged images, truncated files)
-    const intactFiles: File[] = [];
-    for (const file of validFiles) {
-      const integrity = await validateFileIntegrity(file);
-      if (!integrity.valid) {
-        toastError(
-          "Corrupted File",
-          integrity.error || `"${file.name}" is corrupted or unreadable. Please check the file and try again.`
-        );
-      } else {
-        intactFiles.push(file);
-      }
-    }
-    if (intactFiles.length === 0) return;
-
     if (multiple) {
-      const incoming: DropzoneFile[] = intactFiles.map((file) => ({
+      const incoming: DropzoneFile[] = validFiles.map((file) => ({
         id: crypto.randomUUID(),
         name: file.name,
         size: file.size,
@@ -232,7 +216,7 @@ export function FileDropzone({
     // `replacesFileId` swap (the revise-wizard's flagged-file correction
     // flow) already handles this atomically server-side, so this only
     // applies when replacing a file in the plain create/draft wizard.
-    const file = intactFiles[0];
+    const file = validFiles[0];
     const row: DropzoneFile = {
       id: crypto.randomUUID(),
       name: file.name,

@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { AppSidebar } from "@/components/shared/app-sidebar";
 import { AppTopbar } from "@/components/shared/app-topbar";
+import { AdminAccessBanner } from "@/components/shared/admin-access-banner";
 import { MobileBottomNav, MobileNavProvider, isFocusRoute } from "@/components/shared/mobile-nav";
 import { MobileMenuSheet } from "@/components/shared/mobile-menu-sheet";
 import { cn } from "@/utils/cn";
@@ -26,6 +27,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </aside>
         <div className="flex min-w-0 flex-1 flex-col">
+          <AdminAccessBanner />
           <AppTopbar />
           <main
             id="main-content"
