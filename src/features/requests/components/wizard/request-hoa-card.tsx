@@ -83,7 +83,7 @@ export function RequestHoaCard({
           </p>
 
           <p id="hoa-helper-text" className="text-xs text-muted-foreground leading-relaxed">
-            The Club at Ibis Architectural Review Board requires prior written HOA approval from your sub-association before processing this request.{letterRequired ? " Upload your HOA Approval Confirmation Letter below, or tick the box to confirm." : ""}
+            The Club at Ibis Architectural Review Board requires prior written HOA approval from your sub-association before processing this request.{letterRequired ? " Upload your HOA Approval Confirmation Letter below, and tick the box to confirm." : ""}
           </p>
 
           {letterRequired && upload && <div className="pt-1.5">{upload}</div>}
