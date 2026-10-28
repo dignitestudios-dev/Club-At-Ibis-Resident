@@ -133,8 +133,8 @@ export function RequestDetailSidebar({ request }: RequestDetailSidebarProps) {
                 <Banknote className="size-3.5" />
               </span>
               <div>
-                <CardTitle className="text-base font-semibold">Refund</CardTitle>
-                <p className="text-xs text-muted-foreground">Post-review return of deposit funds</p>
+                <CardTitle className="text-base font-semibold">Deposit Refund</CardTitle>
+                <p className="text-xs text-muted-foreground">Refund for your withdrawn request</p>
               </div>
             </div>
           </CardHeader>
@@ -185,7 +185,7 @@ export function RequestDetailSidebar({ request }: RequestDetailSidebarProps) {
                       <Clock className="size-4" />
                     </span>
                     <span className="text-xs font-semibold text-amber-950 dark:text-amber-300 uppercase tracking-wider">
-                      Pending Closeout
+                      Refund Pending
                     </span>
                   </div>
                   {(request.deposit?.amount || request.depositAmount) && (
@@ -195,7 +195,7 @@ export function RequestDetailSidebar({ request }: RequestDetailSidebarProps) {
                   )}
                 </div>
                 <p className="text-xs text-amber-900/90 dark:text-amber-300/90 leading-relaxed">
-                  Your deposit refund is queued and will be disbursed following final project inspection and completion sign-off.
+                  Your request has been withdrawn. Your deposit refund is pending processing.
                 </p>
               </div>
             ) : (request.refund?.outcome === "no_refund" || request.refundStatus === "no_refund") ? (
