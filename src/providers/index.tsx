@@ -24,9 +24,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
             <AuthRehydrator>
               <TooltipProvider>
                 <ToastProvider>
+                  <OfflineBanner />
                   {children}
                   <ServerErrorDialog />
-                  <OfflineBanner />
                 </ToastProvider>
               </TooltipProvider>
             </AuthRehydrator>
