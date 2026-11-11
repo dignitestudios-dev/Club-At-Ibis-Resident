@@ -4,16 +4,35 @@
  *   still renders behind the in-app "You are offline" overlay instead of a separate offline screen.
  * - Hashed build assets (/_next/static) are cached so the cached page can actually boot offline.
  * API calls are never cached, so residents never see stale request data. */
-const VERSION = "v2";
+const VERSION = "v3";
 const PAGES = `cai-pages-${VERSION}`;
 const STATIC = `cai-static-${VERSION}`;
+const IMAGES = `cai-images-${VERSION}`;
 
-self.addEventListener("install", () => self.skipWaiting());
+// Brand images the app always needs, saved at install so they never break offline.
+const PRECACHE = [
+  "/brand/club-at-ibis-logo.png",
+  "/brand/ibis-mark-navy.png",
+  "/brand/ibis-mark-gold.png",
+  "/brand/ibis-mark-ivory.png",
+  "/brand/ibis-mark-blue.png",
+  "/icons/icon-192.png",
+  "/icons/icon-512.png",
+];
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches
+      .open(IMAGES)
+      .then((c) => Promise.allSettled(PRECACHE.map((u) => c.add(u))))
+      .then(() => self.skipWaiting())
+  );
+});
 self.addEventListener("activate", (event) =>
   event.waitUntil(
     (async () => {
       const keys = await caches.keys();
-      await Promise.all(keys.filter((k) => k !== PAGES && k !== STATIC).map((k) => caches.delete(k)));
+      await Promise.all(keys.filter((k) => k !== PAGES && k !== STATIC && k !== IMAGES).map((k) => caches.delete(k)));
       await self.clients.claim();
     })()
   )
@@ -56,6 +75,28 @@ self.addEventListener("fetch", (event) => {
           );
         }
       })()
+    );
+    return;
+  }
+
+  // Logos and other images (including the optimised /_next/image copies): serve the saved copy
+  // instantly, refresh it in the background, and keep it when the network is gone.
+  if (url.pathname.startsWith("/_next/image") || url.pathname.startsWith("/brand/") || url.pathname.startsWith("/icons/")) {
+    event.respondWith(
+      caches.open(IMAGES).then(async (cache) => {
+        const hit = await cache.match(request);
+        const refresh = fetch(request)
+          .then((res) => {
+            if (res.ok) cache.put(request, res.clone());
+            return res;
+          })
+          .catch(() => null);
+        if (hit) {
+          event.waitUntil(refresh);
+          return hit;
+        }
+        return (await refresh) || Response.error();
+      })
     );
     return;
   }
