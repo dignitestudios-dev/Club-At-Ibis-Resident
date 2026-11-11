@@ -1,37 +1,60 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { WifiOff } from "lucide-react";
+import { CheckCircle2, WifiOff } from "lucide-react";
+import { cn } from "@/utils/cn";
 
+type Status = "online" | "offline" | "restored";
+
+/**
+ * A slim strip at the top of the screen: "You are offline" while disconnected (the app keeps showing the
+ * data it already loaded), then "You're back online" for a few seconds once the connection returns.
+ */
 export function OfflineBanner() {
-  const [isOffline, setIsOffline] = useState(false);
+  const [status, setStatus] = useState<Status>("online");
 
   useEffect(() => {
-    const handleOnline = () => setIsOffline(false);
-    const handleOffline = () => setIsOffline(true);
+    let hideTimer: ReturnType<typeof setTimeout> | null = null;
+    const clear = () => {
+      if (hideTimer) clearTimeout(hideTimer);
+      hideTimer = null;
+    };
+    const goOffline = () => {
+      clear();
+      setStatus("offline");
+    };
+    const goOnline = () => {
+      clear();
+      setStatus("restored");
+      hideTimer = setTimeout(() => setStatus("online"), 3500);
+    };
 
-    if (typeof window !== "undefined") {
-      setIsOffline(!navigator.onLine);
-      window.addEventListener("online", handleOnline);
-      window.addEventListener("offline", handleOffline);
-    }
-
+    if (!navigator.onLine) setStatus("offline");
+    window.addEventListener("offline", goOffline);
+    window.addEventListener("online", goOnline);
     return () => {
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
+      clear();
+      window.removeEventListener("offline", goOffline);
+      window.removeEventListener("online", goOnline);
     };
   }, []);
 
-  if (!isOffline) return null;
+  if (status === "online") return null;
+  const offline = status === "offline";
 
   return (
     <div
       role="status"
       aria-live="polite"
-      className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2 flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs font-medium text-rose-900 shadow-lg dark:border-rose-900 dark:bg-rose-950 dark:text-rose-200 animate-in fade-in slide-in-from-bottom-2"
+      className={cn(
+        "pt-safe fixed inset-x-0 top-0 z-[60] animate-in fade-in slide-in-from-top-2",
+        offline ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"
+      )}
     >
-      <WifiOff className="size-4 text-rose-600 dark:text-rose-400" aria-hidden="true" />
-      <span>You are currently offline. Please check your internet connection.</span>
+      <div className="flex items-center justify-center gap-2 px-4 py-1.5 text-xs font-medium">
+        {offline ? <WifiOff className="size-3.5 shrink-0" aria-hidden="true" /> : <CheckCircle2 className="size-3.5 shrink-0" aria-hidden="true" />}
+        <span>{offline ? "You are offline. Showing the last data loaded; changes can't be saved until you reconnect." : "You're back online."}</span>
+      </div>
     </div>
   );
 }

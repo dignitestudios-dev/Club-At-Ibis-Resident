@@ -32,6 +32,7 @@ function clearSessionAndRedirect() {
   localStorage.removeItem("auth-token");
   localStorage.removeItem("auth-user");
   localStorage.removeItem("cai.admin-access");
+  localStorage.removeItem("cai.query-cache");
   document.cookie = "auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0";
 
   try {
@@ -116,7 +117,8 @@ axiosInstance.interceptors.response.use(
     }
 
     // Trigger server-error dialog on 5xx or network-down responses
-    if (typeof window !== "undefined" && (!status || status >= 500 || error.code === "ERR_NETWORK")) {
+    // (Not when the device is simply offline: the offline strip already says so.)
+    if (typeof window !== "undefined" && navigator.onLine && (!status || status >= 500 || error.code === "ERR_NETWORK")) {
       window.dispatchEvent(new CustomEvent("app:server-error"));
     }
 

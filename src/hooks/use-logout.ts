@@ -6,6 +6,7 @@ import { useAppDispatch } from "@/store";
 import { clearUser } from "@/store/slices/auth.slice";
 import { authKeys } from "@/features/auth/api/auth.queries";
 import { logoutUser } from "@/features/auth/api/auth.service";
+import { clearPersistedQueries } from "@/lib/query-persist";
 
 export function useLogout() {
   const dispatch = useAppDispatch();
@@ -24,6 +25,9 @@ export function useLogout() {
       localStorage.removeItem("auth-user");
       localStorage.removeItem("cai.admin-access");
       document.cookie = "auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0";
+      // Drop offline copies of pages: they can contain the resident's data.
+      navigator.serviceWorker?.controller?.postMessage("clear-pages");
+      clearPersistedQueries();
       dispatch(clearUser());
       queryClient.setQueryData(authKeys.currentUser, null);
       queryClient.removeQueries({ queryKey: authKeys.all });
