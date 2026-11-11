@@ -39,3 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Android wrapper secrets and build output
+*.keystore
+*.jks
+android/app/
+android/build/
+android/*.aab
+android/*.apk

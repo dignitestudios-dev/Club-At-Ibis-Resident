@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.vercel.clubatibis_resident.twa",
+      "sha256_cert_fingerprints": ["46:68:A3:5A:0F:EB:B8:46:52:E4:E3:03:E6:FB:62:19:40:8B:B2:47:4F:32:A2:C7:61:B2:7B:ED:36:56:01:87"]
+    }
+  }
+]

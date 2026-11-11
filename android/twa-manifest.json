@@ -1,0 +1,20 @@
+{
+  "packageId": "app.vercel.clubatibis_resident.twa",
+  "host": "clubatibis-resident.vercel.app",
+  "name": "Club At Ibis — Resident Portal",
+  "launcherName": "Club At Ibis",
+  "display": "standalone",
+  "orientation": "default",
+  "themeColor": "#112636",
+  "navigationColor": "#112636",
+  "backgroundColor": "#0d1522",
+  "startUrl": "/dashboard?source=twa",
+  "iconUrl": "https://clubatibis-resident.vercel.app/icons/icon-512.png",
+  "maskableIconUrl": "https://clubatibis-resident.vercel.app/icons/icon-maskable-512.png",
+  "webManifestUrl": "https://clubatibis-resident.vercel.app/manifest.webmanifest",
+  "appVersion": "1.0.0",
+  "appVersionCode": 1,
+  "enableNotifications": true,
+  "fallbackType": "customtabs",
+  "signingKey": { "path": "./android.keystore", "alias": "clubatibis" }
+}
