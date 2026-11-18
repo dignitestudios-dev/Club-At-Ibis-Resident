@@ -266,7 +266,7 @@ export function DynamicField({
                 <FieldContent>
                   <Textarea
                     id={field.id}
-                    placeholder={field.placeholder || field.helpText}
+                    placeholder={field.placeholder || field.helpText || `Enter ${field.label.toLowerCase()}`}
                     rows={3}
                     // Deliberately no `maxLength` here: the resident may type past
                     // the limit, see the count/error below, and still save the
