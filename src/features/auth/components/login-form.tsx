@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/field";
 import { Spinner } from "@/components/ui/spinner";
 import { useLogin } from "@/features/auth/hooks/use-login";
+import { RateLimitNotice } from "@/components/shared/rate-limit-notice";
 import { clearPendingRegistration } from "@/features/auth/hooks/use-register";
 
 export default function LoginForm() {
@@ -48,6 +49,7 @@ export default function LoginForm() {
     isResendingVerification,
     resendCountdown,
     resendFormattedTime,
+    rateLimit,
   } = useLogin();
   const {
     control,
@@ -124,6 +126,8 @@ export default function LoginForm() {
           </Button>
         </div>
       )}
+
+      <RateLimitNotice remaining={rateLimit.remaining} restored={rateLimit.restored} />
 
       <form onSubmit={handleSubmit(onSubmit, onInvalid)} noValidate>
         <FieldGroup>

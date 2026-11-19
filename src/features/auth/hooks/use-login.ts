@@ -8,6 +8,7 @@ import { useAppDispatch } from "@/store";
 import { setUser } from "@/store/slices/auth.slice";
 import { useToast } from "@/hooks/use-toast";
 import { useResendTimer } from "@/hooks/use-resend-timer";
+import { useRateLimit } from "@/hooks/use-rate-limit";
 import { DEFAULT_REDIRECT } from "@/config/routes";
 import { clearAdminAccessMarker, startAdminAccessSession } from "@/lib/admin-access";
 import { loginSchema } from "@/features/auth/schemas/login.schema";
@@ -26,6 +27,7 @@ export function useLogin() {
   const { mutate: resendVerification, isPending: isResendingVerification } = useResendEmailVerificationMutation();
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
   const [accountDisabled, setAccountDisabled] = useState(false);
+  const rateLimit = useRateLimit("cai.rate-limit.login");
 
   const {
     countdown: resendCountdown,
@@ -74,6 +76,8 @@ export function useLogin() {
       },
       onError: (error: Error & { code?: string }) => {
         isSubmittingRef.current = false;
+        // Rate limited: start/re-sync the visible countdown from the backend's retryAfterSeconds.
+        if (rateLimit.handleError(error)) return;
         if (error.code === "EMAIL_VERIFICATION_REQUIRED" || error.message?.toLowerCase().includes("verification")) {
           setUnverifiedEmail(data.email);
         }
@@ -120,5 +124,6 @@ export function useLogin() {
     resendCountdown,
     isResendCoolingDown,
     resendFormattedTime,
+    rateLimit,
   };
 }
