@@ -58,6 +58,7 @@ export function useLogin() {
     setAccountDisabled(false);
     login(data, {
       onSuccess: ({ token, user, accessMode, expiresIn }) => {
+        rateLimit.clear();
         resetResendTimer();
         localStorage.removeItem("cai.logged-out");
         localStorage.setItem("auth-user", JSON.stringify(user));
@@ -76,8 +77,11 @@ export function useLogin() {
       },
       onError: (error: Error & { code?: string }) => {
         isSubmittingRef.current = false;
-        // Rate limited: start/re-sync the visible countdown from the backend's retryAfterSeconds.
-        if (rateLimit.handleError(error)) return;
+        // Throttled: (re)start the visible countdown from the backend's wait time and show its message.
+        if (rateLimit.handleError(error)) {
+          toast.error(error.message || "Too many attempts. Please try again later.");
+          return;
+        }
         if (error.code === "EMAIL_VERIFICATION_REQUIRED" || error.message?.toLowerCase().includes("verification")) {
           setUnverifiedEmail(data.email);
         }
